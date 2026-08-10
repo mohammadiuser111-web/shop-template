@@ -1,0 +1,212 @@
+version: '3.8'
+
+services:
+  # Django application
+  web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: shop_template_web
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/shop_template
+      - REDIS_URL=redis://redis:6379/1
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    volumes:
+      - ..:/app
+      - static_volume:/static
+      - media_volume:/media
+      - logs_volume:/logs
+    depends_on:
+      - db
+      - redis
+    networks:
+      - shop_template_network
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "/app/manage.py", "health_check"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Gunicorn server
+  gunicorn:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: shop_template_gunicorn
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/shop_template
+      - REDIS_URL=redis://redis:6379/1
+    volumes:
+      - ..:/app
+      - static_volume:/static
+      - media_volume:/media
+      - logs_volume:/logs
+    depends_on:
+      - db
+      - redis
+    networks:
+      - shop_template_network
+    command: gunicorn --bind 0.0.0.0:8000 --workers 4 --threads 2 --timeout 120 config.wsgi:application
+    ports:
+      - "8000:8000"
+
+  # PostgreSQL database
+  db:
+    image: postgres:15-alpine
+    container_name: shop_template_db
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=shop_template
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - shop_template_network
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis cache and message broker
+  redis:
+    image: redis:7-alpine
+    container_name: shop_template_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - shop_template_network
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Celery worker
+  celery:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: shop_template_celery
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/shop_template
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    volumes:
+      - ..:/app
+      - static_volume:/static
+      - media_volume:/media
+      - logs_volume:/logs
+    depends_on:
+      - db
+      - redis
+      - web
+    networks:
+      - shop_template_network
+    command: celery -A config.celery worker --loglevel=info --concurrency=4
+
+  # Celery beat (for scheduled tasks)
+  celery_beat:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: shop_template_celery_beat
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/shop_template
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    volumes:
+      - ..:/app
+      - static_volume:/static
+      - media_volume:/media
+      - logs_volume:/logs
+    depends_on:
+      - db
+      - redis
+      - web
+    networks:
+      - shop_template_network
+    command: celery -A config.celery beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+
+  # Nginx web server
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: shop_template_nginx
+    restart: unless-stopped
+    volumes:
+      - static_volume:/static:ro
+      - media_volume:/media:ro
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - web
+    networks:
+      - shop_template_network
+    ports:
+      - "80:80"
+      - "443:443"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # pgAdmin (optional, for database management)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: shop_template_pgadmin
+    restart: unless-stopped
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@shop-template.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+      - PGADMIN_CONFIG_SERVER_MODE=False
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - shop_template_network
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_volume:
+  media_volume:
+  logs_volume:
+  pgadmin_data:
+
+networks:
+  shop_template_network:
+    driver: bridge

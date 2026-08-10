@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    
+    {% block meta %}
+    <meta name="description" content="{{ site_settings.site_description|default:'قالب حرفه‌ای فروشگاهی' }}">
+    <meta name="keywords" content="">
+    <meta name="author" content="{{ site_settings.site_name|default:'Shop Template' }}">
+    
+    <!-- Open Graph / Social Media Meta Tags -->
+    <meta property="og:title" content="{{ site_settings.site_name|default:'Shop Template' }}">
+    <meta property="og:description" content="{{ site_settings.site_description|default:'قالب حرفه‌ای فروشگاهی' }}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ request.get_host }}">
+    <meta property="og:site_name" content="{{ site_settings.site_name|default:'Shop Template' }}">
+    {% endblock %}
+    
+    <title>{% block title %}{{ site_settings.site_name|default:'Shop Template' }}{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ theme.favicon|default:theme_logo }}">
+    
+    <!-- CSS -->
+    {% block css %}
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/base/reset.css">
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/base/typography.css">
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/base/grid.css">
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/base/base.css">
+    
+    <!-- Theme CSS Variables -->
+    <style>
+        :root {
+            {% for key, value in theme.colors.items %}
+            --color-{{ key }}: {{ value }};
+            {% endfor %}
+            
+            {% for lang, font in theme.fonts.items %}
+            {% if font.name %}
+            --font-{{ lang }}: "{{ font.name }}", sans-serif;
+            {% endif %}
+            {% endfor %}
+            
+            --site-name: "{{ theme.name|default:'Shop Template' }}";
+        }
+    </style>
+    
+    <!-- Components CSS -->
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/components/buttons.css">
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/components/cards.css">
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/components/forms.css">
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/components/modals.css">
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/components/navbar.css">
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/components/footer.css">
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/components/breadcrumbs.css">
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/components/pagination.css">
+    
+    <!-- Pages CSS -->
+    {% block page_css %}{% endblock %}
+    
+    <!-- Responsive CSS -->
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/base/responsive.css">
+    {% endblock %}
+    
+    <!-- JS -->
+    {% block js %}
+    <!-- Load jQuery if needed -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- Core JS -->
+    <script src="{{ STATIC_URL }}js/core/utils.js"></script>
+    <script src="{{ STATIC_URL }}js/core/api.js"></script>
+    
+    <!-- Components JS -->
+    <script src="{{ STATIC_URL }}js/components/cart.js"></script>
+    <script src="{{ STATIC_URL }}js/components/modals.js"></script>
+    
+    <!-- Pages JS -->
+    {% block page_js %}{% endblock %}
+    {% endblock %}
+    
+    <!-- CSRF Token -->
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Vazir:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Header -->
+    {% block header %}
+    {% include 'includes/header.html' %}
+    {% endblock %}
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    {% block footer %}
+    {% include 'includes/footer.html' %}
+    {% endblock %}
+    
+    <!-- Back to Top Button -->
+    <button id="back-to-top" class="back-to-top">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 15l-6-6-6 6"/>
+        </svg>
+    </button>
+    
+    <!-- Notifications -->
+    {% include 'includes/notifications.html' %}
+    
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+    </div>
+    
+    <!-- JavaScript -->
+    <script>
+        // Initialize theme
+        window.theme = {
+            colors: {{ theme.colors|json_script|safe }},
+            fonts: {{ theme.fonts|json_script|safe }},
+            name: {{ theme.name|json_script|safe }},
+            slogan: {{ theme.slogan|json_script|safe }},
+            logo: {{ theme.logo|json_script|safe }},
+        };
+        
+        // Initialize CSRF token for AJAX requests
+        window.csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+        
+        // Back to top functionality
+        document.getElementById('back-to-top').addEventListener('click', function() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        
+        // Show/hide back to top button
+        window.addEventListener('scroll', function() {
+            const backToTop = document.getElementById('back-to-top');
+            if (window.pageYOffset > 300) {
+                backToTop.style.display = 'block';
+            } else {
+                backToTop.style.display = 'none';
+            }
+        });
+        
+        // Initialize components
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize cart
+            if (typeof Cart !== 'undefined') {
+                window.cart = new Cart();
+            }
+            
+            // Initialize modals
+            if (typeof Modal !== 'undefined') {
+                window.modal = new Modal();
+            }
+        });
+    </script>
+</body>
+</html>

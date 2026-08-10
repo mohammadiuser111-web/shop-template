@@ -1,0 +1,30 @@
+# Production requirements
+-r base.txt
+
+# Database connection pooling
+# psycogreen>=1.0.2
+
+# Web server
+# gunicorn>=21.0.0
+
+# Monitoring
+# django-debug-toolbar is not included in production
+# Use separate monitoring tools like Prometheus, Grafana, etc.
+
+# Security
+# Consider adding:
+# django-axes>=6.0.0 (for brute force protection)
+# django-ratelimit>=4.0.0 (for rate limiting)
+
+# Caching
+# Consider adding Memcached support:
+# pymemcache>=4.0.0
+
+# Search
+# Consider adding search functionality:
+# django-haystack>=3.5.0
+# elasticsearch>=8.0.0
+
+# Analytics
+# Consider adding analytics:
+# django-analytical>=4.0.0
