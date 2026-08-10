@@ -1,0 +1,545 @@
+{% extends "admin_panel/admin_base.html" %}
+{% load i18n static %}
+
+{% block page_title %}{% trans "Inventory" %}{% endblock %}
+{% block page_description %}{% trans "Manage product inventory, warehouses, and stock levels." %}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'inventory:warehouse_create' %}" class="btn btn-primary">
+    <i class="bi bi-plus me-1"></i> {% trans "Add Warehouse" %}
+</a>
+{% endblock %}
+
+{% block main_content %}
+<!-- Stats -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-inboxes"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Total Products" %}</h6>
+                        <h3 class="mb-0">{{ stats.total_products }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-inbox"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "In Stock" %}</h6>
+                        <h3 class="mb-0">{{ stats.in_stock }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Low Stock" %}</h6>
+                        <h3 class="mb-0">{{ stats.low_stock }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-danger text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-x-circle"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Out of Stock" %}</h6>
+                        <h3 class="mb-0">{{ stats.out_of_stock }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Search" %}</label>
+                <input type="text" name="q" class="form-control" placeholder="{% trans 'Product name or SKU' %}" value="{{ request.GET.q }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Category" %}</label>
+                <select name="category" class="form-select">
+                    <option value="">{% trans "All Categories" %}</option>
+                    {% for category in categories %}
+                    <option value="{{ category.id }}" {% if request.GET.category|stringformat:"s" == category.id|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Warehouse" %}</label>
+                <select name="warehouse" class="form-select">
+                    <option value="">{% trans "All Warehouses" %}</option>
+                    {% for warehouse in warehouses %}
+                    <option value="{{ warehouse.id }}" {% if request.GET.warehouse|stringformat:"s" == warehouse.id|stringformat:"s" %}selected{% endif %}>{{ warehouse.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Stock Status" %}</label>
+                <select name="stock_status" class="form-select">
+                    <option value="">{% trans "All Statuses" %}</option>
+                    <option value="in_stock" {% if request.GET.stock_status == 'in_stock' %}selected{% endif %}>{% trans "In Stock" %}</option>
+                    <option value="low_stock" {% if request.GET.stock_status == 'low_stock' %}selected{% endif %}>{% trans "Low Stock" %}</option>
+                    <option value="out_of_stock" {% if request.GET.stock_status == 'out_of_stock' %}selected{% endif %}>{% trans "Out of Stock" %}</option>
+                </select>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search me-1"></i> {% trans "Search" %}
+                </button>
+                <a href="{% url 'inventory:inventory_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle me-1"></i> {% trans "Reset" %}
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Inventory Table -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>
+                            <input type="checkbox" id="selectAllInventory">
+                        </th>
+                        <th>{% trans "Product" %}</th>
+                        <th>{% trans "SKU" %}</th>
+                        <th>{% trans "Category" %}</th>
+                        <th>{% trans "Warehouse" %}</th>
+                        <th>{% trans "Location" %}</th>
+                        <th>{% trans "Current Stock" %}</th>
+                        <th>{% trans "Reserved" %}</th>
+                        <th>{% trans "Available" %}</th>
+                        <th>{% trans "Low Stock Threshold" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inventory in inventory_list %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" name="selected[]" value="{{ inventory.id }}">
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if inventory.product.image %}
+                                <img src="{{ inventory.product.image.url }}" alt="" class="me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                {% else %}
+                                <div class="bg-secondary text-white rounded d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px;">
+                                    <i class="bi bi-image"></i>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-0">{{ inventory.product.name|truncatechars:30 }}</h6>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ inventory.product.sku }}</td>
+                        <td>{{ inventory.product.category.name|default:"-" }}</td>
+                        <td>{{ inventory.warehouse.name|default:"-" }}</td>
+                        <td>{{ inventory.location|default:"-" }}</td>
+                        <td>{{ inventory.quantity }}</td>
+                        <td>{{ inventory.reserved }}</td>
+                        <td>{{ inventory.available }}</td>
+                        <td>{{ inventory.low_stock_threshold }}</td>
+                        <td>
+                            <span class="badge bg-{{ inventory.get_status_display|lower }}">
+                                {{ inventory.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'inventory:inventory_detail' pk=inventory.id %}">
+                                            <i class="bi bi-eye me-1"></i> {% trans "View" %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'inventory:inventory_update' pk=inventory.id %}">
+                                            <i class="bi bi-pencil me-1"></i> {% trans "Edit" %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'inventory:stock_movement_list' %}?inventory={{ inventory.id }}">
+                                            <i class="bi bi-list me-1"></i> {% trans "Stock Movements" %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item adjust-stock" data-inventory-id="{{ inventory.id }}" href="#">
+                                            <i class="bi bi-plus-square me-1"></i> {% trans "Adjust Stock" %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item transfer-stock" data-inventory-id="{{ inventory.id }}" href="#">
+                                            <i class="bi bi-arrow-left-right me-1"></i> {% trans "Transfer" %}
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item text-danger delete-inventory" data-inventory-id="{{ inventory.id }}" href="#">
+                                            <i class="bi bi-trash me-1"></i> {% trans "Delete" %}
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="card-footer bg-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <p class="mb-0 text-muted small">
+                    {% trans "Showing" %} {{ inventory_list.start_index }} - {{ inventory_list.end_index }} {% trans "of" %} {{ inventory_list.paginator.count }} {% trans "items" %}
+                </p>
+            </div>
+            <div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                        {% trans "Bulk Actions" %}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item bulk-inventory-action" data-action="export">{% trans "Export" %}</a></li>
+                        <li><a class="dropdown-item bulk-inventory-action" data-action="print_labels">{% trans "Print Labels" %}</a></li>
+                        <li><a class="dropdown-item bulk-inventory-action" data-action="delete">{% trans "Delete" %}</a></li>
+                    </ul>
+                </div>
+                
+                {% if inventory_list.paginator.num_pages > 1 %}
+                <nav aria-label="Page navigation" class="d-inline-block ms-2">
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if inventory_list.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ inventory_list.previous_page_number }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% for num in inventory_list.paginator.page_range %}
+                            {% if inventory_list.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > inventory_list.number|add:'-3' and num < inventory_list.number|add:'3' %}
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">{{ num }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                        {% if inventory_list.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ inventory_list.next_page_number }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Warehouses Section -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">{% trans "Warehouses" %}</h5>
+    </div>
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <p class="text-muted small mb-0">{% trans "Manage your warehouses and storage locations." %}</p>
+            <a href="{% url 'inventory:warehouse_create' %}" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus me-1"></i> {% trans "Add Warehouse" %}
+            </a>
+        </div>
+        
+        <div class="row">
+            {% for warehouse in warehouses %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h5 class="mb-1">{{ warehouse.name }}</h5>
+                                <p class="text-muted small mb-0">{{ warehouse.code }}</p>
+                            </div>
+                            <span class="badge bg-{{ warehouse.get_status_display|lower }}">{{ warehouse.get_status_display }}</span>
+                        </div>
+                        <div class="mb-3">
+                            <p class="text-muted small mb-1">{% trans "Address" %}:</p>
+                            <p class="mb-0">{{ warehouse.address }}, {{ warehouse.city }}, {{ warehouse.state }} {{ warehouse.zip }}</p>
+                            <p class="mb-0">{{ warehouse.country }}</p>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <p class="text-muted small mb-1">{% trans "Capacity" %}:</p>
+                                <p class="mb-0">{{ warehouse.capacity }} {% trans "items" %}</p>
+                            </div>
+                            <div>
+                                <p class="text-muted small mb-1">{% trans "Used" %}:</p>
+                                <p class="mb-0">{{ warehouse.used_capacity }} {% trans "items" %}</p>
+                            </div>
+                            <div>
+                                <p class="text-muted small mb-1">{% trans "Available" %}:</p>
+                                <p class="mb-0">{{ warehouse.available_capacity }} {% trans "items" %}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white">
+                        <a href="{% url 'inventory:warehouse_detail' pk=warehouse.id %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye me-1"></i> {% trans "View" %}
+                        </a>
+                        <a href="{% url 'inventory:warehouse_update' pk=warehouse.id %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-pencil me-1"></i> {% trans "Edit" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Stock Movements Section -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">{% trans "Recent Stock Movements" %}</h5>
+    </div>
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <p class="text-muted small mb-0">{% trans "Latest inventory movements and adjustments." %}</p>
+            <a href="{% url 'inventory:stock_movement_list' %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-list me-1"></i> {% trans "View All" %}
+            </a>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-hover table-sm">
+                <thead class="table-light">
+                    <tr>
+                        <th>{% trans "Product" %}</th>
+                        <th>{% trans "Type" %}</th>
+                        <th>{% trans "Quantity" %}</th>
+                        <th>{% trans "From" %}</th>
+                        <th>{% trans "To" %}</th>
+                        <th>{% trans "Reference" %}</th>
+                        <th>{% trans "User" %}</th>
+                        <th>{% trans "Date" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for movement in recent_movements %}
+                    <tr>
+                        <td>{{ movement.product.name|truncatechars:30 }}</td>
+                        <td>
+                            <span class="badge bg-{{ movement.get_type_display|lower }}">
+                                {{ movement.get_type_display }}
+                            </span>
+                        </td>
+                        <td class="{% if movement.type == 'addition' %}text-success{% elif movement.type == 'subtraction' %}text-danger{% endif %}">
+                            {% if movement.type == 'addition' %}+{% endif %}{{ movement.quantity }}
+                        </td>
+                        <td>{{ movement.from_warehouse.name|default:"-" }}</td>
+                        <td>{{ movement.to_warehouse.name|default:"-" }}</td>
+                        <td>{{ movement.reference|truncatechars:20|default:"-" }}</td>
+                        <td>{{ movement.user.get_full_name|default:movement.user.email|default:"System" }}</td>
+                        <td>{{ movement.created_at|date:"M d, Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Low Stock Alerts -->
+<div class="card mt-4">
+    <div class="card-header bg-warning bg-opacity-10">
+        <h5 class="mb-0">{% trans "Low Stock Alerts" %}</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm">
+                <thead class="table-light">
+                    <tr>
+                        <th>{% trans "Product" %}</th>
+                        <th>{% trans "SKU" %}</th>
+                        <th>{% trans "Current Stock" %}</th>
+                        <th>{% trans "Threshold" %}</th>
+                        <th>{% trans "Warehouse" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for alert in low_stock_alerts %}
+                    <tr>
+                        <td>{{ alert.product.name }}</td>
+                        <td>{{ alert.product.sku }}</td>
+                        <td>{{ alert.current_stock }}</td>
+                        <td>{{ alert.threshold }}</td>
+                        <td>{{ alert.warehouse.name|default:"-" }}</td>
+                        <td>
+                            <a href="{% url 'inventory:inventory_update' pk=alert.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil me-1"></i> {% trans "Restock" %}
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+// Select all
+$('#selectAllInventory').on('change', function() {
+    $('input[name="selected[]"]').prop('checked', $(this).prop('checked'));
+});
+
+// Adjust stock
+$('.adjust-stock').on('click', function(e) {
+    e.preventDefault();
+    const inventoryId = $(this).data('inventory-id');
+    
+    // This would typically open a modal
+    const quantity = prompt('{% trans "Enter quantity to adjust (use negative for subtraction):" %}');
+    if (quantity !== null) {
+        const reason = prompt('{% trans "Enter reason for adjustment:" %}');
+        if (reason !== null) {
+            $.post('{% url "inventory:adjust_stock" %}', {
+                inventory_id: inventoryId,
+                quantity: quantity,
+                reason: reason,
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            }, function(data) {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    toastr.error(data.error || '{% trans "Failed to adjust stock." %}');
+                }
+            });
+        }
+    }
+});
+
+// Transfer stock
+$('.transfer-stock').on('click', function(e) {
+    e.preventDefault();
+    const inventoryId = $(this).data('inventory-id');
+    
+    // This would typically open a modal
+    toastr.info('{% trans "Stock transfer functionality would be implemented with a modal." %}');
+});
+
+// Delete inventory
+$('.delete-inventory').on('click', function(e) {
+    e.preventDefault();
+    const inventoryId = $(this).data('inventory-id');
+    
+    if (confirm('{% trans "Are you sure you want to delete this inventory record?" %}')) {
+        $.post('{% url "inventory:delete_inventory" %}', {
+            inventory_id: inventoryId,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                toastr.error(data.error || '{% trans "Failed to delete inventory record." %}');
+            }
+        });
+    }
+});
+
+// Bulk actions
+$('.bulk-inventory-action').on('click', function(e) {
+    e.preventDefault();
+    const action = $(this).data('action');
+    const selected = [];
+    
+    $('input[name="selected[]"]:checked').each(function() {
+        selected.push($(this).val());
+    });
+    
+    if (selected.length === 0) {
+        toastr.error('{% trans "Please select at least one inventory item." %}');
+        return;
+    }
+    
+    let message = '';
+    switch(action) {
+        case 'export': message = '{% trans "Export selected inventory items?" %}'; break;
+        case 'print_labels': message = '{% trans "Print labels for selected items?" %}'; break;
+        case 'delete': message = '{% trans "Delete selected inventory items? This cannot be undone." %}'; break;
+    }
+    
+    if (confirm(message)) {
+        $.post('{% url "inventory:bulk_inventory_action" %}', {
+            action: action,
+            selected: selected,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                if (action === 'export') {
+                    window.location.href = data.url;
+                } else {
+                    location.reload();
+                }
+            } else {
+                toastr.error(data.error || '{% trans "Failed to perform action." %}');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

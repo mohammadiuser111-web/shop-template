@@ -1,0 +1,386 @@
+{% extends "admin_panel/admin_base.html" %}
+{% load i18n static %}
+
+{% block page_title %}{% trans "Discounts" %}{% endblock %}
+{% block page_description %}{% trans "Manage automatic discounts and price rules." %}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'discounts:discount_create' %}" class="btn btn-primary">
+    <i class="bi bi-plus me-1"></i> {% trans "Add Discount" %}
+</a>
+{% endblock %}
+
+{% block main_content %}
+<!-- Stats -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-gift"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Total Discounts" %}</h6>
+                        <h3 class="mb-0">{{ stats.total_discounts }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Active" %}</h6>
+                        <h3 class="mb-0">{{ stats.active_discounts }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-calendar"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Scheduled" %}</h6>
+                        <h3 class="mb-0">{{ stats.scheduled_discounts }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-graph-down"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Expired" %}</h6>
+                        <h3 class="mb-0">{{ stats.expired_discounts }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Search" %}</label>
+                <input type="text" name="q" class="form-control" placeholder="{% trans 'Discount name' %}" value="{{ request.GET.q }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Type" %}</label>
+                <select name="type" class="form-select">
+                    <option value="">{% trans "All Types" %}</option>
+                    <option value="percentage" {% if request.GET.type == 'percentage' %}selected{% endif %}>{% trans "Percentage" %}</option>
+                    <option value="fixed" {% if request.GET.type == 'fixed' %}selected{% endif %}>{% trans "Fixed Amount" %}</option>
+                    <option value="free_shipping" {% if request.GET.type == 'free_shipping' %}selected{% endif %}>{% trans "Free Shipping" %}</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Status" %}</label>
+                <select name="status" class="form-select">
+                    <option value="">{% trans "All Statuses" %}</option>
+                    <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>{% trans "Active" %}</option>
+                    <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>{% trans "Inactive" %}</option>
+                    <option value="scheduled" {% if request.GET.status == 'scheduled' %}selected{% endif %}>{% trans "Scheduled" %}</option>
+                    <option value="expired" {% if request.GET.status == 'expired' %}selected{% endif %}>{% trans "Expired" %}</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Apply To" %}</label>
+                <select name="apply_to" class="form-select">
+                    <option value="">{% trans "All" %}</option>
+                    <option value="all" {% if request.GET.apply_to == 'all' %}selected{% endif %}>{% trans "All Products" %}</option>
+                    <option value="categories" {% if request.GET.apply_to == 'categories' %}selected{% endif %}>{% trans "Specific Categories" %}</option>
+                    <option value="brands" {% if request.GET.apply_to == 'brands' %}selected{% endif %}>{% trans "Specific Brands" %}</option>
+                    <option value="products" {% if request.GET.apply_to == 'products' %}selected{% endif %}>{% trans "Specific Products" %}</option>
+                </select>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search me-1"></i> {% trans "Search" %}
+                </button>
+                <a href="{% url 'discounts:discount_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle me-1"></i> {% trans "Reset" %}
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Discounts Table -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>
+                            <input type="checkbox" id="selectAllDiscounts">
+                        </th>
+                        <th>{% trans "Name" %}</th>
+                        <th>{% trans "Type" %}</th>
+                        <th>{% trans "Value" %}</th>
+                        <th>{% trans "Apply To" %}</th>
+                        <th>{% trans "Conditions" %}</th>
+                        <th>{% trans "Validity" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for discount in discounts %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" name="selected[]" value="{{ discount.id }}">
+                        </td>
+                        <td>
+                            <h6 class="mb-0">{{ discount.name }}</h6>
+                            <small class="text-muted">{{ discount.description|truncatewords:5 }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ discount.get_type_display|lower }}">
+                                {{ discount.get_type_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if discount.type == 'percentage' %}{{ discount.value }}%
+                            {% elif discount.type == 'fixed' %}${{ discount.value|floatformat:2 }}
+                            {% else %}{% trans "Free Shipping" %}{% endif %}
+                        </td>
+                        <td>
+                            {% if discount.apply_to == 'all' %}{% trans "All Products" %}
+                            {% elif discount.apply_to == 'categories' %}{% trans "Categories" %}
+                            {% elif discount.apply_to == 'brands' %}{% trans "Brands" %}
+                            {% elif discount.apply_to == 'products' %}{% trans "Products" %}
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small>
+                                {% if discount.min_quantity %}{% trans "Min Qty" %}: {{ discount.min_quantity }}<br>{% endif %}
+                                {% if discount.min_amount %}{% trans "Min Amount" %}: ${{ discount.min_amount|floatformat:2 }}<br>{% endif %}
+                                {% if discount.max_amount %}{% trans "Max Amount" %}: ${{ discount.max_amount|floatformat:2 }}{% endif %}
+                            </small>
+                        </td>
+                        <td>
+                            <small>
+                                {{ discount.start_date|date:"M d" }} - {{ discount.end_date|date:"M d" }}<br>
+                                {{ discount.start_time|time:"H:i" }} - {{ discount.end_time|time:"H:i" }}
+                            </small>
+                        </td>
+                        <td>
+                            <span class="badge {% if discount.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                {% if discount.is_active %}{% trans "Active" %}{% else %}{% trans "Inactive" %}{% endif %}
+                            </span>
+                            {% if discount.is_scheduled %}
+                            <br><span class="badge bg-info mt-1">{% trans "Scheduled" %}</span>
+                            {% endif %}
+                            {% if discount.is_expired %}
+                            <br><span class="badge bg-danger mt-1">{% trans "Expired" %}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'discounts:discount_detail' pk=discount.id %}">
+                                            <i class="bi bi-eye me-1"></i> {% trans "View" %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'discounts:discount_update' pk=discount.id %}">
+                                            <i class="bi bi-pencil me-1"></i> {% trans "Edit" %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'discounts:price_rule_list' %}?discount={{ discount.id }}">
+                                            <i class="bi bi-list me-1"></i> {% trans "Price Rules" %} ({{ discount.price_rules.count }})
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item {% if discount.is_active %}text-warning{% else %}text-success{% endif %} toggle-discount-status" 
+                                           data-discount-id="{{ discount.id }}" href="#">
+                                            <i class="bi {% if discount.is_active %}bi-eye-slash{% else %}bi-eye{% endif %} me-1"></i>
+                                            {% if discount.is_active %}{% trans "Deactivate" %}{% else %}{% trans "Activate" %}{% endif %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item text-danger delete-discount" data-discount-id="{{ discount.id }}" href="#">
+                                            <i class="bi bi-trash me-1"></i> {% trans "Delete" %}
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="card-footer bg-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <p class="mb-0 text-muted small">
+                    {% trans "Showing" %} {{ discounts.start_index }} - {{ discounts.end_index }} {% trans "of" %} {{ discounts.paginator.count }} {% trans "discounts" %}
+                </p>
+            </div>
+            <div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                        {% trans "Bulk Actions" %}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item bulk-discount-action" data-action="activate">{% trans "Activate" %}</a></li>
+                        <li><a class="dropdown-item bulk-discount-action" data-action="deactivate">{% trans "Deactivate" %}</a></li>
+                        <li><a class="dropdown-item bulk-discount-action" data-action="delete">{% trans "Delete" %}</a></li>
+                    </ul>
+                </div>
+                
+                {% if discounts.paginator.num_pages > 1 %}
+                <nav aria-label="Page navigation" class="d-inline-block ms-2">
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if discounts.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ discounts.previous_page_number }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% for num in discounts.paginator.page_range %}
+                            {% if discounts.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > discounts.number|add:'-3' and num < discounts.number|add:'3' %}
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">{{ num }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                        {% if discounts.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ discounts.next_page_number }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+// Select all
+$('#selectAllDiscounts').on('change', function() {
+    $('input[name="selected[]"]').prop('checked', $(this).prop('checked'));
+});
+
+// Toggle status
+$('.toggle-discount-status').on('click', function(e) {
+    e.preventDefault();
+    const discountId = $(this).data('discount-id');
+    
+    $.post('{% url "discounts:toggle_discount_status" %}', {
+        discount_id: discountId,
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+    }, function(data) {
+        if (data.success) {
+            location.reload();
+        } else {
+            toastr.error(data.error || '{% trans "Failed to update status." %}');
+        }
+    });
+});
+
+// Delete discount
+$('.delete-discount').on('click', function(e) {
+    e.preventDefault();
+    const discountId = $(this).data('discount-id');
+    
+    if (confirm('{% trans "Are you sure you want to delete this discount?" %}')) {
+        $.post('{% url "discounts:delete_discount" %}', {
+            discount_id: discountId,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                toastr.error(data.error || '{% trans "Failed to delete discount." %}');
+            }
+        });
+    }
+});
+
+// Bulk actions
+$('.bulk-discount-action').on('click', function(e) {
+    e.preventDefault();
+    const action = $(this).data('action');
+    const selected = [];
+    
+    $('input[name="selected[]"]:checked').each(function() {
+        selected.push($(this).val());
+    });
+    
+    if (selected.length === 0) {
+        toastr.error('{% trans "Please select at least one discount." %}');
+        return;
+    }
+    
+    let message = '';
+    switch(action) {
+        case 'activate': message = '{% trans "Activate selected discounts?" %}'; break;
+        case 'deactivate': message = '{% trans "Deactivate selected discounts?" %}'; break;
+        case 'delete': message = '{% trans "Delete selected discounts? This cannot be undone." %}'; break;
+    }
+    
+    if (confirm(message)) {
+        $.post('{% url "discounts:bulk_discount_action" %}', {
+            action: action,
+            selected: selected,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                toastr.error(data.error || '{% trans "Failed to perform action." %}');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

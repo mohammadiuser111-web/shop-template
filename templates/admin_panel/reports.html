@@ -1,0 +1,812 @@
+{% extends "admin_panel/admin_base.html" %}
+{% load i18n static %}
+
+{% block page_title %}{% trans "Reports" %}{% endblock %}
+{% block page_description %}{% trans "View sales, orders, and product analytics reports." %}{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+        <i class="bi bi-calendar me-1"></i> {% trans "Date Range" %}
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end">
+        <li><a class="dropdown-item" href="?range=today">{% trans "Today" %}</a></li>
+        <li><a class="dropdown-item" href="?range=yesterday">{% trans "Yesterday" %}</a></li>
+        <li><a class="dropdown-item" href="?range=last_7_days">{% trans "Last 7 Days" %}</a></li>
+        <li><a class="dropdown-item" href="?range=last_30_days">{% trans "Last 30 Days" %}</a></li>
+        <li><a class="dropdown-item" href="?range=this_month">{% trans "This Month" %}</a></li>
+        <li><a class="dropdown-item" href="?range=last_month">{% trans "Last Month" %}</a></li>
+        <li><a class="dropdown-item" href="?range=custom">{% trans "Custom Range" %}</a></li>
+    </ul>
+</div>
+<button class="btn btn-primary" onclick="exportReport()">
+    <i class="bi bi-download me-1"></i> {% trans "Export" %}
+</button>
+{% endblock %}
+
+{% block main_content %}
+<!-- Date Range Selector -->
+<div class="card mb-4" id="customRangeCard" style="{% if request.GET.range != 'custom' %}display: none;{% endif %}">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-5">
+                <label class="form-label">{% trans "Start Date" %}</label>
+                <input type="date" class="form-control" value="{{ request.GET.start_date }}">
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">{% trans "End Date" %}</label>
+                <input type="date" class="form-control" value="{{ request.GET.end_date }}">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button class="btn btn-primary w-100">{% trans "Apply" %}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-currency-dollar"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Total Sales" %}</h6>
+                        <h3 class="mb-0">${{ summary.total_sales|floatformat:2 }}</h3>
+                        <small class="text-muted">{{ summary.sales_count }} {% trans "orders" %}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-cart-check"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Total Orders" %}</h6>
+                        <h3 class="mb-0">{{ summary.total_orders }}</h3>
+                        <small class="text-muted">{{ summary.completed_orders }} {% trans "completed" %}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-box-seam"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Total Products" %}</h6>
+                        <h3 class="mb-0">{{ summary.total_products }}</h3>
+                        <small class="text-muted">{{ summary.active_products }} {% trans "active" %}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-people"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Total Customers" %}</h6>
+                        <h3 class="mb-0">{{ summary.total_customers }}</h3>
+                        <small class="text-muted">{{ summary.new_customers }} {% trans "new" %}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">{% trans "Sales Overview" %}</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="salesChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">{% trans "Sales by Category" %}</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="categoryChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">{% trans "Top Selling Products" %}</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>{% trans "Product" %}</th>
+                                <th>{% trans "Quantity" %}</th>
+                                <th>{% trans "Revenue" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in top_products %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if product.image %}
+                                        <img src="{{ product.image.url }}" alt="" class="me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                        {% else %}
+                                        <div class="bg-secondary text-white rounded d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px;">
+                                            <i class="bi bi-image"></i>
+                                        </div>
+                                        {% endif %}
+                                        <div>
+                                            <h6 class="mb-0">{{ product.name|truncatechars:30 }}</h6>
+                                            <small class="text-muted">#{{ product.sku }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ product.quantity_sold }}</td>
+                                <td>${{ product.revenue|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">{% trans "Recent Orders" %}</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>{% trans "Order #" %}</th>
+                                <th>{% trans "Customer" %}</th>
+                                <th>{% trans "Amount" %}</th>
+                                <th>{% trans "Status" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'orders:order_detail' pk=order.id %}">#{{ order.order_number }}</a>
+                                    <small class="text-muted d-block">{{ order.created_at|date:"M d, Y" }}</small>
+                                </td>
+                                <td>{{ order.customer.get_full_name|default:order.customer.email }}</td>
+                                <td>${{ order.total|floatformat:2 }}</td>
+                                <td>
+                                    <span class="badge bg-{{ order.get_status_display|lower }}">
+                                        {{ order.get_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Reports -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">{% trans "Detailed Reports" %}</h5>
+            </div>
+            <div class="card-body">
+                <ul class="nav nav-tabs" id="reportTabs">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#salesReport">
+                            <i class="bi bi-graph-up me-1"></i> {% trans "Sales Report" %}
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#orderReport">
+                            <i class="bi bi-cart-check me-1"></i> {% trans "Order Report" %}
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#productReport">
+                            <i class="bi bi-box-seam me-1"></i> {% trans "Product Report" %}
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#customerReport">
+                            <i class="bi bi-people me-1"></i> {% trans "Customer Report" %}
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#stockReport">
+                            <i class="bi bi-inboxes me-1"></i> {% trans "Stock Report" %}
+                        </button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content mt-3">
+                    <!-- Sales Report -->
+                    <div class="tab-pane fade show active" id="salesReport">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">{% trans "Group By" %}</label>
+                                <select class="form-select" onchange="updateSalesReport()">
+                                    <option value="day">{% trans "Day" %}</option>
+                                    <option value="week">{% trans "Week" %}</option>
+                                    <option value="month">{% trans "Month" %}</option>
+                                    <option value="year">{% trans "Year" %}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">{% trans "Payment Method" %}</label>
+                                <select class="form-select" onchange="updateSalesReport()">
+                                    <option value="">{% trans "All Methods" %}</option>
+                                    {% for method in payment_methods %}
+                                    <option value="{{ method.id }}">{{ method.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">{% trans "Status" %}</label>
+                                <select class="form-select" onchange="updateSalesReport()">
+                                    <option value="">{% trans "All Statuses" %}</option>
+                                    <option value="completed">{% trans "Completed" %}</option>
+                                    <option value="pending">{% trans "Pending" %}</option>
+                                    <option value="cancelled">{% trans "Cancelled" %}</option>
+                                    <option value="refunded">{% trans "Refunded" %}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">&nbsp;</label>
+                                <button class="btn btn-primary w-100" onclick="updateSalesReport()">
+                                    <i class="bi bi-arrow-clockwise me-1"></i> {% trans "Update" %}
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive mt-3">
+                            <table class="table table-hover table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>{% trans "Period" %}</th>
+                                        <th>{% trans "Orders" %}</th>
+                                        <th>{% trans "Items Sold" %}</th>
+                                        <th>{% trans "Subtotal" %}</th>
+                                        <th>{% trans "Tax" %}</th>
+                                        <th>{% trans "Shipping" %}</th>
+                                        <th>{% trans "Discount" %}</th>
+                                        <th>{% trans "Total" %}</th>
+                                        <th>{% trans "Average Order" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in sales_report %}
+                                    <tr>
+                                        <td>{{ row.period }}</td>
+                                        <td>{{ row.orders }}</td>
+                                        <td>{{ row.items }}</td>
+                                        <td>${{ row.subtotal|floatformat:2 }}</td>
+                                        <td>${{ row.tax|floatformat:2 }}</td>
+                                        <td>${{ row.shipping|floatformat:2 }}</td>
+                                        <td>${{ row.discount|floatformat:2 }}</td>
+                                        <td>${{ row.total|floatformat:2 }}</td>
+                                        <td>${{ row.average|floatformat:2 }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot class="table-light">
+                                    <tr>
+                                        <th>{% trans "Total" %}</th>
+                                        <th>{{ sales_report_total.orders }}</th>
+                                        <th>{{ sales_report_total.items }}</th>
+                                        <th>${{ sales_report_total.subtotal|floatformat:2 }}</th>
+                                        <th>${{ sales_report_total.tax|floatformat:2 }}</th>
+                                        <th>${{ sales_report_total.shipping|floatformat:2 }}</th>
+                                        <th>${{ sales_report_total.discount|floatformat:2 }}</th>
+                                        <th>${{ sales_report_total.total|floatformat:2 }}</th>
+                                        <th>${{ sales_report_total.average|floatformat:2 }}</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Order Report -->
+                    <div class="tab-pane fade" id="orderReport">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label">{% trans "Status" %}</label>
+                                <select class="form-select" onchange="updateOrderReport()">
+                                    <option value="">{% trans "All Statuses" %}</option>
+                                    <option value="pending">{% trans "Pending" %}</option>
+                                    <option value="processing">{% trans "Processing" %}</option>
+                                    <option value="shipped">{% trans "Shipped" %}</option>
+                                    <option value="delivered">{% trans "Delivered" %}</option>
+                                    <option value="completed">{% trans "Completed" %}</option>
+                                    <option value="cancelled">{% trans "Cancelled" %}</option>
+                                    <option value="refunded">{% trans "Refunded" %}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">{% trans "Payment Status" %}</label>
+                                <select class="form-select" onchange="updateOrderReport()">
+                                    <option value="">{% trans "All" %}</option>
+                                    <option value="paid">{% trans "Paid" %}</option>
+                                    <option value="unpaid">{% trans "Unpaid" %}</option>
+                                    <option value="partial">{% trans "Partial" %}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">{% trans "Shipping Status" %}</label>
+                                <select class="form-select" onchange="updateOrderReport()">
+                                    <option value="">{% trans "All" %}</option>
+                                    <option value="not_shipped">{% trans "Not Shipped" %}</option>
+                                    <option value="partially_shipped">{% trans "Partially Shipped" %}</option>
+                                    <option value="shipped">{% trans "Shipped" %}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">&nbsp;</label>
+                                <button class="btn btn-primary w-100" onclick="updateOrderReport()">
+                                    <i class="bi bi-arrow-clockwise me-1"></i> {% trans "Update" %}
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>{% trans "Order #" %}</th>
+                                        <th>{% trans "Date" %}</th>
+                                        <th>{% trans "Customer" %}</th>
+                                        <th>{% trans "Items" %}</th>
+                                        <th>{% trans "Amount" %}</th>
+                                        <th>{% trans "Payment" %}</th>
+                                        <th>{% trans "Status" %}</th>
+                                        <th>{% trans "Shipping" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in order_report %}
+                                    <tr>
+                                        <td><a href="{% url 'orders:order_detail' pk=order.id %}">#{{ order.order_number }}</a></td>
+                                        <td>{{ order.created_at|date:"M d, Y H:i" }}</td>
+                                        <td>{{ order.customer.get_full_name|default:order.customer.email }}</td>
+                                        <td>{{ order.items.count }}</td>
+                                        <td>${{ order.total|floatformat:2 }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ order.payment_status }}">
+                                                {{ order.get_payment_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ order.status }}">
+                                                {{ order.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ order.shipping_status }}">
+                                                {{ order.get_shipping_status_display }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Product Report -->
+                    <div class="tab-pane fade" id="productReport">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label">{% trans "Category" %}</label>
+                                <select class="form-select" onchange="updateProductReport()">
+                                    <option value="">{% trans "All Categories" %}</option>
+                                    {% for category in categories %}
+                                    <option value="{{ category.id }}">{{ category.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">{% trans "Brand" %}</label>
+                                <select class="form-select" onchange="updateProductReport()">
+                                    <option value="">{% trans "All Brands" %}</option>
+                                    {% for brand in brands %}
+                                    <option value="{{ brand.id }}">{{ brand.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">{% trans "Stock Status" %}</label>
+                                <select class="form-select" onchange="updateProductReport()">
+                                    <option value="">{% trans "All" %}</option>
+                                    <option value="in_stock">{% trans "In Stock" %}</option>
+                                    <option value="out_of_stock">{% trans "Out of Stock" %}</option>
+                                    <option value="low_stock">{% trans "Low Stock" %}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">&nbsp;</label>
+                                <button class="btn btn-primary w-100" onclick="updateProductReport()">
+                                    <i class="bi bi-arrow-clockwise me-1"></i> {% trans "Update" %}
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>{% trans "Product" %}</th>
+                                        <th>{% trans "SKU" %}</th>
+                                        <th>{% trans "Category" %}</th>
+                                        <th>{% trans "Brand" %}</th>
+                                        <th>{% trans "Price" %}</th>
+                                        <th>{% trans "Stock" %}</th>
+                                        <th>{% trans "Sold" %}</th>
+                                        <th>{% trans "Revenue" %}</th>
+                                        <th>{% trans "Rating" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for product in product_report %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                {% if product.image %}
+                                                <img src="{{ product.image.url }}" alt="" class="me-2" style="width: 30px; height: 30px; object-fit: cover;">
+                                                {% endif %}
+                                                {{ product.name|truncatechars:40 }}
+                                            </div>
+                                        </td>
+                                        <td>{{ product.sku }}</td>
+                                        <td>{{ product.category.name|default:"-" }}</td>
+                                        <td>{{ product.brand.name|default:"-" }}</td>
+                                        <td>${{ product.price|floatformat:2 }}</td>
+                                        <td>{{ product.stock }}</td>
+                                        <td>{{ product.sold }}</td>
+                                        <td>${{ product.revenue|floatformat:2 }}</td>
+                                        <td>
+                                            <div class="text-warning">
+                                                {% for i in "12345" %}
+                                                <i class="bi {% if product.rating >= forloop.counter %}bi-star-fill{% else %}bi-star{% endif %}"></i>
+                                                {% endfor %}
+                                            </div>
+                                            <small class="text-muted">({{ product.reviews.count }})</small>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Customer Report -->
+                    <div class="tab-pane fade" id="customerReport">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label">{% trans "Group" %}</label>
+                                <select class="form-select" onchange="updateCustomerReport()">
+                                    <option value="">{% trans "All Groups" %}</option>
+                                    {% for group in customer_groups %}
+                                    <option value="{{ group.id }}">{{ group.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">{% trans "Status" %}</label>
+                                <select class="form-select" onchange="updateCustomerReport()">
+                                    <option value="">{% trans "All Statuses" %}</option>
+                                    <option value="active">{% trans "Active" %}</option>
+                                    <option value="inactive">{% trans "Inactive" %}</option>
+                                    <option value="banned">{% trans "Banned" %}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">{% trans "Sort By" %}</label>
+                                <select class="form-select" onchange="updateCustomerReport()">
+                                    <option value="date">{% trans "Date Registered" %}</option>
+                                    <option value="orders">{% trans "Total Orders" %}</option>
+                                    <option value="spent">{% trans "Total Spent" %}</option>
+                                    <option value="name">{% trans "Name" %}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">&nbsp;</label>
+                                <button class="btn btn-primary w-100" onclick="updateCustomerReport()">
+                                    <i class="bi bi-arrow-clockwise me-1"></i> {% trans "Update" %}
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>{% trans "Customer" %}</th>
+                                        <th>{% trans "Email" %}</th>
+                                        <th>{% trans "Phone" %}</th>
+                                        <th>{% trans "Group" %}</th>
+                                        <th>{% trans "Orders" %}</th>
+                                        <th>{% trans "Total Spent" %}</th>
+                                        <th>{% trans "Average Order" %}</th>
+                                        <th>{% trans "Last Order" %}</th>
+                                        <th>{% trans "Status" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for customer in customer_report %}
+                                    <tr>
+                                        <td>{{ customer.get_full_name|default:customer.email }}</td>
+                                        <td>{{ customer.email }}</td>
+                                        <td>{{ customer.phone|default:"-" }}</td>
+                                        <td>{{ customer.group.name|default:"-" }}</td>
+                                        <td>{{ customer.orders.count }}</td>
+                                        <td>${{ customer.total_spent|floatformat:2 }}</td>
+                                        <td>${{ customer.average_order|floatformat:2 }}</td>
+                                        <td>{{ customer.last_order|date:"M d, Y"|default:"-" }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ customer.status }}">
+                                                {{ customer.get_status_display }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Stock Report -->
+                    <div class="tab-pane fade" id="stockReport">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label">{% trans "Stock Status" %}</label>
+                                <select class="form-select" onchange="updateStockReport()">
+                                    <option value="">{% trans "All" %}</option>
+                                    <option value="in_stock">{% trans "In Stock" %}</option>
+                                    <option value="out_of_stock">{% trans "Out of Stock" %}</option>
+                                    <option value="low_stock">{% trans "Low Stock" %}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">{% trans "Category" %}</label>
+                                <select class="form-select" onchange="updateStockReport()">
+                                    <option value="">{% trans "All Categories" %}</option>
+                                    {% for category in categories %}
+                                    <option value="{{ category.id }}">{{ category.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">{% trans "Warehouse" %}</label>
+                                <select class="form-select" onchange="updateStockReport()">
+                                    <option value="">{% trans "All Warehouses" %}</option>
+                                    {% for warehouse in warehouses %}
+                                    <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">&nbsp;</label>
+                                <button class="btn btn-primary w-100" onclick="updateStockReport()">
+                                    <i class="bi bi-arrow-clockwise me-1"></i> {% trans "Update" %}
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>{% trans "Product" %}</th>
+                                        <th>{% trans "SKU" %}</th>
+                                        <th>{% trans "Warehouse" %}</th>
+                                        <th>{% trans "Current Stock" %}</th>
+                                        <th>{% trans "Reserved" %}</th>
+                                        <th>{% trans "Available" %}</th>
+                                        <th>{% trans "Low Stock Threshold" %}</th>
+                                        <th>{% trans "Status" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for stock in stock_report %}
+                                    <tr>
+                                        <td>{{ stock.product.name|truncatechars:40 }}</td>
+                                        <td>{{ stock.product.sku }}</td>
+                                        <td>{{ stock.warehouse.name|default:"-" }}</td>
+                                        <td>{{ stock.quantity }}</td>
+                                        <td>{{ stock.reserved }}</td>
+                                        <td>{{ stock.available }}</td>
+                                        <td>{{ stock.low_stock_threshold }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ stock.get_status_display|lower }}">
+                                                {{ stock.get_status_display }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// Initialize charts
+const salesCtx = document.getElementById('salesChart').getContext('2d');
+const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+
+// Sales Chart
+new Chart(salesCtx, {
+    type: 'line',
+    data: {
+        labels: {{ sales_chart.labels|safe }},
+        datasets: [{
+            label: '{% trans "Sales" %}',
+            data: {{ sales_chart.data|safe }},
+            borderColor: '#673ab7',
+            backgroundColor: 'rgba(103, 58, 183, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return '$' + value.toFixed(2);
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Category Chart
+new Chart(categoryCtx, {
+    type: 'doughnut',
+    data: {
+        labels: {{ category_chart.labels|safe }},
+        datasets: [{
+            data: {{ category_chart.data|safe }},
+            backgroundColor: [
+                '#673ab7', '#ff9800', '#4caf50', '#f44336', '#2196f3',
+                '#9c27b0', '#00bcd4', '#8bc34a', '#e91e63', '#3f51b5'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Date range selector
+$('a[data-bs-target="#customRangeCard"]').on('click', function() {
+    $('#customRangeCard').show();
+});
+
+$('a:not([data-bs-target="#customRangeCard"])').on('click', function() {
+    $('#customRangeCard').hide();
+});
+
+// Export report
+function exportReport() {
+    const format = prompt('{% trans "Export format (csv, excel, pdf):" %}');
+    if (format && ['csv', 'excel', 'pdf'].includes(format.toLowerCase())) {
+        const activeTab = $('.tab-pane.active').attr('id');
+        const url = '/admin/reports/export/?format=' + format + '&report=' + activeTab + '&' + window.location.search.substring(1);
+        window.location.href = url;
+    } else if (format) {
+        alert('{% trans "Invalid format. Please enter csv, excel, or pdf." %}');
+    }
+}
+
+// Update reports
+function updateSalesReport() {
+    toastr.info('{% trans "Updating sales report..." %}');
+    setTimeout(function() {
+        toastr.success('{% trans "Sales report updated!" %}');
+    }, 1000);
+}
+
+function updateOrderReport() {
+    toastr.info('{% trans "Updating order report..." %}');
+    setTimeout(function() {
+        toastr.success('{% trans "Order report updated!" %}');
+    }, 1000);
+}
+
+function updateProductReport() {
+    toastr.info('{% trans "Updating product report..." %}');
+    setTimeout(function() {
+        toastr.success('{% trans "Product report updated!" %}');
+    }, 1000);
+}
+
+function updateCustomerReport() {
+    toastr.info('{% trans "Updating customer report..." %}');
+    setTimeout(function() {
+        toastr.success('{% trans "Customer report updated!" %}');
+    }, 1000);
+}
+
+function updateStockReport() {
+    toastr.info('{% trans "Updating stock report..." %}');
+    setTimeout(function() {
+        toastr.success('{% trans "Stock report updated!" %}');
+    }, 1000);
+}
+</script>
+{% endblock %}

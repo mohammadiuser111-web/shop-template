@@ -1,0 +1,590 @@
+{% extends "admin_panel/admin_base.html" %}
+{% load i18n static %}
+
+{% block page_title %}{% trans "Users" %}{% endblock %}
+{% block page_description %}{% trans "Manage customers, staff, and user accounts." %}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'accounts:user_create' %}" class="btn btn-primary">
+    <i class="bi bi-plus me-1"></i> {% trans "Add User" %}
+</a>
+{% endblock %}
+
+{% block main_content %}
+<!-- Stats -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-people"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Total Users" %}</h6>
+                        <h3 class="mb-0">{{ stats.total_users }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-person-check"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Active" %}</h6>
+                        <h3 class="mb-0">{{ stats.active_users }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-shop"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Customers" %}</h6>
+                        <h3 class="mb-0">{{ stats.customers }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-shield-check"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Staff" %}</h6>
+                        <h3 class="mb-0">{{ stats.staff }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Search" %}</label>
+                <input type="text" name="q" class="form-control" placeholder="{% trans 'Name or email' %}" value="{{ request.GET.q }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Role" %}</label>
+                <select name="role" class="form-select">
+                    <option value="">{% trans "All Roles" %}</option>
+                    <option value="customer" {% if request.GET.role == 'customer' %}selected{% endif %}>{% trans "Customer" %}</option>
+                    <option value="staff" {% if request.GET.role == 'staff' %}selected{% endif %}>{% trans "Staff" %}</option>
+                    <option value="admin" {% if request.GET.role == 'admin' %}selected{% endif %}>{% trans "Admin" %}</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Status" %}</label>
+                <select name="status" class="form-select">
+                    <option value="">{% trans "All Statuses" %}</option>
+                    <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>{% trans "Active" %}</option>
+                    <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>{% trans "Inactive" %}</option>
+                    <option value="banned" {% if request.GET.status == 'banned' %}selected{% endif %}>{% trans "Banned" %}</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Group" %}</label>
+                <select name="group" class="form-select">
+                    <option value="">{% trans "All Groups" %}</option>
+                    {% for group in groups %}
+                    <option value="{{ group.id }}" {% if request.GET.group|stringformat:"s" == group.id|stringformat:"s" %}selected{% endif %}>{{ group.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search me-1"></i> {% trans "Search" %}
+                </button>
+                <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle me-1"></i> {% trans "Reset" %}
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Users Table -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>
+                            <input type="checkbox" id="selectAllUsers">
+                        </th>
+                        <th>{% trans "Name" %}</th>
+                        <th>{% trans "Email" %}</th>
+                        <th>{% trans "Phone" %}</th>
+                        <th>{% trans "Role" %}</th>
+                        <th>{% trans "Group" %}</th>
+                        <th>{% trans "Orders" %}</th>
+                        <th>{% trans "Total Spent" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Date Joined" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" name="selected[]" value="{{ user.id }}">
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if user.avatar %}
+                                <img src="{{ user.avatar.url }}" alt="" class="me-2 rounded-circle" style="width: 35px; height: 35px; object-fit: cover;">
+                                {% else %}
+                                <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px;">
+                                    <i class="bi bi-person"></i>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-0">{{ user.get_full_name|default:user.username }}</h6>
+                                    <small class="text-muted">{{ user.username }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.phone|default:"-" }}</td>
+                        <td>
+                            <span class="badge bg-{{ user.get_role_display|lower }}">{{ user.get_role_display }}</span>
+                        </td>
+                        <td>{{ user.group.name|default:"-" }}</td>
+                        <td>{{ user.orders.count }}</td>
+                        <td>${{ user.total_spent|floatformat:2 }}</td>
+                        <td>
+                            <span class="badge {% if user.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                {% if user.is_active %}{% trans "Active" %}{% else %}{% trans "Inactive" %}{% endif %}
+                            </span>
+                            {% if user.is_banned %}
+                            <br><span class="badge bg-danger mt-1">{% trans "Banned" %}</span>
+                            {% endif %}
+                            {% if user.email_verified %}
+                            <br><span class="badge bg-info mt-1">{% trans "Verified" %}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small>
+                                {{ user.date_joined|date:"M d, Y" }}<br>
+                                {{ user.date_joined|time:"H:i" }}
+                            </small>
+                        </td>
+                        <td>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'accounts:user_detail' pk=user.id %}">
+                                            <i class="bi bi-eye me-1"></i> {% trans "View" %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'accounts:user_update' pk=user.id %}">
+                                            <i class="bi bi-pencil me-1"></i> {% trans "Edit" %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'accounts:address_list' %}?user={{ user.id }}">
+                                            <i class="bi bi-geo me-1"></i> {% trans "Addresses" %} ({{ user.addresses.count }})
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'orders:order_list' %}?customer={{ user.id }}">
+                                            <i class="bi bi-cart me-1"></i> {% trans "Orders" %} ({{ user.orders.count }})
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item {% if user.is_active %}text-warning{% else %}text-success{% endif %} toggle-user-status" 
+                                           data-user-id="{{ user.id }}" href="#">
+                                            <i class="bi {% if user.is_active %}bi-person-dash{% else %}bi-person-plus{% endif %} me-1"></i>
+                                            {% if user.is_active %}{% trans "Deactivate" %}{% else %}{% trans "Activate" %}{% endif %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item {% if user.is_banned %}text-success{% else %}text-danger{% endif %} toggle-user-ban" 
+                                           data-user-id="{{ user.id }}" href="#">
+                                            <i class="bi {% if user.is_banned %}bi-unlock{% else %}bi-lock{% endif %} me-1"></i>
+                                            {% if user.is_banned %}{% trans "Unban" %}{% else %}{% trans "Ban" %}{% endif %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item text-danger delete-user" data-user-id="{{ user.id }}" href="#">
+                                            <i class="bi bi-trash me-1"></i> {% trans "Delete" %}
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="card-footer bg-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <p class="mb-0 text-muted small">
+                    {% trans "Showing" %} {{ users.start_index }} - {{ users.end_index }} {% trans "of" %} {{ users.paginator.count }} {% trans "users" %}
+                </p>
+            </div>
+            <div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                        {% trans "Bulk Actions" %}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item bulk-user-action" data-action="activate">{% trans "Activate" %}</a></li>
+                        <li><a class="dropdown-item bulk-user-action" data-action="deactivate">{% trans "Deactivate" %}</a></li>
+                        <li><a class="dropdown-item bulk-user-action" data-action="ban">{% trans "Ban" %}</a></li>
+                        <li><a class="dropdown-item bulk-user-action" data-action="unban">{% trans "Unban" %}</a></li>
+                        <li><a class="dropdown-item bulk-user-action" data-action="delete">{% trans "Delete" %}</a></li>
+                    </ul>
+                </div>
+                
+                {% if users.paginator.num_pages > 1 %}
+                <nav aria-label="Page navigation" class="d-inline-block ms-2">
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if users.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ users.previous_page_number }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% for num in users.paginator.page_range %}
+                            {% if users.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > users.number|add:'-3' and num < users.number|add:'3' %}
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">{{ num }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                        {% if users.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ users.next_page_number }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Groups Section -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">{% trans "User Groups" %}</h5>
+    </div>
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <p class="text-muted small mb-0">{% trans "Organize users into groups with different permissions." %}</p>
+            <a href="{% url 'accounts:group_create' %}" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus me-1"></i> {% trans "Add Group" %}
+            </a>
+        </div>
+        
+        <div class="row">
+            {% for group in groups %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h5 class="mb-1">{{ group.name }}</h5>
+                                <p class="text-muted small mb-0">{{ group.description|truncatechars:50 }}</p>
+                            </div>
+                            <span class="badge bg-{{ group.get_status_display|lower }}">{{ group.get_status_display }}</span>
+                        </div>
+                        <div class="mb-3">
+                            <p class="text-muted small mb-1">{% trans "Users" %}:</p>
+                            <p class="mb-0">{{ group.users.count }}</p>
+                        </div>
+                        <div class="mb-3">
+                            <p class="text-muted small mb-1">{% trans "Permissions" %}:</p>
+                            <div class="d-flex flex-wrap gap-1">
+                                {% for permission in group.permissions.all %}
+                                <span class="badge bg-secondary">{{ permission.name }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-muted small mb-1">{% trans "Discount" %}:</p>
+                            <p class="mb-0">{{ group.discount }}%</p>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white">
+                        <a href="{% url 'accounts:group_detail' pk=group.id %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye me-1"></i> {% trans "View" %}
+                        </a>
+                        <a href="{% url 'accounts:group_update' pk=group.id %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-pencil me-1"></i> {% trans "Edit" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- User Activity Section -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">{% trans "Recent User Activity" %}</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm">
+                <thead class="table-light">
+                    <tr>
+                        <th>{% trans "User" %}</th>
+                        <th>{% trans "Action" %}</th>
+                        <th>{% trans "Details" %}</th>
+                        <th>{% trans "IP Address" %}</th>
+                        <th>{% trans "Date" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for activity in recent_activities %}
+                    <tr>
+                        <td>{{ activity.user.get_full_name|default:activity.user.username|default:activity.user.email }}</td>
+                        <td>
+                            <span class="badge bg-{{ activity.get_action_display|lower }}">{{ activity.get_action_display }}</span>
+                        </td>
+                        <td>{{ activity.details|truncatechars:50 }}</td>
+                        <td>{{ activity.ip_address|default:"-" }}</td>
+                        <td>{{ activity.created_at|date:"M d, Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- User Registration Stats -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">{% trans "User Registration Stats" %}</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="registrationChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">{% trans "User Roles Distribution" %}</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="rolesChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// Select all
+$('#selectAllUsers').on('change', function() {
+    $('input[name="selected[]"]').prop('checked', $(this).prop('checked'));
+});
+
+// Initialize charts
+const registrationCtx = document.getElementById('registrationChart').getContext('2d');
+const rolesCtx = document.getElementById('rolesChart').getContext('2d');
+
+// Registration Chart
+new Chart(registrationCtx, {
+    type: 'line',
+    data: {
+        labels: {{ registration_stats.labels|safe }},
+        datasets: [{
+            label: '{% trans "New Users" %}',
+            data: {{ registration_stats.data|safe }},
+            borderColor: '#673ab7',
+            backgroundColor: 'rgba(103, 58, 183, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Roles Chart
+new Chart(rolesCtx, {
+    type: 'doughnut',
+    data: {
+        labels: {{ roles_distribution.labels|safe }},
+        datasets: [{
+            data: {{ roles_distribution.data|safe }},
+            backgroundColor: [
+                '#673ab7', '#ff9800', '#4caf50', '#f44336', '#2196f3'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Toggle user status
+$('.toggle-user-status').on('click', function(e) {
+    e.preventDefault();
+    const userId = $(this).data('user-id');
+    
+    $.post('{% url "accounts:toggle_user_status" %}', {
+        user_id: userId,
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+    }, function(data) {
+        if (data.success) {
+            location.reload();
+        } else {
+            toastr.error(data.error || '{% trans "Failed to update user status." %}');
+        }
+    });
+});
+
+// Toggle user ban
+$('.toggle-user-ban').on('click', function(e) {
+    e.preventDefault();
+    const userId = $(this).data('user-id');
+    
+    $.post('{% url "accounts:toggle_user_ban" %}', {
+        user_id: userId,
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+    }, function(data) {
+        if (data.success) {
+            location.reload();
+        } else {
+            toastr.error(data.error || '{% trans "Failed to update user ban status." %}');
+        }
+    });
+});
+
+// Delete user
+$('.delete-user').on('click', function(e) {
+    e.preventDefault();
+    const userId = $(this).data('user-id');
+    
+    if (confirm('{% trans "Are you sure you want to delete this user? This cannot be undone." %}')) {
+        $.post('{% url "accounts:delete_user" %}', {
+            user_id: userId,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                toastr.error(data.error || '{% trans "Failed to delete user." %}');
+            }
+        });
+    }
+});
+
+// Bulk actions
+$('.bulk-user-action').on('click', function(e) {
+    e.preventDefault();
+    const action = $(this).data('action');
+    const selected = [];
+    
+    $('input[name="selected[]"]:checked').each(function() {
+        selected.push($(this).val());
+    });
+    
+    if (selected.length === 0) {
+        toastr.error('{% trans "Please select at least one user." %}');
+        return;
+    }
+    
+    let message = '';
+    switch(action) {
+        case 'activate': message = '{% trans "Activate selected users?" %}'; break;
+        case 'deactivate': message = '{% trans "Deactivate selected users?" %}'; break;
+        case 'ban': message = '{% trans "Ban selected users?" %}'; break;
+        case 'unban': message = '{% trans "Unban selected users?" %}'; break;
+        case 'delete': message = '{% trans "Delete selected users? This cannot be undone." %}'; break;
+    }
+    
+    if (confirm(message)) {
+        $.post('{% url "accounts:bulk_user_action" %}', {
+            action: action,
+            selected: selected,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                toastr.error(data.error || '{% trans "Failed to perform action." %}');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

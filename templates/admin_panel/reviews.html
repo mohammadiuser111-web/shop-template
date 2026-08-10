@@ -1,0 +1,615 @@
+{% extends "admin_panel/admin_base.html" %}
+{% load i18n static %}
+
+{% block page_title %}{% trans "Reviews" %}{% endblock %}
+{% block page_description %}{% trans "Manage product reviews and ratings." %}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'reviews:review_create' %}" class="btn btn-primary">
+    <i class="bi bi-plus me-1"></i> {% trans "Add Review" %}
+</a>
+{% endblock %}
+
+{% block main_content %}
+<!-- Stats -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-star"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Total Reviews" %}</h6>
+                        <h3 class="mb-0">{{ stats.total_reviews }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Approved" %}</h6>
+                        <h3 class="mb-0">{{ stats.approved_reviews }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-clock"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Pending" %}</h6>
+                        <h3 class="mb-0">{{ stats.pending_reviews }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-graph-up"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Average Rating" %}</h6>
+                        <h3 class="mb-0">{{ stats.average_rating|floatformat:1 }} / 5</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Search" %}</label>
+                <input type="text" name="q" class="form-control" placeholder="{% trans 'Review text or product' %}" value="{{ request.GET.q }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Product" %}</label>
+                <select name="product" class="form-select">
+                    <option value="">{% trans "All Products" %}</option>
+                    {% for product in products %}
+                    <option value="{{ product.id }}" {% if request.GET.product|stringformat:"s" == product.id|stringformat:"s" %}selected{% endif %}>{{ product.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Rating" %}</label>
+                <select name="rating" class="form-select">
+                    <option value="">{% trans "All Ratings" %}</option>
+                    <option value="5" {% if request.GET.rating == '5' %}selected{% endif %}>5 {% trans "Stars" %}</option>
+                    <option value="4" {% if request.GET.rating == '4' %}selected{% endif %}>4 {% trans "Stars" %}</option>
+                    <option value="3" {% if request.GET.rating == '3' %}selected{% endif %}>3 {% trans "Stars" %}</option>
+                    <option value="2" {% if request.GET.rating == '2' %}selected{% endif %}>2 {% trans "Stars" %}</option>
+                    <option value="1" {% if request.GET.rating == '1' %}selected{% endif %}>1 {% trans "Star" %}</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Status" %}</label>
+                <select name="status" class="form-select">
+                    <option value="">{% trans "All Statuses" %}</option>
+                    <option value="approved" {% if request.GET.status == 'approved' %}selected{% endif %}>{% trans "Approved" %}</option>
+                    <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>{% trans "Pending" %}</option>
+                    <option value="rejected" {% if request.GET.status == 'rejected' %}selected{% endif %}>{% trans "Rejected" %}</option>
+                </select>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search me-1"></i> {% trans "Search" %}
+                </button>
+                <a href="{% url 'reviews:review_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle me-1"></i> {% trans "Reset" %}
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Reviews Table -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>
+                            <input type="checkbox" id="selectAllReviews">
+                        </th>
+                        <th>{% trans "Product" %}</th>
+                        <th>{% trans "Customer" %}</th>
+                        <th>{% trans "Rating" %}</th>
+                        <th>{% trans "Review" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Date" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for review in reviews %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" name="selected[]" value="{{ review.id }}">
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if review.product.image %}
+                                <img src="{{ review.product.image.url }}" alt="" class="me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                {% else %}
+                                <div class="bg-secondary text-white rounded d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px;">
+                                    <i class="bi bi-image"></i>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-0">{{ review.product.name|truncatechars:30 }}</h6>
+                                    <small class="text-muted">{{ review.product.sku }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ review.customer.get_full_name|default:review.customer.email }}</td>
+                        <td>
+                            <div class="text-warning">
+                                {% for i in "12345" %}
+                                <i class="bi {% if review.rating >= forloop.counter %}bi-star-fill{% else %}bi-star{% endif %}"></i>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td>{{ review.comment|truncatechars:50 }}</td>
+                        <td>
+                            <span class="badge {% if review.is_approved %}bg-success{% elif review.is_rejected %}bg-danger{% else %}bg-warning{% endif %}">
+                                {% if review.is_approved %}{% trans "Approved" %}{% elif review.is_rejected %}{% trans "Rejected" %}{% else %}{% trans "Pending" %}{% endif %}
+                            </span>
+                            {% if review.is_featured %}
+                            <br><span class="badge bg-info mt-1">{% trans "Featured" %}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small>{{ review.created_at|date:"M d, Y H:i" }}</small>
+                        </td>
+                        <td>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'reviews:review_detail' pk=review.id %}">
+                                            <i class="bi bi-eye me-1"></i> {% trans "View" %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'reviews:review_update' pk=review.id %}">
+                                            <i class="bi bi-pencil me-1"></i> {% trans "Edit" %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'reviews:review_photos' pk=review.id %}">
+                                            <i class="bi bi-images me-1"></i> {% trans "Photos" %} ({{ review.photos.count }})
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item {% if review.is_approved %}text-warning{% else %}text-success{% endif %} toggle-review-approval" 
+                                           data-review-id="{{ review.id }}" href="#">
+                                            <i class="bi {% if review.is_approved %}bi-hand-thumbs-down{% else %}bi-hand-thumbs-up{% endif %} me-1"></i>
+                                            {% if review.is_approved %}{% trans "Reject" %}{% else %}{% trans "Approve" %}{% endif %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item {% if review.is_featured %}text-warning{% else %}text-info{% endif %} toggle-review-featured" 
+                                           data-review-id="{{ review.id }}" href="#">
+                                            <i class="bi {% if review.is_featured %}bi-star-fill{% else %}bi-star{% endif %} me-1"></i>
+                                            {% if review.is_featured %}{% trans "Unfeature" %}{% else %}{% trans "Feature" %}{% endif %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item text-danger delete-review" data-review-id="{{ review.id }}" href="#">
+                                            <i class="bi bi-trash me-1"></i> {% trans "Delete" %}
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="card-footer bg-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <p class="mb-0 text-muted small">
+                    {% trans "Showing" %} {{ reviews.start_index }} - {{ reviews.end_index }} {% trans "of" %} {{ reviews.paginator.count }} {% trans "reviews" %}
+                </p>
+            </div>
+            <div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                        {% trans "Bulk Actions" %}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item bulk-review-action" data-action="approve">{% trans "Approve" %}</a></li>
+                        <li><a class="dropdown-item bulk-review-action" data-action="reject">{% trans "Reject" %}</a></li>
+                        <li><a class="dropdown-item bulk-review-action" data-action="feature">{% trans "Feature" %}</a></li>
+                        <li><a class="dropdown-item bulk-review-action" data-action="unfeature">{% trans "Unfeature" %}</a></li>
+                        <li><a class="dropdown-item bulk-review-action" data-action="delete">{% trans "Delete" %}</a></li>
+                    </ul>
+                </div>
+                
+                {% if reviews.paginator.num_pages > 1 %}
+                <nav aria-label="Page navigation" class="d-inline-block ms-2">
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if reviews.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ reviews.previous_page_number }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% for num in reviews.paginator.page_range %}
+                            {% if reviews.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > reviews.number|add:'-3' and num < reviews.number|add:'3' %}
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">{{ num }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                        {% if reviews.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ reviews.next_page_number }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rating Distribution Chart -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">{% trans "Rating Distribution" %}</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="ratingChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">{% trans "Reviews by Product" %}</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="productChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Reviewers Section -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">{% trans "Top Reviewers" %}</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>{% trans "Customer" %}</th>
+                        <th>{% trans "Reviews" %}</th>
+                        <th>{% trans "Average Rating" %}</th>
+                        <th>{% trans "Last Review" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reviewer in top_reviewers %}
+                    <tr>
+                        <td>{{ reviewer.customer.get_full_name|default:reviewer.customer.email }}</td>
+                        <td>{{ reviewer.review_count }}</td>
+                        <td>
+                            <div class="text-warning">
+                                {% for i in "12345" %}
+                                <i class="bi {% if reviewer.average_rating >= forloop.counter %}bi-star-fill{% else %}bi-star{% endif %}"></i>
+                                {% endfor %}
+                            </div>
+                            <small class="text-muted">({{ reviewer.average_rating|floatformat:1 }})</small>
+                        </td>
+                        <td>{{ reviewer.last_review|date:"M d, Y" }}</td>
+                        <td>
+                            <a href="{% url 'reviews:review_list' %}?customer={{ reviewer.customer.id }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-list me-1"></i> {% trans "View Reviews" %}
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Review Settings Section -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">{% trans "Review Settings" %}</h5>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">{% trans "Enable Reviews" %}</label>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="reviews_enabled" id="reviewsEnabled" {% if settings.reviews_enabled %}checked{% endif %}>
+                        <label class="form-check-label" for="reviewsEnabled">{% trans "Allow customers to submit reviews" %}</label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{% trans "Review Moderation" %}</label>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="review_moderation" id="reviewModeration" {% if settings.review_moderation %}checked{% endif %}>
+                        <label class="form-check-label" for="reviewModeration">{% trans "Require approval for new reviews" %}</label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{% trans "Allow Anonymous Reviews" %}</label>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="anonymous_reviews" id="anonymousReviews" {% if settings.anonymous_reviews %}checked{% endif %}>
+                        <label class="form-check-label" for="anonymousReviews">{% trans "Allow guests to submit reviews" %}</label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{% trans "Allow Review Photos" %}</label>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="review_photos_enabled" id="reviewPhotosEnabled" {% if settings.review_photos_enabled %}checked{% endif %}>
+                        <label class="form-check-label" for="reviewPhotosEnabled">{% trans "Allow customers to upload photos with reviews" %}</label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{% trans "Max Photos per Review" %}</label>
+                    <input type="number" name="max_review_photos" class="form-control" value="{{ settings.max_review_photos|default:5 }}" min="0" max="10">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{% trans "Min Review Length" %}</label>
+                    <input type="number" name="min_review_length" class="form-control" value="{{ settings.min_review_length|default:10 }}" min="0">
+                    <small class="text-muted">{% trans "Minimum number of characters required for review text." %}</small>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{% trans "Max Review Length" %}</label>
+                    <input type="number" name="max_review_length" class="form-control" value="{{ settings.max_review_length|default:1000 }}" min="0">
+                    <small class="text-muted">{% trans "Maximum number of characters allowed for review text." %}</small>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{% trans "Review Expiry Days" %}</label>
+                    <input type="number" name="review_expiry_days" class="form-control" value="{{ settings.review_expiry_days|default:0 }}" min="0">
+                    <small class="text-muted">{% trans "Number of days after which reviews expire. Set to 0 to disable." %}</small>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{% trans "Show Reviews on Product Page" %}</label>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="show_reviews_on_product" id="showReviewsOnProduct" {% if settings.show_reviews_on_product %}checked{% endif %}>
+                        <label class="form-check-label" for="showReviewsOnProduct">{% trans "Display reviews on product pages" %}</label>
+                    </div>
+                </div>
+                <div class="col-12 text-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check me-1"></i> {% trans "Save Settings" %}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// Select all
+$('#selectAllReviews').on('change', function() {
+    $('input[name="selected[]"]').prop('checked', $(this).prop('checked'));
+});
+
+// Initialize charts
+const ratingCtx = document.getElementById('ratingChart').getContext('2d');
+const productCtx = document.getElementById('productChart').getContext('2d');
+
+// Rating Distribution Chart
+new Chart(ratingCtx, {
+    type: 'bar',
+    data: {
+        labels: ['5 {% trans "Stars" %}', '4 {% trans "Stars" %}', '3 {% trans "Stars" %}', '2 {% trans "Stars" %}', '1 {% trans "Star" %}'],
+        datasets: [{
+            label: '{% trans "Number of Reviews" %}',
+            data: {{ rating_distribution|safe }},
+            backgroundColor: [
+                '#4caf50',
+                '#8bc34a',
+                '#ffc107',
+                '#ff9800',
+                '#f44336'
+            ],
+            borderColor: [
+                '#4caf50',
+                '#8bc34a',
+                '#ffc107',
+                '#ff9800',
+                '#f44336'
+            ],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Product Reviews Chart
+new Chart(productCtx, {
+    type: 'doughnut',
+    data: {
+        labels: {{ product_chart.labels|safe }},
+        datasets: [{
+            data: {{ product_chart.data|safe }},
+            backgroundColor: [
+                '#673ab7', '#ff9800', '#4caf50', '#f44336', '#2196f3',
+                '#9c27b0', '#00bcd4', '#8bc34a', '#e91e63', '#3f51b5'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Toggle review approval
+$('.toggle-review-approval').on('click', function(e) {
+    e.preventDefault();
+    const reviewId = $(this).data('review-id');
+    
+    $.post('{% url "reviews:toggle_review_approval" %}', {
+        review_id: reviewId,
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+    }, function(data) {
+        if (data.success) {
+            location.reload();
+        } else {
+            toastr.error(data.error || '{% trans "Failed to update review." %}');
+        }
+    });
+});
+
+// Toggle review featured
+$('.toggle-review-featured').on('click', function(e) {
+    e.preventDefault();
+    const reviewId = $(this).data('review-id');
+    
+    $.post('{% url "reviews:toggle_review_featured" %}', {
+        review_id: reviewId,
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+    }, function(data) {
+        if (data.success) {
+            location.reload();
+        } else {
+            toastr.error(data.error || '{% trans "Failed to update review." %}');
+        }
+    });
+});
+
+// Delete review
+$('.delete-review').on('click', function(e) {
+    e.preventDefault();
+    const reviewId = $(this).data('review-id');
+    
+    if (confirm('{% trans "Are you sure you want to delete this review?" %}')) {
+        $.post('{% url "reviews:delete_review" %}', {
+            review_id: reviewId,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                toastr.error(data.error || '{% trans "Failed to delete review." %}');
+            }
+        });
+    }
+});
+
+// Bulk actions
+$('.bulk-review-action').on('click', function(e) {
+    e.preventDefault();
+    const action = $(this).data('action');
+    const selected = [];
+    
+    $('input[name="selected[]"]:checked').each(function() {
+        selected.push($(this).val());
+    });
+    
+    if (selected.length === 0) {
+        toastr.error('{% trans "Please select at least one review." %}');
+        return;
+    }
+    
+    let message = '';
+    switch(action) {
+        case 'approve': message = '{% trans "Approve selected reviews?" %}'; break;
+        case 'reject': message = '{% trans "Reject selected reviews?" %}'; break;
+        case 'feature': message = '{% trans "Feature selected reviews?" %}'; break;
+        case 'unfeature': message = '{% trans "Unfeature selected reviews?" %}'; break;
+        case 'delete': message = '{% trans "Delete selected reviews? This cannot be undone." %}'; break;
+    }
+    
+    if (confirm(message)) {
+        $.post('{% url "reviews:bulk_review_action" %}', {
+            action: action,
+            selected: selected,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                toastr.error(data.error || '{% trans "Failed to perform action." %}');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

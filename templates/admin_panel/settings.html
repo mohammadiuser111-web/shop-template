@@ -1,0 +1,1385 @@
+{% extends "admin_panel/admin_base.html" %}
+{% load i18n static %}
+
+{% block page_title %}{% trans "Settings" %}{% endblock %}
+{% block page_description %}{% trans "Configure store settings, themes, and preferences." %}{% endblock %}
+
+{% block page_actions %}
+<button class="btn btn-primary" onclick="saveSettings()">
+    <i class="bi bi-check me-1"></i> {% trans "Save Settings" %}
+</button>
+{% endblock %}
+
+{% block main_content %}
+<!-- Settings Navigation -->
+<div class="row mb-4">
+    <div class="col-12">
+        <ul class="nav nav-pills mb-3" id="settingsTabs">
+            <li class="nav-item">
+                <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#general" type="button">
+                    <i class="bi bi-gear me-1"></i> {% trans "General" %}
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#store" type="button">
+                    <i class="bi bi-shop me-1"></i> {% trans "Store" %}
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#seo" type="button">
+                    <i class="bi bi-globe me-1"></i> {% trans "SEO" %}
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#email" type="button">
+                    <i class="bi bi-envelope me-1"></i> {% trans "Email" %}
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#payment" type="button">
+                    <i class="bi bi-credit-card me-1"></i> {% trans "Payment" %}
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#shipping" type="button">
+                    <i class="bi bi-truck me-1"></i> {% trans "Shipping" %}
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#theme" type="button">
+                    <i class="bi bi-palette me-1"></i> {% trans "Theme" %}
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#social" type="button">
+                    <i class="bi bi-share me-1"></i> {% trans "Social" %}
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#maintenance" type="button">
+                    <i class="bi bi-tools me-1"></i> {% trans "Maintenance" %}
+                </button>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<!-- Settings Form -->
+<form id="settingsForm" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    
+    <div class="tab-content" id="settingsTabContent">
+        <!-- General Settings -->
+        <div class="tab-pane fade show active" id="general">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "General Settings" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Site Name" %}</label>
+                            <input type="text" name="site_name" class="form-control" value="{{ settings.site_name }}" required>
+                            <small class="text-muted">{% trans "The name of your website." %}</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Site Tagline" %}</label>
+                            <input type="text" name="site_tagline" class="form-control" value="{{ settings.site_tagline }}">
+                            <small class="text-muted">{% trans "A short tagline for your site." %}</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Site URL" %}</label>
+                            <input type="url" name="site_url" class="form-control" value="{{ settings.site_url }}" required>
+                            <small class="text-muted">{% trans "Your website's base URL." %}</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Admin Email" %}</label>
+                            <input type="email" name="admin_email" class="form-control" value="{{ settings.admin_email }}" required>
+                            <small class="text-muted">{% trans "Administrator email address." %}</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Default Language" %}</label>
+                            <select name="default_language" class="form-select">
+                                {% for lang in LANGUAGES %}
+                                <option value="{{ lang.0 }}" {% if settings.default_language == lang.0 %}selected{% endif %}>{{ lang.1 }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Time Zone" %}</label>
+                            <select name="timezone" class="form-select">
+                                {% for tz in timezones %}
+                                <option value="{{ tz }}" {% if settings.timezone == tz %}selected{% endif %}>{{ tz }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Date Format" %}</label>
+                            <select name="date_format" class="form-select">
+                                <option value="Y-m-d" {% if settings.date_format == 'Y-m-d' %}selected{% endif %}>2024-01-15</option>
+                                <option value="m/d/Y" {% if settings.date_format == 'm/d/Y' %}selected{% endif %}>01/15/2024</option>
+                                <option value="d/m/Y" {% if settings.date_format == 'd/m/Y' %}selected{% endif %}>15/01/2024</option>
+                                <option value="F j, Y" {% if settings.date_format == 'F j, Y' %}selected{% endif %}>January 15, 2024</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Time Format" %}</label>
+                            <select name="time_format" class="form-select">
+                                <option value="H:i" {% if settings.time_format == 'H:i' %}selected{% endif %}>14:30</option>
+                                <option value="h:i A" {% if settings.time_format == 'h:i A' %}selected{% endif %}>02:30 PM</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Site Logo" %}</label>
+                            <input type="file" name="site_logo" class="form-control" accept="image/*">
+                            <small class="text-muted">{% trans "Upload your site logo. Recommended size: 200x50px." %}</small>
+                            {% if settings.site_logo %}
+                            <div class="mt-2">
+                                <img src="{{ settings.site_logo.url }}" alt="Logo" class="img-thumbnail" style="max-height: 50px;">
+                                <button type="button" class="btn btn-sm btn-danger" onclick="removeLogo()">
+                                    <i class="bi bi-trash"></i> {% trans "Remove" %}
+                                </button>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Favicon" %}</label>
+                            <input type="file" name="favicon" class="form-control" accept="image/x-icon,image/png">
+                            <small class="text-muted">{% trans "Upload your favicon. Recommended size: 32x32px." %}</small>
+                            {% if settings.favicon %}
+                            <div class="mt-2">
+                                <img src="{{ settings.favicon.url }}" alt="Favicon" class="img-thumbnail" style="width: 32px; height: 32px;">
+                                <button type="button" class="btn btn-sm btn-danger" onclick="removeFavicon()">
+                                    <i class="bi bi-trash"></i> {% trans "Remove" %}
+                                </button>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Store Settings -->
+        <div class="tab-pane fade" id="store">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Store Settings" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Store Name" %}</label>
+                            <input type="text" name="store_name" class="form-control" value="{{ settings.store_name }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Store Email" %}</label>
+                            <input type="email" name="store_email" class="form-control" value="{{ settings.store_email }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Store Phone" %}</label>
+                            <input type="text" name="store_phone" class="form-control" value="{{ settings.store_phone }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Store Address" %}</label>
+                            <input type="text" name="store_address" class="form-control" value="{{ settings.store_address }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">{% trans "City" %}</label>
+                            <input type="text" name="store_city" class="form-control" value="{{ settings.store_city }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">{% trans "State/Province" %}</label>
+                            <input type="text" name="store_state" class="form-control" value="{{ settings.store_state }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">{% trans "ZIP/Postal Code" %}</label>
+                            <input type="text" name="store_zip" class="form-control" value="{{ settings.store_zip }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Country" %}</label>
+                            <select name="store_country" class="form-select">
+                                {% for country in countries %}
+                                <option value="{{ country.code }}" {% if settings.store_country == country.code %}selected{% endif %}>{{ country.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Currency" %}</label>
+                            <select name="default_currency" class="form-select">
+                                {% for currency in currencies %}
+                                <option value="{{ currency.code }}" {% if settings.default_currency == currency.code %}selected{% endif %}>{{ currency.name }} ({{ currency.code }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Minimum Order Amount" %}</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" name="min_order_amount" class="form-control" value="{{ settings.min_order_amount|default:0 }}" step="0.01" min="0">
+                            </div>
+                            <small class="text-muted">{% trans "Minimum order amount for checkout. Set to 0 to disable." %}</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Free Shipping Threshold" %}</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" name="free_shipping_threshold" class="form-control" value="{{ settings.free_shipping_threshold|default:0 }}" step="0.01" min="0">
+                            </div>
+                            <small class="text-muted">{% trans "Order amount required for free shipping. Set to 0 to disable." %}</small>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Tax Calculation" %}</label>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tax_calculation" id="taxNone" value="none" {% if settings.tax_calculation == 'none' %}checked{% endif %}>
+                                        <label class="form-check-label" for="taxNone">{% trans "No Tax" %}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tax_calculation" id="taxInclusive" value="inclusive" {% if settings.tax_calculation == 'inclusive' %}checked{% endif %}>
+                                        <label class="form-check-label" for="taxInclusive">{% trans "Tax Inclusive" %}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tax_calculation" id="taxExclusive" value="exclusive" {% if settings.tax_calculation == 'exclusive' %}checked{% endif %}>
+                                        <label class="form-check-label" for="taxExclusive">{% trans "Tax Exclusive" %}</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Default Tax Rate" %}</label>
+                            <div class="input-group">
+                                <input type="number" name="default_tax_rate" class="form-control" value="{{ settings.default_tax_rate|default:0 }}" step="0.01" min="0" max="100">
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Decimal Places" %}</label>
+                            <select name="decimal_places" class="form-select">
+                                <option value="2" {% if settings.decimal_places|default:2 == 2 %}selected{% endif %}>2</option>
+                                <option value="3" {% if settings.decimal_places == 3 %}selected{% endif %}>3</option>
+                                <option value="4" {% if settings.decimal_places == 4 %}selected{% endif %}>4</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Allowed Countries" %}</label>
+                            <select name="allowed_countries" class="form-select" multiple>
+                                {% for country in countries %}
+                                <option value="{{ country.code }}" {% if country.code in settings.allowed_countries %}selected{% endif %}>{{ country.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">{% trans "Select countries where you ship to. Hold Ctrl/Cmd to select multiple." %}</small>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Restricted Countries" %}</label>
+                            <select name="restricted_countries" class="form-select" multiple>
+                                {% for country in countries %}
+                                <option value="{{ country.code }}" {% if country.code in settings.restricted_countries %}selected{% endif %}>{{ country.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">{% trans "Select countries where you do NOT ship to. Hold Ctrl/Cmd to select multiple." %}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- SEO Settings -->
+        <div class="tab-pane fade" id="seo">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "SEO Settings" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Meta Title" %}</label>
+                            <input type="text" name="meta_title" class="form-control" value="{{ settings.meta_title }}">
+                            <small class="text-muted">{% trans "Default meta title for all pages." %}</small>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Meta Description" %}</label>
+                            <textarea name="meta_description" class="form-control" rows="3">{{ settings.meta_description }}</textarea>
+                            <small class="text-muted">{% trans "Default meta description for all pages." %}</small>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Meta Keywords" %}</label>
+                            <input type="text" name="meta_keywords" class="form-control" value="{{ settings.meta_keywords }}">
+                            <small class="text-muted">{% trans "Comma-separated keywords for SEO." %}</small>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Google Analytics Code" %}</label>
+                            <textarea name="google_analytics" class="form-control" rows="5" placeholder="{% trans 'Paste your Google Analytics tracking code here.' %}">{{ settings.google_analytics }}</textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Google Tag Manager Code" %}</label>
+                            <textarea name="google_tag_manager" class="form-control" rows="5" placeholder="{% trans 'Paste your Google Tag Manager code here.' %}">{{ settings.google_tag_manager }}</textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Facebook Pixel Code" %}</label>
+                            <textarea name="facebook_pixel" class="form-control" rows="5" placeholder="{% trans 'Paste your Facebook Pixel code here.' %}">{{ settings.facebook_pixel }}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Enable SEO URLs" %}</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="seo_urls" id="seoUrls" {% if settings.seo_urls %}checked{% endif %}>
+                                <label class="form-check-label" for="seoUrls">{% trans "Enable search engine friendly URLs" %}</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Enable Canonical URLs" %}</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="canonical_urls" id="canonicalUrls" {% if settings.canonical_urls %}checked{% endif %}>
+                                <label class="form-check-label" for="canonicalUrls">{% trans "Add canonical URLs to prevent duplicate content" %}</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Robots.txt Content" %}</label>
+                            <textarea name="robots_txt" class="form-control" rows="10" placeholder="{% trans 'Custom robots.txt content.' %}">{{ settings.robots_txt }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Email Settings -->
+        <div class="tab-pane fade" id="email">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Email Settings" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Email Protocol" %}</label>
+                            <select name="email_protocol" class="form-select">
+                                <option value="smtp" {% if settings.email_protocol == 'smtp' %}selected{% endif %}>SMTP</option>
+                                <option value="mail" {% if settings.email_protocol == 'mail' %}selected{% endif %}>PHP Mail</option>
+                                <option value="sendmail" {% if settings.email_protocol == 'sendmail' %}selected{% endif %}>Sendmail</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "SMTP Host" %}</label>
+                            <input type="text" name="smtp_host" class="form-control" value="{{ settings.smtp_host }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "SMTP Port" %}</label>
+                            <input type="number" name="smtp_port" class="form-control" value="{{ settings.smtp_port|default:587 }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "SMTP Username" %}</label>
+                            <input type="text" name="smtp_username" class="form-control" value="{{ settings.smtp_username }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "SMTP Password" %}</label>
+                            <input type="password" name="smtp_password" class="form-control" value="{{ settings.smtp_password }}">
+                            <small class="text-muted">{% trans "Leave empty to keep current password." %}</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "SMTP Encryption" %}</label>
+                            <select name="smtp_encryption" class="form-select">
+                                <option value="tls" {% if settings.smtp_encryption == 'tls' %}selected{% endif %}>TLS</option>
+                                <option value="ssl" {% if settings.smtp_encryption == 'ssl' %}selected{% endif %}>SSL</option>
+                                <option value="" {% if settings.smtp_encryption == '' or settings.smtp_encryption == None %}selected{% endif %}>{% trans "None" %}</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "From Email" %}</label>
+                            <input type="email" name="from_email" class="form-control" value="{{ settings.from_email }}">
+                            <small class="text-muted">{% trans "Email address used as the sender for all outgoing emails." %}</small>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "From Name" %}</label>
+                            <input type="text" name="from_name" class="form-control" value="{{ settings.from_name }}">
+                            <small class="text-muted">{% trans "Name used as the sender for all outgoing emails." %}</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Test Email" %}</label>
+                            <div class="input-group">
+                                <input type="email" name="test_email" class="form-control" placeholder="{% trans 'Enter email to test' %}">
+                                <button class="btn btn-primary" type="button" onclick="sendTestEmail()">
+                                    <i class="bi bi-send me-1"></i> {% trans "Send Test" %}
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Email Template" %}</label>
+                            <select name="email_template" class="form-select">
+                                <option value="default" {% if settings.email_template == 'default' %}selected{% endif %}>{% trans "Default" %}</option>
+                                {% for template in email_templates %}
+                                <option value="{{ template.name }}" {% if settings.email_template == template.name %}selected{% endif %}>{{ template.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Email Signature" %}</label>
+                            <textarea name="email_signature" class="form-control" rows="5">{{ settings.email_signature }}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Enable Email Notifications" %}</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="email_notifications" id="emailNotifications" {% if settings.email_notifications %}checked{% endif %}>
+                                <label class="form-check-label" for="emailNotifications">{% trans "Enable email notifications for orders and other events" %}</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Enable Email Verification" %}</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="email_verification" id="emailVerification" {% if settings.email_verification %}checked{% endif %}>
+                                <label class="form-check-label" for="emailVerification">{% trans "Require email verification for new accounts" %}</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Payment Settings -->
+        <div class="tab-pane fade" id="payment">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Payment Settings" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Default Payment Method" %}</label>
+                            <select name="default_payment_method" class="form-select">
+                                {% for method in payment_methods %}
+                                <option value="{{ method.id }}" {% if settings.default_payment_method == method.id %}selected{% endif %}>{{ method.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "COD (Cash On Delivery)" %}</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="cod_enabled" id="codEnabled" {% if settings.cod_enabled %}checked{% endif %}>
+                                <label class="form-check-label" for="codEnabled">{% trans "Enable Cash On Delivery payment method" %}</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "PayPal Settings" %}</label>
+                            <div class="row g-3 mt-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">{% trans "PayPal Client ID" %}</label>
+                                    <input type="text" name="paypal_client_id" class="form-control" value="{{ settings.paypal_client_id }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{% trans "PayPal Secret" %}</label>
+                                    <input type="password" name="paypal_secret" class="form-control" value="{{ settings.paypal_secret }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{% trans "PayPal Mode" %}</label>
+                                    <select name="paypal_mode" class="form-select">
+                                        <option value="sandbox" {% if settings.paypal_mode == 'sandbox' %}selected{% endif %}>Sandbox</option>
+                                        <option value="live" {% if settings.paypal_mode == 'live' %}selected{% endif %}>Live</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{% trans "PayPal Enabled" %}</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="paypal_enabled" id="paypalEnabled" {% if settings.paypal_enabled %}checked{% endif %}>
+                                        <label class="form-check-label" for="paypalEnabled">{% trans "Enable PayPal payments" %}</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Stripe Settings" %}</label>
+                            <div class="row g-3 mt-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">{% trans "Stripe Publishable Key" %}</label>
+                                    <input type="text" name="stripe_publishable_key" class="form-control" value="{{ settings.stripe_publishable_key }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{% trans "Stripe Secret Key" %}</label>
+                                    <input type="password" name="stripe_secret_key" class="form-control" value="{{ settings.stripe_secret_key }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{% trans "Stripe Webhook Secret" %}</label>
+                                    <input type="password" name="stripe_webhook_secret" class="form-control" value="{{ settings.stripe_webhook_secret }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{% trans "Stripe Enabled" %}</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="stripe_enabled" id="stripeEnabled" {% if settings.stripe_enabled %}checked{% endif %}>
+                                        <label class="form-check-label" for="stripeEnabled">{% trans "Enable Stripe payments" %}</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Razorpay Settings" %}</label>
+                            <div class="row g-3 mt-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">{% trans "Razorpay Key ID" %}</label>
+                                    <input type="text" name="razorpay_key_id" class="form-control" value="{{ settings.razorpay_key_id }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{% trans "Razorpay Key Secret" %}</label>
+                                    <input type="password" name="razorpay_key_secret" class="form-control" value="{{ settings.razorpay_key_secret }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{% trans "Razorpay Enabled" %}</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="razorpay_enabled" id="razorpayEnabled" {% if settings.razorpay_enabled %}checked{% endif %}>
+                                        <label class="form-check-label" for="razorpayEnabled">{% trans "Enable Razorpay payments" %}</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Zarinpal Settings" %}</label>
+                            <div class="row g-3 mt-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">{% trans "Zarinpal Merchant ID" %}</label>
+                                    <input type="text" name="zarinpal_merchant_id" class="form-control" value="{{ settings.zarinpal_merchant_id }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{% trans "Zarinpal Mode" %}</label>
+                                    <select name="zarinpal_mode" class="form-select">
+                                        <option value="sandbox" {% if settings.zarinpal_mode == 'sandbox' %}selected{% endif %}>Sandbox</option>
+                                        <option value="zarinpal" {% if settings.zarinpal_mode == 'zarinpal' %}selected{% endif %}>Zarinpal</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{% trans "Zarinpal Enabled" %}</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="zarinpal_enabled" id="zarinpalEnabled" {% if settings.zarinpal_enabled %}checked{% endif %}>
+                                        <label class="form-check-label" for="zarinpalEnabled">{% trans "Enable Zarinpal payments" %}</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Transaction Fee" %}</label>
+                            <div class="input-group">
+                                <input type="number" name="transaction_fee" class="form-control" value="{{ settings.transaction_fee|default:0 }}" step="0.01" min="0" max="100">
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <small class="text-muted">{% trans "Additional fee for online payments." %}</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Minimum Payment Amount" %}</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" name="min_payment_amount" class="form-control" value="{{ settings.min_payment_amount|default:0 }}" step="0.01" min="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Shipping Settings -->
+        <div class="tab-pane fade" id="shipping">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Shipping Settings" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Default Shipping Method" %}</label>
+                            <select name="default_shipping_method" class="form-select">
+                                {% for method in shipping_methods %}
+                                <option value="{{ method.id }}" {% if settings.default_shipping_method == method.id %}selected{% endif %}>{{ method.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Free Shipping" %}</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="free_shipping_enabled" id="freeShippingEnabled" {% if settings.free_shipping_enabled %}checked{% endif %}>
+                                <label class="form-check-label" for="freeShippingEnabled">{% trans "Enable free shipping" %}</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Local Pickup" %}</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="local_pickup_enabled" id="localPickupEnabled" {% if settings.local_pickup_enabled %}checked{% endif %}>
+                                <label class="form-check-label" for="localPickupEnabled">{% trans "Enable local pickup option" %}</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Shipping Calculation" %}</label>
+                            <select name="shipping_calculation" class="form-select">
+                                <option value="fixed" {% if settings.shipping_calculation == 'fixed' %}selected{% endif %}>{% trans "Fixed Rate" %}</option>
+                                <option value="weight" {% if settings.shipping_calculation == 'weight' %}selected{% endif %}>{% trans "Weight Based" %}</option>
+                                <option value="price" {% if settings.shipping_calculation == 'price' %}selected{% endif %}>{% trans "Price Based" %}</option>
+                                <option value="api" {% if settings.shipping_calculation == 'api' %}selected{% endif %}>{% trans "Shipping API" %}</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Shipping Origins" %}</label>
+                            <div id="shippingOrigins">
+                                {% for origin in settings.shipping_origins %}
+                                <div class="row g-3 mb-3 shipping-origin">
+                                    <div class="col-md-4">
+                                        <input type="text" name="shipping_origin_name[]" class="form-control" placeholder="{% trans 'Name' %}" value="{{ origin.name }}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="text" name="shipping_origin_city[]" class="form-control" placeholder="{% trans 'City' %}" value="{{ origin.city }}">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <input type="text" name="shipping_origin_state[]" class="form-control" placeholder="{% trans 'State' %}" value="{{ origin.state }}">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <input type="text" name="shipping_origin_zip[]" class="form-control" placeholder="{% trans 'ZIP' %}" value="{{ origin.zip }}">
+                                    </div>
+                                    <div class="col-md-1">
+                                        <select name="shipping_origin_country[]" class="form-select">
+                                            {% for country in countries %}
+                                            <option value="{{ country.code }}" {% if origin.country == country.code %}selected{% endif %}>{{ country.code }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-auto">
+                                        <button type="button" class="btn btn-sm btn-danger" onclick="$(this).parent().parent().remove()">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                                {% if not settings.shipping_origins %}
+                                <div class="row g-3 mb-3 shipping-origin">
+                                    <div class="col-md-4">
+                                        <input type="text" name="shipping_origin_name[]" class="form-control" placeholder="{% trans 'Name' %}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="text" name="shipping_origin_city[]" class="form-control" placeholder="{% trans 'City' %}">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <input type="text" name="shipping_origin_state[]" class="form-control" placeholder="{% trans 'State' %}">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <input type="text" name="shipping_origin_zip[]" class="form-control" placeholder="{% trans 'ZIP' %}">
+                                    </div>
+                                    <div class="col-md-1">
+                                        <select name="shipping_origin_country[]" class="form-select">
+                                            {% for country in countries %}
+                                            <option value="{{ country.code }}">{{ country.code }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-auto">
+                                        <button type="button" class="btn btn-sm btn-danger" onclick="$(this).parent().parent().remove()">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <button type="button" class="btn btn-sm btn-secondary mt-2" onclick="addShippingOrigin()">
+                                <i class="bi bi-plus me-1"></i> {% trans "Add Origin" %}
+                            </button>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Shipping Restrictions" %}</label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="shipping_restrict_by_weight" id="restrictByWeight" {% if settings.shipping_restrict_by_weight %}checked{% endif %}>
+                                        <label class="form-check-label" for="restrictByWeight">{% trans "Restrict by weight" %}</label>
+                                    </div>
+                                    <div class="mt-2" id="weightRestriction" style="{% if not settings.shipping_restrict_by_weight %}display: none;{% endif %}">
+                                        <div class="row g-3">
+                                            <div class="col-6">
+                                                <label class="form-label">{% trans "Min Weight" %}</label>
+                                                <input type="number" name="shipping_min_weight" class="form-control" value="{{ settings.shipping_min_weight|default:0 }}" step="0.01">
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label">{% trans "Max Weight" %}</label>
+                                                <input type="number" name="shipping_max_weight" class="form-control" value="{{ settings.shipping_max_weight|default:0 }}" step="0.01">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="shipping_restrict_by_price" id="restrictByPrice" {% if settings.shipping_restrict_by_price %}checked{% endif %}>
+                                        <label class="form-check-label" for="restrictByPrice">{% trans "Restrict by price" %}</label>
+                                    </div>
+                                    <div class="mt-2" id="priceRestriction" style="{% if not settings.shipping_restrict_by_price %}display: none;{% endif %}">
+                                        <div class="row g-3">
+                                            <div class="col-6">
+                                                <label class="form-label">{% trans "Min Price" %}</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text">$</span>
+                                                    <input type="number" name="shipping_min_price" class="form-control" value="{{ settings.shipping_min_price|default:0 }}" step="0.01">
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label">{% trans "Max Price" %}</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text">$</span>
+                                                    <input type="number" name="shipping_max_price" class="form-control" value="{{ settings.shipping_max_price|default:0 }}" step="0.01">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Estimated Delivery Time" %}</label>
+                            <input type="text" name="estimated_delivery_time" class="form-control" value="{{ settings.estimated_delivery_time }}" placeholder="{% trans 'e.g., 3-5 business days' %}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Theme Settings -->
+        <div class="tab-pane fade" id="theme">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Theme Settings" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Current Theme" %}</label>
+                            <select name="current_theme" class="form-select" id="themeSelect">
+                                {% for theme in themes %}
+                                <option value="{{ theme.name }}" {% if settings.current_theme == theme.name %}selected{% endif %} data-theme-path="{{ theme.path }}">{{ theme.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Theme Color" %}</label>
+                            <div class="input-group">
+                                <input type="color" name="theme_color" class="form-control form-control-color" value="{{ settings.theme_color|default:'#673ab7' }}">
+                                <input type="text" name="theme_color_text" class="form-control" value="{{ settings.theme_color|default:'#673ab7' }}">
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Theme Preview" %}</label>
+                            <div id="themePreview" class="border rounded p-4 bg-light">
+                                <p class="text-muted">{% trans "Select a theme to preview its appearance." %}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Layout Style" %}</label>
+                            <select name="layout_style" class="form-select">
+                                <option value="wide" {% if settings.layout_style == 'wide' %}selected{% endif %}>{% trans "Wide" %}</option>
+                                <option value="boxed" {% if settings.layout_style == 'boxed' %}selected{% endif %}>{% trans "Boxed" %}</option>
+                                <option value="fullscreen" {% if settings.layout_style == 'fullscreen' %}selected{% endif %}>{% trans "Fullscreen" %}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Color Scheme" %}</label>
+                            <select name="color_scheme" class="form-select">
+                                <option value="light" {% if settings.color_scheme == 'light' %}selected{% endif %}>{% trans "Light" %}</option>
+                                <option value="dark" {% if settings.color_scheme == 'dark' %}selected{% endif %}>{% trans "Dark" %}</option>
+                                <option value="auto" {% if settings.color_scheme == 'auto' %}selected{% endif %}>{% trans "System" %}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Products Per Page" %}</label>
+                            <select name="products_per_page" class="form-select">
+                                <option value="12" {% if settings.products_per_page|default:12 == 12 %}selected{% endif %}>12</option>
+                                <option value="24" {% if settings.products_per_page == 24 %}selected{% endif %}>24</option>
+                                <option value="36" {% if settings.products_per_page == 36 %}selected{% endif %}>36</option>
+                                <option value="48" {% if settings.products_per_page == 48 %}selected{% endif %}>48</option>
+                                <option value="60" {% if settings.products_per_page == 60 %}selected{% endif %}>60</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Product Image Aspect Ratio" %}</label>
+                            <select name="product_image_ratio" class="form-select">
+                                <option value="1:1" {% if settings.product_image_ratio == '1:1' %}selected{% endif %}>1:1 (Square)</option>
+                                <option value="4:3" {% if settings.product_image_ratio == '4:3' %}selected{% endif %}>4:3 (Portrait)</option>
+                                <option value="3:4" {% if settings.product_image_ratio == '3:4' %}selected{% endif %}>3:4 (Landscape)</option>
+                                <option value="16:9" {% if settings.product_image_ratio == '16:9' %}selected{% endif %}>16:9 (Widescreen)</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Custom CSS" %}</label>
+                            <textarea name="custom_css" class="form-control" rows="10" placeholder="{% trans 'Add custom CSS code here.' %}">{{ settings.custom_css }}</textarea>
+                            <small class="text-muted">{% trans "This CSS will be applied to all pages." %}</small>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Custom JavaScript" %}</label>
+                            <textarea name="custom_js" class="form-control" rows="10" placeholder="{% trans 'Add custom JavaScript code here.' %}">{{ settings.custom_js }}</textarea>
+                            <small class="text-muted">{% trans "This JavaScript will be loaded on all pages." %}</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Enable Lazy Loading" %}</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="lazy_loading" id="lazyLoading" {% if settings.lazy_loading %}checked{% endif %}>
+                                <label class="form-check-label" for="lazyLoading">{% trans "Enable lazy loading for images" %}</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Enable Image Optimization" %}</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="image_optimization" id="imageOptimization" {% if settings.image_optimization %}checked{% endif %}>
+                                <label class="form-check-label" for="imageOptimization">{% trans "Enable automatic image optimization" %}</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Show Product Ratings" %}</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="show_ratings" id="showRatings" {% if settings.show_ratings %}checked{% endif %}>
+                                <label class="form-check-label" for="showRatings">{% trans "Display product ratings and reviews" %}</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Show Stock Status" %}</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="show_stock_status" id="showStockStatus" {% if settings.show_stock_status %}checked{% endif %}>
+                                <label class="form-check-label" for="showStockStatus">{% trans "Display product stock status" %}</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Show Price" %}</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="show_price" id="showPrice" {% if settings.show_price %}checked{% endif %}>
+                                <label class="form-check-label" for="showPrice">{% trans "Display product prices" %}</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Show Add to Cart Button" %}</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="show_add_to_cart" id="showAddToCart" {% if settings.show_add_to_cart %}checked{% endif %}>
+                                <label class="form-check-label" for="showAddToCart">{% trans "Display Add to Cart buttons" %}</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Social Media Settings -->
+        <div class="tab-pane fade" id="social">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Social Media Settings" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Social Links" %}</label>
+                            <div id="socialLinks">
+                                {% for link in settings.social_links %}
+                                <div class="row g-3 mb-3 social-link">
+                                    <div class="col-md-3">
+                                        <select name="social_network[]" class="form-select">
+                                            <option value="facebook" {% if link.network == 'facebook' %}selected{% endif %}>Facebook</option>
+                                            <option value="twitter" {% if link.network == 'twitter' %}selected{% endif %}>Twitter/X</option>
+                                            <option value="instagram" {% if link.network == 'instagram' %}selected{% endif %}>Instagram</option>
+                                            <option value="linkedin" {% if link.network == 'linkedin' %}selected{% endif %}>LinkedIn</option>
+                                            <option value="youtube" {% if link.network == 'youtube' %}selected{% endif %}>YouTube</option>
+                                            <option value="pinterest" {% if link.network == 'pinterest' %}selected{% endif %}>Pinterest</option>
+                                            <option value="tiktok" {% if link.network == 'tiktok' %}selected{% endif %}>TikTok</option>
+                                            <option value="whatsapp" {% if link.network == 'whatsapp' %}selected{% endif %}>WhatsApp</option>
+                                            <option value="telegram" {% if link.network == 'telegram' %}selected{% endif %}>Telegram</option>
+                                            <option value="snapchat" {% if link.network == 'snapchat' %}selected{% endif %}>Snapchat</option>
+                                            <option value="custom" {% if link.network == 'custom' %}selected{% endif %}>{% trans "Custom" %}</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="url" name="social_url[]" class="form-control" placeholder="{% trans 'URL' %}" value="{{ link.url }}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="text" name="social_title[]" class="form-control" placeholder="{% trans 'Title (optional)' %}" value="{{ link.title }}">
+                                    </div>
+                                    <div class="col-md-1">
+                                        <input type="text" name="social_icon[]" class="form-control" placeholder="{% trans 'Icon' %}" value="{{ link.icon }}">
+                                    </div>
+                                    <div class="col-auto">
+                                        <button type="button" class="btn btn-sm btn-danger" onclick="$(this).parent().parent().remove()">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                                {% if not settings.social_links %}
+                                <div class="row g-3 mb-3 social-link">
+                                    <div class="col-md-3">
+                                        <select name="social_network[]" class="form-select">
+                                            <option value="facebook">Facebook</option>
+                                            <option value="twitter">Twitter/X</option>
+                                            <option value="instagram">Instagram</option>
+                                            <option value="linkedin">LinkedIn</option>
+                                            <option value="youtube">YouTube</option>
+                                            <option value="pinterest">Pinterest</option>
+                                            <option value="tiktok">TikTok</option>
+                                            <option value="whatsapp">WhatsApp</option>
+                                            <option value="telegram">Telegram</option>
+                                            <option value="snapchat">Snapchat</option>
+                                            <option value="custom">{% trans "Custom" %}</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="url" name="social_url[]" class="form-control" placeholder="{% trans 'URL' %}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="text" name="social_title[]" class="form-control" placeholder="{% trans 'Title (optional)' %}">
+                                    </div>
+                                    <div class="col-md-1">
+                                        <input type="text" name="social_icon[]" class="form-control" placeholder="{% trans 'Icon' %}">
+                                    </div>
+                                    <div class="col-auto">
+                                        <button type="button" class="btn btn-sm btn-danger" onclick="$(this).parent().parent().remove()">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <button type="button" class="btn btn-sm btn-secondary mt-2" onclick="addSocialLink()">
+                                <i class="bi bi-plus me-1"></i> {% trans "Add Social Link" %}
+                            </button>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Social Sharing" %}</label>
+                            <div class="row">
+                                {% for network in social_networks %}
+                                <div class="col-md-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="social_sharing_{{ network.0 }}" id="socialSharing{{ forloop.counter0 }}" {% if network.0 in settings.social_sharing %}checked{% endif %}>
+                                        <label class="form-check-label" for="socialSharing{{ forloop.counter0 }}">{{ network.1 }}</label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Open Graph Settings" %}</label>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">{% trans "Default Image" %}</label>
+                                    <input type="file" name="og_image" class="form-control" accept="image/*">
+                                    <small class="text-muted">{% trans "Default image for social sharing. Recommended size: 1200x630px." %}</small>
+                                    {% if settings.og_image %}
+                                    <div class="mt-2">
+                                        <img src="{{ settings.og_image.url }}" alt="OG Image" class="img-thumbnail" style="max-height: 100px;">
+                                        <button type="button" class="btn btn-sm btn-danger" onclick="removeOGImage()">
+                                            <i class="bi bi-trash"></i> {% trans "Remove" %}
+                                        </button>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{% trans "Twitter Card" %}</label>
+                                    <select name="twitter_card" class="form-select">
+                                        <option value="summary" {% if settings.twitter_card == 'summary' %}selected{% endif %}>Summary</option>
+                                        <option value="summary_large_image" {% if settings.twitter_card == 'summary_large_image' %}selected{% endif %}>Summary Large Image</option>
+                                        <option value="player" {% if settings.twitter_card == 'player' %}selected{% endif %}>Player</option>
+                                        <option value="app" {% if settings.twitter_card == 'app' %}selected{% endif %}>App</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Maintenance Settings -->
+        <div class="tab-pane fade" id="maintenance">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Maintenance Settings" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Maintenance Mode" %}</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="maintenance_mode" id="maintenanceMode" {% if settings.maintenance_mode %}checked{% endif %}>
+                                <label class="form-check-label" for="maintenanceMode">{% trans "Enable maintenance mode" %}</label>
+                            </div>
+                            <small class="text-muted d-block">{% trans "When enabled, only admins can access the site." %}</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Maintenance Message" %}</label>
+                            <textarea name="maintenance_message" class="form-control" rows="3">{{ settings.maintenance_message }}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Maintenance Start" %}</label>
+                            <input type="datetime-local" name="maintenance_start" class="form-control" value="{{ settings.maintenance_start }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Maintenance End" %}</label>
+                            <input type="datetime-local" name="maintenance_end" class="form-control" value="{{ settings.maintenance_end }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Maintenance IP Whitelist" %}</label>
+                            <textarea name="maintenance_ips" class="form-control" rows="3" placeholder="{% trans 'One IP per line. These IPs can access the site during maintenance.' %}">{{ settings.maintenance_ips }}</textarea>
+                        </div>
+                        <div class="col-12">
+                            <hr>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Enable Cache" %}</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="cache_enabled" id="cacheEnabled" {% if settings.cache_enabled %}checked{% endif %}>
+                                <label class="form-check-label" for="cacheEnabled">{% trans "Enable caching for better performance" %}</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Cache Timeout" %}</label>
+                            <div class="input-group">
+                                <input type="number" name="cache_timeout" class="form-control" value="{{ settings.cache_timeout|default:3600 }}" min="0">
+                                <span class="input-group-text">{% trans "seconds" %}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Enable Compression" %}</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="compression_enabled" id="compressionEnabled" {% if settings.compression_enabled %}checked{% endif %}>
+                                <label class="form-check-label" for="compressionEnabled">{% trans "Enable GZIP compression" %}</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans "Enable Minification" %}</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="minification_enabled" id="minificationEnabled" {% if settings.minification_enabled %}checked{% endif %}>
+                                <label class="form-check-label" for="minificationEnabled">{% trans "Enable CSS/JS minification" %}</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <hr>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Backup Settings" %}</label>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">{% trans "Automatic Backups" %}</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="auto_backup" id="autoBackup" {% if settings.auto_backup %}checked{% endif %}>
+                                        <label class="form-check-label" for="autoBackup">{% trans "Enable automatic database backups" %}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{% trans "Backup Frequency" %}</label>
+                                    <select name="backup_frequency" class="form-select">
+                                        <option value="daily" {% if settings.backup_frequency == 'daily' %}selected{% endif %}>{% trans "Daily" %}</option>
+                                        <option value="weekly" {% if settings.backup_frequency == 'weekly' %}selected{% endif %}>{% trans "Weekly" %}</option>
+                                        <option value="monthly" {% if settings.backup_frequency == 'monthly' %}selected{% endif %}>{% trans "Monthly" %}</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{% trans "Backup Retention" %}</label>
+                                    <div class="input-group">
+                                        <input type="number" name="backup_retention" class="form-control" value="{{ settings.backup_retention|default:30 }}" min="1">
+                                        <span class="input-group-text">{% trans "days" %}</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{% trans "Backup Storage" %}</label>
+                                    <select name="backup_storage" class="form-select">
+                                        <option value="local" {% if settings.backup_storage == 'local' %}selected{% endif %}>{% trans "Local Server" %}</option>
+                                        <option value="s3" {% if settings.backup_storage == 's3' %}selected{% endif %}>Amazon S3</option>
+                                        <option value="dropbox" {% if settings.backup_storage == 'dropbox' %}selected{% endif %}>Dropbox</option>
+                                        <option value="google_drive" {% if settings.backup_storage == 'google_drive' %}selected{% endif %}>Google Drive</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <button type="button" class="btn btn-warning" onclick="createBackup()">
+                                <i class="bi bi-cloud-arrow-up me-1"></i> {% trans "Create Backup Now" %}
+                            </button>
+                            <button type="button" class="btn btn-info" onclick="restoreBackup()">
+                                <i class="bi bi-cloud-arrow-down me-1"></i> {% trans "Restore Backup" %}
+                            </button>
+                        </div>
+                        <div class="col-12">
+                            <hr>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Debug Mode" %}</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="debug_mode" id="debugMode" {% if settings.debug_mode %}checked{% endif %}>
+                                <label class="form-check-label" for="debugMode">{% trans "Enable debug mode for development" %}</label>
+                            </div>
+                            <small class="text-muted">{% trans "WARNING: Do not enable in production!" %}</small>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans "Environment" %}</label>
+                            <select name="environment" class="form-select">
+                                <option value="production" {% if settings.environment == 'production' %}selected{% endif %}>{% trans "Production" %}</option>
+                                <option value="staging" {% if settings.environment == 'staging' %}selected{% endif %}>{% trans "Staging" %}</option>
+                                <option value="development" {% if settings.environment == 'development' %}selected{% endif %}>{% trans "Development" %}</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <button type="button" class="btn btn-danger" onclick="clearCache()">
+                                <i class="bi bi-trash me-1"></i> {% trans "Clear Cache" %}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="text-end mt-4">
+        <button type="button" class="btn btn-secondary me-2" onclick="resetSettings()">
+            <i class="bi bi-arrow-clockwise me-1"></i> {% trans "Reset" %}
+        </button>
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check me-1"></i> {% trans "Save Settings" %}
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+// Theme preview
+$('#themeSelect').on('change', function() {
+    const themePath = $(this).find('option:selected').data('theme-path');
+    $('#themePreview').html('<p class="text-muted">Loading preview for: ' + $(this).val() + '...</p>');
+    
+    // Load theme preview via AJAX
+    $.get('/admin/theme/preview/' + themePath + '/', function(data) {
+        $('#themePreview').html(data);
+    }).fail(function() {
+        $('#themePreview').html('<p class="text-muted">Preview not available.</p>');
+    });
+});
+
+// Add shipping origin
+function addShippingOrigin() {
+    const html = `
+    <div class="row g-3 mb-3 shipping-origin">
+        <div class="col-md-4">
+            <input type="text" name="shipping_origin_name[]" class="form-control" placeholder="Name">
+        </div>
+        <div class="col-md-3">
+            <input type="text" name="shipping_origin_city[]" class="form-control" placeholder="City">
+        </div>
+        <div class="col-md-2">
+            <input type="text" name="shipping_origin_state[]" class="form-control" placeholder="State">
+        </div>
+        <div class="col-md-2">
+            <input type="text" name="shipping_origin_zip[]" class="form-control" placeholder="ZIP">
+        </div>
+        <div class="col-md-1">
+            <select name="shipping_origin_country[]" class="form-select">
+                {% for country in countries %}
+                <option value="{{ country.code }}">{{ country.code }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-auto">
+            <button type="button" class="btn btn-sm btn-danger" onclick="$(this).parent().parent().remove()">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    </div>
+    `;
+    $('#shippingOrigins').append(html);
+}
+
+// Add social link
+function addSocialLink() {
+    const html = `
+    <div class="row g-3 mb-3 social-link">
+        <div class="col-md-3">
+            <select name="social_network[]" class="form-select">
+                <option value="facebook">Facebook</option>
+                <option value="twitter">Twitter/X</option>
+                <option value="instagram">Instagram</option>
+                <option value="linkedin">LinkedIn</option>
+                <option value="youtube">YouTube</option>
+                <option value="pinterest">Pinterest</option>
+                <option value="tiktok">TikTok</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="telegram">Telegram</option>
+                <option value="snapchat">Snapchat</option>
+                <option value="custom">Custom</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <input type="url" name="social_url[]" class="form-control" placeholder="URL">
+        </div>
+        <div class="col-md-3">
+            <input type="text" name="social_title[]" class="form-control" placeholder="Title (optional)">
+        </div>
+        <div class="col-md-1">
+            <input type="text" name="social_icon[]" class="form-control" placeholder="Icon">
+        </div>
+        <div class="col-auto">
+            <button type="button" class="btn btn-sm btn-danger" onclick="$(this).parent().parent().remove()">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    </div>
+    `;
+    $('#socialLinks').append(html);
+}
+
+// Toggle restrictions
+$('#restrictByWeight').on('change', function() {
+    $('#weightRestriction').toggle($(this).is(':checked'));
+});
+
+$('#restrictByPrice').on('change', function() {
+    $('#priceRestriction').toggle($(this).is(':checked'));
+});
+
+// Send test email
+function sendTestEmail() {
+    const email = $('input[name="test_email"]').val();
+    if (!email) {
+        toastr.error('{% trans "Please enter a test email address." %}');
+        return;
+    }
+    
+    $.post('{% url "settings:send_test_email" %}', {
+        email: email,
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+    }, function(data) {
+        if (data.success) {
+            toastr.success('{% trans "Test email sent successfully!" %}');
+        } else {
+            toastr.error(data.error || '{% trans "Failed to send test email." %}');
+        }
+    });
+}
+
+// Save settings
+function saveSettings() {
+    const form = $('#settingsForm')[0];
+    const formData = new FormData(form);
+    
+    $.ajax({
+        url: '{% url "settings:save_settings" %}',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        beforeSend: function() {
+            toastr.info('{% trans "Saving settings..." %}');
+        },
+        success: function(data) {
+            if (data.success) {
+                toastr.success('{% trans "Settings saved successfully!" %}');
+                location.reload();
+            } else {
+                toastr.error(data.error || '{% trans "Failed to save settings." %}');
+            }
+        },
+        error: function(xhr) {
+            toastr.error('{% trans "An error occurred while saving settings." %}');
+            console.error(xhr.responseText);
+        }
+    });
+}
+
+// Reset settings
+function resetSettings() {
+    if (confirm('{% trans "Are you sure you want to reset all settings to default?" %}')) {
+        $.post('{% url "settings:reset_settings" %}', {
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                toastr.success('{% trans "Settings reset successfully!" %}');
+                location.reload();
+            } else {
+                toastr.error(data.error || '{% trans "Failed to reset settings." %}');
+            }
+        });
+    }
+}
+
+// Remove logo
+function removeLogo() {
+    if (confirm('{% trans "Are you sure you want to remove the logo?" %}')) {
+        $.post('{% url "settings:remove_logo" %}', {
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                toastr.error(data.error || '{% trans "Failed to remove logo." %}');
+            }
+        });
+    }
+}
+
+// Remove favicon
+function removeFavicon() {
+    if (confirm('{% trans "Are you sure you want to remove the favicon?" %}')) {
+        $.post('{% url "settings:remove_favicon" %}', {
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                toastr.error(data.error || '{% trans "Failed to remove favicon." %}');
+            }
+        });
+    }
+}
+
+// Remove OG image
+function removeOGImage() {
+    if (confirm('{% trans "Are you sure you want to remove the OG image?" %}')) {
+        $.post('{% url "settings:remove_og_image" %}', {
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                toastr.error(data.error || '{% trans "Failed to remove OG image." %}');
+            }
+        });
+    }
+}
+
+// Create backup
+function createBackup() {
+    if (confirm('{% trans "Are you sure you want to create a backup now?" %}')) {
+        $.post('{% url "settings:create_backup" %}', {
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                toastr.success('{% trans "Backup created successfully!" %}');
+            } else {
+                toastr.error(data.error || '{% trans "Failed to create backup." %}');
+            }
+        });
+    }
+}
+
+// Restore backup
+function restoreBackup() {
+    // This would typically open a modal to select which backup to restore
+    toastr.info('{% trans "Backup restore functionality would be implemented here." %}');
+}
+
+// Clear cache
+function clearCache() {
+    if (confirm('{% trans "Are you sure you want to clear all cache?" %}')) {
+        $.post('{% url "settings:clear_cache" %}', {
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                toastr.success('{% trans "Cache cleared successfully!" %}');
+            } else {
+                toastr.error(data.error || '{% trans "Failed to clear cache." %}');
+            }
+        });
+    }
+}
+
+// Form submission
+$('#settingsForm').on('submit', function(e) {
+    e.preventDefault();
+    saveSettings();
+});
+</script>
+{% endblock %}

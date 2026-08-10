@@ -1,0 +1,393 @@
+{% extends "admin_panel/admin_base.html" %}
+{% load i18n static %}
+
+{% block page_title %}{% trans "Brands" %}{% endblock %}
+{% block page_description %}{% trans "Manage product brands and manufacturers." %}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'products:brand_create' %}" class="btn btn-primary">
+    <i class="bi bi-plus me-1"></i> {% trans "Add Brand" %}
+</a>
+<a href="{% url 'products:export_brands' %}" class="btn btn-outline-primary">
+    <i class="bi bi-download me-1"></i> {% trans "Export" %}
+</a>
+{% endblock %}
+
+{% block main_content %}
+<!-- Stats -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-tags"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Total Brands" %}</h6>
+                        <h3 class="mb-0">{{ stats.total_brands }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-box-seam"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Products" %}</h6>
+                        <h3 class="mb-0">{{ stats.total_products }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-eye"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Featured" %}</h6>
+                        <h3 class="mb-0">{{ stats.featured_brands }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-star"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Top Rated" %}</h6>
+                        <h3 class="mb-0">{{ stats.top_rated_brands }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">{% trans "Search" %}</label>
+                <input type="text" name="q" class="form-control" placeholder="{% trans 'Brand name' %}" value="{{ request.GET.q }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">{% trans "Status" %}</label>
+                <select name="status" class="form-select">
+                    <option value="">{% trans "All Statuses" %}</option>
+                    <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>{% trans "Active" %}</option>
+                    <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>{% trans "Inactive" %}</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">{% trans "Featured" %}</label>
+                <select name="featured" class="form-select">
+                    <option value="">{% trans "All" %}</option>
+                    <option value="1" {% if request.GET.featured == '1' %}selected{% endif %}>{% trans "Featured Only" %}</option>
+                    <option value="0" {% if request.GET.featured == '0' %}selected{% endif %}>{% trans "Non-Featured" %}</option>
+                </select>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search me-1"></i> {% trans "Search" %}
+                </button>
+                <a href="{% url 'products:brand_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle me-1"></i> {% trans "Reset" %}
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Brands Table -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>
+                            <input type="checkbox" id="selectAllBrands">
+                        </th>
+                        <th>{% trans "Logo" %}</th>
+                        <th>{% trans "Brand" %}</th>
+                        <th>{% trans "Slug" %}</th>
+                        <th>{% trans "Products" %}</th>
+                        <th>{% trans "Rating" %}</th>
+                        <th>{% trans "Featured" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for brand in brands %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" name="selected[]" value="{{ brand.id }}">
+                        </td>
+                        <td>
+                            {% if brand.logo %}
+                            <img src="{{ brand.logo.url }}" alt="{{ brand.name }}" class="rounded" width="40" height="40" style="object-fit: contain;">
+                            {% else %}
+                            <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                <i class="bi bi-image text-muted"></i>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <h6 class="mb-0">{{ brand.name }}</h6>
+                            <small class="text-muted">{{ brand.description|truncatewords:5 }}</small>
+                        </td>
+                        <td><code>{{ brand.slug }}</code></td>
+                        <td>{{ brand.product_count }}</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-1">
+                                {% for i in "12345" %}
+                                <i class="bi bi-star{% if forloop.counter <= brand.rating %}-fill text-warning{% else %} text-muted{% endif %}"></i>
+                                {% endfor %}
+                            </div>
+                            <small class="text-muted">({{ brand.review_count }})</small>
+                        </td>
+                        <td>
+                            {% if brand.is_featured %}
+                            <span class="badge bg-success">{% trans "Yes" %}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{% trans "No" %}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge {% if brand.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                {% if brand.is_active %}{% trans "Active" %}{% else %}{% trans "Inactive" %}{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'products:brand_detail' slug=brand.slug %}">
+                                            <i class="bi bi-eye me-1"></i> {% trans "View" %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'products:brand_update' slug=brand.slug %}">
+                                            <i class="bi bi-pencil me-1"></i> {% trans "Edit" %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'products:product_list' %}?brand={{ brand.slug }}">
+                                            <i class="bi bi-box me-1"></i> {% trans "View Products" %}
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item toggle-brand-featured" data-brand-id="{{ brand.id }}" href="#">
+                                            <i class="bi {% if brand.is_featured %}bi-star-fill{% else %}bi-star{% endif %} me-1"></i>
+                                            {% if brand.is_featured %}{% trans "Unfeature" %}{% else %}{% trans "Feature" %}{% endif %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item {% if brand.is_active %}text-warning{% else %}text-success{% endif %} toggle-brand-status" 
+                                           data-brand-id="{{ brand.id }}" href="#">
+                                            <i class="bi {% if brand.is_active %}bi-eye-slash{% else %}bi-eye{% endif %} me-1"></i>
+                                            {% if brand.is_active %}{% trans "Deactivate" %}{% else %}{% trans "Activate" %}{% endif %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item text-danger delete-brand" data-brand-id="{{ brand.id }}" href="#">
+                                            <i class="bi bi-trash me-1"></i> {% trans "Delete" %}
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="card-footer bg-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <p class="mb-0 text-muted small">
+                    {% trans "Showing" %} {{ brands.start_index }} - {{ brands.end_index }} {% trans "of" %} {{ brands.paginator.count }} {% trans "brands" %}
+                </p>
+            </div>
+            <div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                        {% trans "Bulk Actions" %}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item bulk-brand-action" data-action="feature">{% trans "Feature" %}</a></li>
+                        <li><a class="dropdown-item bulk-brand-action" data-action="unfeature">{% trans "Unfeature" %}</a></li>
+                        <li><a class="dropdown-item bulk-brand-action" data-action="activate">{% trans "Activate" %}</a></li>
+                        <li><a class="dropdown-item bulk-brand-action" data-action="deactivate">{% trans "Deactivate" %}</a></li>
+                        <li><a class="dropdown-item bulk-brand-action" data-action="delete">{% trans "Delete" %}</a></li>
+                    </ul>
+                </div>
+                
+                {% if brands.paginator.num_pages > 1 %}
+                <nav aria-label="Page navigation" class="d-inline-block ms-2">
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if brands.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ brands.previous_page_number }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% for num in brands.paginator.page_range %}
+                            {% if brands.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > brands.number|add:'-3' and num < brands.number|add:'3' %}
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">{{ num }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                        {% if brands.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ brands.next_page_number }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+// Select all
+$('#selectAllBrands').on('change', function() {
+    $('input[name="selected[]"]').prop('checked', $(this).prop('checked'));
+});
+
+// Toggle featured
+$('.toggle-brand-featured').on('click', function(e) {
+    e.preventDefault();
+    const brandId = $(this).data('brand-id');
+    
+    $.post('{% url "products:toggle_brand_featured" %}', {
+        brand_id: brandId,
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+    }, function(data) {
+        if (data.success) {
+            location.reload();
+        } else {
+            toastr.error(data.error || '{% trans "Failed to update." %}');
+        }
+    });
+});
+
+// Toggle status
+$('.toggle-brand-status').on('click', function(e) {
+    e.preventDefault();
+    const brandId = $(this).data('brand-id');
+    
+    $.post('{% url "products:toggle_brand_status" %}', {
+        brand_id: brandId,
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+    }, function(data) {
+        if (data.success) {
+            location.reload();
+        } else {
+            toastr.error(data.error || '{% trans "Failed to update status." %}');
+        }
+    });
+});
+
+// Delete brand
+$('.delete-brand').on('click', function(e) {
+    e.preventDefault();
+    const brandId = $(this).data('brand-id');
+    
+    if (confirm('{% trans "Are you sure you want to delete this brand? All products will be unassigned." %}')) {
+        $.post('{% url "products:delete_brand" %}', {
+            brand_id: brandId,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                toastr.error(data.error || '{% trans "Failed to delete brand." %}');
+            }
+        });
+    }
+});
+
+// Bulk actions
+$('.bulk-brand-action').on('click', function(e) {
+    e.preventDefault();
+    const action = $(this).data('action');
+    const selected = [];
+    
+    $('input[name="selected[]"]:checked').each(function() {
+        selected.push($(this).val());
+    });
+    
+    if (selected.length === 0) {
+        toastr.error('{% trans "Please select at least one brand." %}');
+        return;
+    }
+    
+    let message = '';
+    switch(action) {
+        case 'feature': message = '{% trans "Feature selected brands?" %}'; break;
+        case 'unfeature': message = '{% trans "Unfeature selected brands?" %}'; break;
+        case 'activate': message = '{% trans "Activate selected brands?" %}'; break;
+        case 'deactivate': message = '{% trans "Deactivate selected brands?" %}'; break;
+        case 'delete': message = '{% trans "Delete selected brands? This cannot be undone." %}'; break;
+    }
+    
+    if (confirm(message)) {
+        $.post('{% url "products:bulk_brand_action" %}', {
+            action: action,
+            selected: selected,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                toastr.error(data.error || '{% trans "Failed to perform action." %}');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

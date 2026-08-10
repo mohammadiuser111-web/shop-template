@@ -1,0 +1,436 @@
+{% extends "admin_panel/admin_base.html" %}
+{% load i18n static %}
+
+{% block page_title %}{% trans "Shipping Methods" %}{% endblock %}
+{% block page_description %}{% trans "Manage shipping methods, zones, and rates." %}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'shipping:shipping_method_create' %}" class="btn btn-primary">
+    <i class="bi bi-plus me-1"></i> {% trans "Add Shipping Method" %}
+</a>
+{% endblock %}
+
+{% block main_content %}
+<!-- Stats -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-truck"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Total Methods" %}</h6>
+                        <h3 class="mb-0">{{ stats.total_methods }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Active" %}</h6>
+                        <h3 class="mb-0">{{ stats.active_methods }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-globe"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Zones" %}</h6>
+                        <h3 class="mb-0">{{ stats.total_zones }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-calculator"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Rate Types" %}</h6>
+                        <h3 class="mb-0">{{ stats.rate_types }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Search" %}</label>
+                <input type="text" name="q" class="form-control" placeholder="{% trans 'Method name' %}" value="{{ request.GET.q }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Status" %}</label>
+                <select name="status" class="form-select">
+                    <option value="">{% trans "All Statuses" %}</option>
+                    <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>{% trans "Active" %}</option>
+                    <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>{% trans "Inactive" %}</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Rate Type" %}</label>
+                <select name="rate_type" class="form-select">
+                    <option value="">{% trans "All Types" %}</option>
+                    <option value="fixed" {% if request.GET.rate_type == 'fixed' %}selected{% endif %}>{% trans "Fixed" %}</option>
+                    <option value="percentage" {% if request.GET.rate_type == 'percentage' %}selected{% endif %}>{% trans "Percentage" %}</option>
+                    <option value="weight" {% if request.GET.rate_type == 'weight' %}selected{% endif %}>{% trans "Weight Based" %}</option>
+                    <option value="price" {% if request.GET.rate_type == 'price' %}selected{% endif %}>{% trans "Price Based" %}</option>
+                    <option value="free" {% if request.GET.rate_type == 'free' %}selected{% endif %}>{% trans "Free" %}</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Zone" %}</label>
+                <select name="zone" class="form-select">
+                    <option value="">{% trans "All Zones" %}</option>
+                    {% for zone in zones %}
+                    <option value="{{ zone.id }}" {% if request.GET.zone|stringformat:"s" == zone.id|stringformat:"s" %}selected{% endif %}>{{ zone.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search me-1"></i> {% trans "Search" %}
+                </button>
+                <a href="{% url 'shipping:shipping_method_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle me-1"></i> {% trans "Reset" %}
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Shipping Methods Table -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>
+                            <input type="checkbox" id="selectAllShipping">
+                        </th>
+                        <th>{% trans "Name" %}</th>
+                        <th>{% trans "Code" %}</th>
+                        <th>{% trans "Rate Type" %}</th>
+                        <th>{% trans "Rate" %}</th>
+                        <th>{% trans "Zone" %}</th>
+                        <th>{% trans "Min/Max" %}</th>
+                        <th>{% trans "Processing Time" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for method in methods %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" name="selected[]" value="{{ method.id }}">
+                        </td>
+                        <td>
+                            <h6 class="mb-0">{{ method.name }}</h6>
+                            <small class="text-muted">{{ method.description|truncatewords:5 }}</small>
+                        </td>
+                        <td>
+                            <code>{{ method.code }}</code>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ method.get_rate_type_display|lower }}">
+                                {{ method.get_rate_type_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if method.rate_type == 'percentage' %}{{ method.rate }}%
+                            {% elif method.rate_type == 'fixed' %}${{ method.rate|floatformat:2 }}
+                            {% elif method.rate_type == 'free' %}{% trans "Free" %}
+                            {% else %}{% trans "Varies" %}{% endif %}
+                        </td>
+                        <td>
+                            {% if method.zone %}{{ method.zone.name }}{% else %}{% trans "All Zones" %}{% endif %}
+                        </td>
+                        <td>
+                            <small>
+                                {% if method.min_amount %}{% trans "Min" %}: ${{ method.min_amount|floatformat:2 }}<br>{% endif %}
+                                {% if method.max_amount %}{% trans "Max" %}: ${{ method.max_amount|floatformat:2 }}{% endif %}
+                                {% if not method.min_amount and not method.max_amount %}-{% endif %}
+                            </small>
+                        </td>
+                        <td>
+                            <small>{{ method.processing_time }} {% trans "days" %}</small>
+                        </td>
+                        <td>
+                            <span class="badge {% if method.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                {% if method.is_active %}{% trans "Active" %}{% else %}{% trans "Inactive" %}{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'shipping:shipping_method_detail' pk=method.id %}">
+                                            <i class="bi bi-eye me-1"></i> {% trans "View" %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'shipping:shipping_method_update' pk=method.id %}">
+                                            <i class="bi bi-pencil me-1"></i> {% trans "Edit" %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'shipping:shipping_zone_detail' pk=method.zone.id %}" {% if not method.zone %}style="display: none;"{% endif %}>
+                                            <i class="bi bi-geo me-1"></i> {% trans "Zone Details" %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'shipping:shipping_rate_list' %}?method={{ method.id }}">
+                                            <i class="bi bi-list me-1"></i> {% trans "Rates" %} ({{ method.rates.count }})
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item {% if method.is_active %}text-warning{% else %}text-success{% endif %} toggle-shipping-status" 
+                                           data-method-id="{{ method.id }}" href="#">
+                                            <i class="bi {% if method.is_active %}bi-eye-slash{% else %}bi-eye{% endif %} me-1"></i>
+                                            {% if method.is_active %}{% trans "Deactivate" %}{% else %}{% trans "Activate" %}{% endif %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item text-danger delete-shipping-method" data-method-id="{{ method.id }}" href="#">
+                                            <i class="bi bi-trash me-1"></i> {% trans "Delete" %}
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="card-footer bg-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <p class="mb-0 text-muted small">
+                    {% trans "Showing" %} {{ methods.start_index }} - {{ methods.end_index }} {% trans "of" %} {{ methods.paginator.count }} {% trans "methods" %}
+                </p>
+            </div>
+            <div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                        {% trans "Bulk Actions" %}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item bulk-shipping-action" data-action="activate">{% trans "Activate" %}</a></li>
+                        <li><a class="dropdown-item bulk-shipping-action" data-action="deactivate">{% trans "Deactivate" %}</a></li>
+                        <li><a class="dropdown-item bulk-shipping-action" data-action="delete">{% trans "Delete" %}</a></li>
+                    </ul>
+                </div>
+                
+                {% if methods.paginator.num_pages > 1 %}
+                <nav aria-label="Page navigation" class="d-inline-block ms-2">
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if methods.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ methods.previous_page_number }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% for num in methods.paginator.page_range %}
+                            {% if methods.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > methods.number|add:'-3' and num < methods.number|add:'3' %}
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">{{ num }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                        {% if methods.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ methods.next_page_number }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Shipping Zones Section -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">{% trans "Shipping Zones" %}</h5>
+    </div>
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <p class="text-muted small mb-0">{% trans "Define geographic regions for shipping methods." %}</p>
+            <a href="{% url 'shipping:shipping_zone_create' %}" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus me-1"></i> {% trans "Add Zone" %}
+            </a>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>{% trans "Name" %}</th>
+                        <th>{% trans "Countries" %}</th>
+                        <th>{% trans "States/Regions" %}</th>
+                        <th>{% trans "Postal Codes" %}</th>
+                        <th>{% trans "Methods" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for zone in zones %}
+                    <tr>
+                        <td>{{ zone.name }}</td>
+                        <td>
+                            <small>{{ zone.countries.count }} {% trans "countries" %}</small>
+                        </td>
+                        <td>
+                            <small>{{ zone.states.count }} {% trans "states/regions" %}</small>
+                        </td>
+                        <td>
+                            <small>{{ zone.postal_codes.count }} {% trans "postal codes" %}</small>
+                        </td>
+                        <td>
+                            <small>{{ zone.shipping_methods.count }} {% trans "methods" %}</small>
+                        </td>
+                        <td>
+                            <a href="{% url 'shipping:shipping_zone_detail' pk=zone.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye me-1"></i> {% trans "View" %}
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+// Select all
+$('#selectAllShipping').on('change', function() {
+    $('input[name="selected[]"]').prop('checked', $(this).prop('checked'));
+});
+
+// Toggle status
+$('.toggle-shipping-status').on('click', function(e) {
+    e.preventDefault();
+    const methodId = $(this).data('method-id');
+    
+    $.post('{% url "shipping:toggle_shipping_method_status" %}', {
+        method_id: methodId,
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+    }, function(data) {
+        if (data.success) {
+            location.reload();
+        } else {
+            toastr.error(data.error || '{% trans "Failed to update status." %}');
+        }
+    });
+});
+
+// Delete shipping method
+$('.delete-shipping-method').on('click', function(e) {
+    e.preventDefault();
+    const methodId = $(this).data('method-id');
+    
+    if (confirm('{% trans "Are you sure you want to delete this shipping method?" %}')) {
+        $.post('{% url "shipping:delete_shipping_method" %}', {
+            method_id: methodId,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                toastr.error(data.error || '{% trans "Failed to delete shipping method." %}');
+            }
+        });
+    }
+});
+
+// Bulk actions
+$('.bulk-shipping-action').on('click', function(e) {
+    e.preventDefault();
+    const action = $(this).data('action');
+    const selected = [];
+    
+    $('input[name="selected[]"]:checked').each(function() {
+        selected.push($(this).val());
+    });
+    
+    if (selected.length === 0) {
+        toastr.error('{% trans "Please select at least one shipping method." %}');
+        return;
+    }
+    
+    let message = '';
+    switch(action) {
+        case 'activate': message = '{% trans "Activate selected shipping methods?" %}'; break;
+        case 'deactivate': message = '{% trans "Deactivate selected shipping methods?" %}'; break;
+        case 'delete': message = '{% trans "Delete selected shipping methods? This cannot be undone." %}'; break;
+    }
+    
+    if (confirm(message)) {
+        $.post('{% url "shipping:bulk_shipping_method_action" %}', {
+            action: action,
+            selected: selected,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                toastr.error(data.error || '{% trans "Failed to perform action." %}');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

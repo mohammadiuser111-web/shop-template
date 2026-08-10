@@ -1,0 +1,659 @@
+{% extends "admin_panel/admin_base.html" %}
+{% load i18n static %}
+
+{% block page_title %}{% trans "Blog Management" %}{% endblock %}
+{% block page_description %}{% trans "Manage blog posts, categories, and comments." %}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'blog:post_create' %}" class="btn btn-primary">
+    <i class="bi bi-plus me-1"></i> {% trans "Add Post" %}
+</a>
+{% endblock %}
+
+{% block main_content %}
+<!-- Stats -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-file-text"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Total Posts" %}</h6>
+                        <h3 class="mb-0">{{ stats.total_posts }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-eye"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Published" %}</h6>
+                        <h3 class="mb-0">{{ stats.published_posts }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-chat-dots"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Comments" %}</h6>
+                        <h3 class="mb-0">{{ stats.total_comments }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-tags"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Categories" %}</h6>
+                        <h3 class="mb-0">{{ stats.total_categories }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Search" %}</label>
+                <input type="text" name="q" class="form-control" placeholder="{% trans 'Post title' %}" value="{{ request.GET.q }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Category" %}</label>
+                <select name="category" class="form-select">
+                    <option value="">{% trans "All Categories" %}</option>
+                    {% for category in categories %}
+                    <option value="{{ category.id }}" {% if request.GET.category|stringformat:"s" == category.id|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Status" %}</label>
+                <select name="status" class="form-select">
+                    <option value="">{% trans "All Statuses" %}</option>
+                    <option value="draft" {% if request.GET.status == 'draft' %}selected{% endif %}>{% trans "Draft" %}</option>
+                    <option value="published" {% if request.GET.status == 'published' %}selected{% endif %}>{% trans "Published" %}</option>
+                    <option value="scheduled" {% if request.GET.status == 'scheduled' %}selected{% endif %}>{% trans "Scheduled" %}</option>
+                    <option value="archived" {% if request.GET.status == 'archived' %}selected{% endif %}>{% trans "Archived" %}</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Author" %}</label>
+                <select name="author" class="form-select">
+                    <option value="">{% trans "All Authors" %}</option>
+                    {% for author in authors %}
+                    <option value="{{ author.id }}" {% if request.GET.author|stringformat:"s" == author.id|stringformat:"s" %}selected{% endif %}>{{ author.get_full_name|default:author.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search me-1"></i> {% trans "Search" %}
+                </button>
+                <a href="{% url 'blog:post_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle me-1"></i> {% trans "Reset" %}
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Posts Table -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>
+                            <input type="checkbox" id="selectAllPosts">
+                        </th>
+                        <th>{% trans "Title" %}</th>
+                        <th>{% trans "Category" %}</th>
+                        <th>{% trans "Author" %}</th>
+                        <th>{% trans "Comments" %}</th>
+                        <th>{% trans "Views" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Date" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for post in posts %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" name="selected[]" value="{{ post.id }}">
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if post.featured_image %}
+                                <img src="{{ post.featured_image.url }}" alt="" class="me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                {% else %}
+                                <div class="bg-secondary text-white rounded d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px;">
+                                    <i class="bi bi-image"></i>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-0">{{ post.title }}</h6>
+                                    <small class="text-muted">{{ post.slug }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if post.category %}
+                            <span class="badge bg-primary">{{ post.category.name }}</span>
+                            {% else %}-{% endif %}
+                        </td>
+                        <td>{{ post.author.get_full_name|default:post.author.username }}</td>
+                        <td>{{ post.comments.count }}</td>
+                        <td>{{ post.view_count }}</td>
+                        <td>
+                            <span class="badge bg-{{ post.get_status_display|lower }}">
+                                {{ post.get_status_display }}
+                            </span>
+                            {% if post.is_featured %}
+                            <br><span class="badge bg-warning text-dark mt-1">{% trans "Featured" %}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small>
+                                {{ post.published_at|date:"M d, Y"|default:post.created_at|date:"M d, Y" }}<br>
+                                {{ post.published_at|time:"H:i"|default:post.created_at|time:"H:i" }}
+                            </small>
+                        </td>
+                        <td>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'blog:post_detail' pk=post.id %}">
+                                            <i class="bi bi-eye me-1"></i> {% trans "View" %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'blog:post_update' pk=post.id %}">
+                                            <i class="bi bi-pencil me-1"></i> {% trans "Edit" %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'blog:comment_list' %}?post={{ post.id }}">
+                                            <i class="bi bi-chat me-1"></i> {% trans "Comments" %} ({{ post.comments.count }})
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item {% if post.is_featured %}text-warning{% else %}text-info{% endif %} toggle-featured" 
+                                           data-post-id="{{ post.id }}" href="#">
+                                            <i class="bi {% if post.is_featured %}bi-star-fill{% else %}bi-star{% endif %} me-1"></i>
+                                            {% if post.is_featured %}{% trans "Unfeature" %}{% else %}{% trans "Feature" %}{% endif %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item {% if post.status == 'published' %}text-warning{% else %}text-success{% endif %} toggle-post-status" 
+                                           data-post-id="{{ post.id }}" href="#">
+                                            <i class="bi {% if post.status == 'published' %}bi-eye-slash{% else %}bi-eye{% endif %} me-1"></i>
+                                            {% if post.status == 'published' %}{% trans "Unpublish" %}{% else %}{% trans "Publish" %}{% endif %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item text-danger delete-post" data-post-id="{{ post.id }}" href="#">
+                                            <i class="bi bi-trash me-1"></i> {% trans "Delete" %}
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="card-footer bg-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <p class="mb-0 text-muted small">
+                    {% trans "Showing" %} {{ posts.start_index }} - {{ posts.end_index }} {% trans "of" %} {{ posts.paginator.count }} {% trans "posts" %}
+                </p>
+            </div>
+            <div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                        {% trans "Bulk Actions" %}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item bulk-post-action" data-action="publish">{% trans "Publish" %}</a></li>
+                        <li><a class="dropdown-item bulk-post-action" data-action="unpublish">{% trans "Unpublish" %}</a></li>
+                        <li><a class="dropdown-item bulk-post-action" data-action="feature">{% trans "Feature" %}</a></li>
+                        <li><a class="dropdown-item bulk-post-action" data-action="unfeature">{% trans "Unfeature" %}</a></li>
+                        <li><a class="dropdown-item bulk-post-action" data-action="archive">{% trans "Archive" %}</a></li>
+                        <li><a class="dropdown-item bulk-post-action" data-action="delete">{% trans "Delete" %}</a></li>
+                    </ul>
+                </div>
+                
+                {% if posts.paginator.num_pages > 1 %}
+                <nav aria-label="Page navigation" class="d-inline-block ms-2">
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if posts.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ posts.previous_page_number }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% for num in posts.paginator.page_range %}
+                            {% if posts.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > posts.number|add:'-3' and num < posts.number|add:'3' %}
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">{{ num }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                        {% if posts.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ posts.next_page_number }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Categories Section -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">{% trans "Blog Categories" %}</h5>
+    </div>
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <p class="text-muted small mb-0">{% trans "Organize your blog posts into categories." %}</p>
+            <a href="{% url 'blog:category_create' %}" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus me-1"></i> {% trans "Add Category" %}
+            </a>
+        </div>
+        
+        <div class="row">
+            {% for category in categories %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h5 class="mb-1">{{ category.name }}</h5>
+                                <p class="text-muted small mb-0">{{ category.slug }}</p>
+                            </div>
+                            <span class="badge bg-{{ category.get_status_display|lower }}">{{ category.get_status_display }}</span>
+                        </div>
+                        <div class="mb-3">
+                            <p class="text-muted small mb-1">{% trans "Description" %}:</p>
+                            <p class="mb-0">{{ category.description|truncatechars:100 }}</p>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <p class="text-muted small mb-1">{% trans "Posts" %}:</p>
+                                <p class="mb-0">{{ category.posts.count }}</p>
+                            </div>
+                            <div>
+                                <p class="text-muted small mb-1">{% trans "Parent" %}:</p>
+                                <p class="mb-0">{{ category.parent.name|default:"-" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white">
+                        <a href="{% url 'blog:category_detail' pk=category.id %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye me-1"></i> {% trans "View" %}
+                        </a>
+                        <a href="{% url 'blog:category_update' pk=category.id %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-pencil me-1"></i> {% trans "Edit" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Tags Section -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">{% trans "Blog Tags" %}</h5>
+    </div>
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <p class="text-muted small mb-0">{% trans "Manage tags for your blog posts." %}</p>
+            <a href="{% url 'blog:tag_create' %}" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus me-1"></i> {% trans "Add Tag" %}
+            </a>
+        </div>
+        
+        <div class="d-flex flex-wrap gap-2">
+            {% for tag in tags %}
+            <div class="border rounded p-2">
+                <div class="d-flex align-items-center">
+                    <span class="badge bg-primary me-2">{{ tag.name }}</span>
+                    <small class="text-muted me-2">{{ tag.posts.count }} {% trans "posts" %}</small>
+                    <a href="{% url 'blog:tag_detail' pk=tag.id %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                    <a href="{% url 'blog:tag_update' pk=tag.id %}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <a class="btn btn-sm btn-outline-danger delete-tag" data-tag-id="{{ tag.id }}" href="#">
+                        <i class="bi bi-trash"></i>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Comments Section -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">{% trans "Recent Comments" %}</h5>
+    </div>
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <p class="text-muted small mb-0">{% trans "Latest comments on your blog posts." %}</p>
+            <a href="{% url 'blog:comment_list' %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-list me-1"></i> {% trans "View All" %}
+            </a>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>{% trans "Author" %}</th>
+                        <th>{% trans "Comment" %}</th>
+                        <th>{% trans "Post" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Date" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for comment in recent_comments %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if comment.author.avatar %}
+                                <img src="{{ comment.author.avatar.url }}" alt="" class="me-2 rounded-circle" style="width: 30px; height: 30px; object-fit: cover;">
+                                {% else %}
+                                <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                    <i class="bi bi-person"></i>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-0">{{ comment.author.get_full_name|default:comment.author.username }}</h6>
+                                    <small class="text-muted">{{ comment.author.email }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ comment.content|truncatechars:50 }}</td>
+                        <td>
+                            <a href="{% url 'blog:post_detail' pk=comment.post.id %}">{{ comment.post.title|truncatechars:30 }}</a>
+                        </td>
+                        <td>
+                            <span class="badge {% if comment.is_approved %}bg-success{% else %}bg-warning{% endif %}">
+                                {% if comment.is_approved %}{% trans "Approved" %}{% else %}{% trans "Pending" %}{% endif %}
+                            </span>
+                        </td>
+                        <td>{{ comment.created_at|date:"M d, Y H:i" }}</td>
+                        <td>
+                            <a href="{% url 'blog:comment_detail' pk=comment.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{% url 'blog:comment_update' pk=comment.id %}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a class="btn btn-sm btn-outline-danger delete-comment" data-comment-id="{{ comment.id }}" href="#">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Blog Settings Section -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">{% trans "Blog Settings" %}</h5>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">{% trans "Posts Per Page" %}</label>
+                    <input type="number" name="posts_per_page" class="form-control" value="{{ settings.blog_posts_per_page|default:10 }}" min="1">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{% trans "Enable Comments" %}</label>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="blog_comments_enabled" id="blogCommentsEnabled" {% if settings.blog_comments_enabled %}checked{% endif %}>
+                        <label class="form-check-label" for="blogCommentsEnabled">{% trans "Allow visitors to comment on posts" %}</label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{% trans "Comment Moderation" %}</label>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="blog_comment_moderation" id="blogCommentModeration" {% if settings.blog_comment_moderation %}checked{% endif %}>
+                        <label class="form-check-label" for="blogCommentModeration">{% trans "Require approval for new comments" %}</label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{% trans "Featured Image Required" %}</label>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="blog_featured_image_required" id="blogFeaturedImageRequired" {% if settings.blog_featured_image_required %}checked{% endif %}>
+                        <label class="form-check-label" for="blogFeaturedImageRequired">{% trans "Require featured image for posts" %}</label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{% trans "Excerpt Length" %}</label>
+                    <input type="number" name="blog_excerpt_length" class="form-control" value="{{ settings.blog_excerpt_length|default:150 }}" min="0">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{% trans "Related Posts Count" %}</label>
+                    <input type="number" name="blog_related_posts_count" class="form-control" value="{{ settings.blog_related_posts_count|default:3 }}" min="0">
+                </div>
+                <div class="col-12 text-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check me-1"></i> {% trans "Save Settings" %}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+// Select all
+$('#selectAllPosts').on('change', function() {
+    $('input[name="selected[]"]').prop('checked', $(this).prop('checked'));
+});
+
+// Toggle featured
+$('.toggle-featured').on('click', function(e) {
+    e.preventDefault();
+    const postId = $(this).data('post-id');
+    
+    $.post('{% url "blog:toggle_post_featured" %}', {
+        post_id: postId,
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+    }, function(data) {
+        if (data.success) {
+            location.reload();
+        } else {
+            toastr.error(data.error || '{% trans "Failed to update post." %}');
+        }
+    });
+});
+
+// Toggle post status
+$('.toggle-post-status').on('click', function(e) {
+    e.preventDefault();
+    const postId = $(this).data('post-id');
+    
+    $.post('{% url "blog:toggle_post_status" %}', {
+        post_id: postId,
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+    }, function(data) {
+        if (data.success) {
+            location.reload();
+        } else {
+            toastr.error(data.error || '{% trans "Failed to update post status." %}');
+        }
+    });
+});
+
+// Delete post
+$('.delete-post').on('click', function(e) {
+    e.preventDefault();
+    const postId = $(this).data('post-id');
+    
+    if (confirm('{% trans "Are you sure you want to delete this post?" %}')) {
+        $.post('{% url "blog:delete_post" %}', {
+            post_id: postId,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                toastr.error(data.error || '{% trans "Failed to delete post." %}');
+            }
+        });
+    }
+});
+
+// Delete tag
+$('.delete-tag').on('click', function(e) {
+    e.preventDefault();
+    const tagId = $(this).data('tag-id');
+    
+    if (confirm('{% trans "Are you sure you want to delete this tag?" %}')) {
+        $.post('{% url "blog:delete_tag" %}', {
+            tag_id: tagId,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                toastr.error(data.error || '{% trans "Failed to delete tag." %}');
+            }
+        });
+    }
+});
+
+// Delete comment
+$('.delete-comment').on('click', function(e) {
+    e.preventDefault();
+    const commentId = $(this).data('comment-id');
+    
+    if (confirm('{% trans "Are you sure you want to delete this comment?" %}')) {
+        $.post('{% url "blog:delete_comment" %}', {
+            comment_id: commentId,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                toastr.error(data.error || '{% trans "Failed to delete comment." %}');
+            }
+        });
+    }
+});
+
+// Bulk actions
+$('.bulk-post-action').on('click', function(e) {
+    e.preventDefault();
+    const action = $(this).data('action');
+    const selected = [];
+    
+    $('input[name="selected[]"]:checked').each(function() {
+        selected.push($(this).val());
+    });
+    
+    if (selected.length === 0) {
+        toastr.error('{% trans "Please select at least one post." %}');
+        return;
+    }
+    
+    let message = '';
+    switch(action) {
+        case 'publish': message = '{% trans "Publish selected posts?" %}'; break;
+        case 'unpublish': message = '{% trans "Unpublish selected posts?" %}'; break;
+        case 'feature': message = '{% trans "Feature selected posts?" %}'; break;
+        case 'unfeature': message = '{% trans "Unfeature selected posts?" %}'; break;
+        case 'archive': message = '{% trans "Archive selected posts?" %}'; break;
+        case 'delete': message = '{% trans "Delete selected posts? This cannot be undone." %}'; break;
+    }
+    
+    if (confirm(message)) {
+        $.post('{% url "blog:bulk_post_action" %}', {
+            action: action,
+            selected: selected,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                toastr.error(data.error || '{% trans "Failed to perform action." %}');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

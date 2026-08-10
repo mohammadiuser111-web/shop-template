@@ -1,0 +1,487 @@
+{% extends "admin_panel/admin_base.html" %}
+{% load i18n static %}
+
+{% block page_title %}{% trans "Payment Methods" %}{% endblock %}
+{% block page_description %}{% trans "Manage payment gateways and methods." %}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'payments:payment_method_create' %}" class="btn btn-primary">
+    <i class="bi bi-plus me-1"></i> {% trans "Add Payment Method" %}
+</a>
+{% endblock %}
+
+{% block main_content %}
+<!-- Stats -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-credit-card"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Total Methods" %}</h6>
+                        <h3 class="mb-0">{{ stats.total_methods }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Active" %}</h6>
+                        <h3 class="mb-0">{{ stats.active_methods }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-currency-dollar"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Total Payments" %}</h6>
+                        <h3 class="mb-0">{{ stats.total_payments }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-graph-up"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "This Month" %}</h6>
+                        <h3 class="mb-0">{{ stats.monthly_payments }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Search" %}</label>
+                <input type="text" name="q" class="form-control" placeholder="{% trans 'Method name' %}" value="{{ request.GET.q }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Status" %}</label>
+                <select name="status" class="form-select">
+                    <option value="">{% trans "All Statuses" %}</option>
+                    <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>{% trans "Active" %}</option>
+                    <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>{% trans "Inactive" %}</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Type" %}</label>
+                <select name="type" class="form-select">
+                    <option value="">{% trans "All Types" %}</option>
+                    <option value="gateway" {% if request.GET.type == 'gateway' %}selected{% endif %}>{% trans "Gateway" %}</option>
+                    <option value="manual" {% if request.GET.type == 'manual' %}selected{% endif %}>{% trans "Manual" %}</option>
+                    <option value="digital_wallet" {% if request.GET.type == 'digital_wallet' %}selected{% endif %}>{% trans "Digital Wallet" %}</option>
+                    <option value="bank_transfer" {% if request.GET.type == 'bank_transfer' %}selected{% endif %}>{% trans "Bank Transfer" %}</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Provider" %}</label>
+                <select name="provider" class="form-select">
+                    <option value="">{% trans "All Providers" %}</option>
+                    <option value="paypal" {% if request.GET.provider == 'paypal' %}selected{% endif %}>{% trans "PayPal" %}</option>
+                    <option value="stripe" {% if request.GET.provider == 'stripe' %}selected{% endif %}>{% trans "Stripe" %}</option>
+                    <option value="razorpay" {% if request.GET.provider == 'razorpay' %}selected{% endif %}>{% trans "Razorpay" %}</option>
+                    <option value="zarinpal" {% if request.GET.provider == 'zarinpal' %}selected{% endif %}>{% trans "Zarinpal" %}</option>
+                    <option value="manual" {% if request.GET.provider == 'manual' %}selected{% endif %}>{% trans "Manual" %}</option>
+                </select>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search me-1"></i> {% trans "Search" %}
+                </button>
+                <a href="{% url 'payments:payment_method_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle me-1"></i> {% trans "Reset" %}
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Payment Methods Table -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>
+                            <input type="checkbox" id="selectAllPayments">
+                        </th>
+                        <th>{% trans "Name" %}</th>
+                        <th>{% trans "Code" %}</th>
+                        <th>{% trans "Type" %}</th>
+                        <th>{% trans "Provider" %}</th>
+                        <th>{% trans "Fee" %}</th>
+                        <th>{% trans "Currencies" %}</th>
+                        <th>{% trans "Test Mode" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for method in methods %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" name="selected[]" value="{{ method.id }}">
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if method.icon %}
+                                <img src="{{ method.icon.url }}" alt="{{ method.name }}" class="me-2" style="width: 24px; height: 24px;">
+                                {% else %}
+                                <i class="bi bi-credit-card me-2 text-muted"></i>
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-0">{{ method.name }}</h6>
+                                    <small class="text-muted">{{ method.description|truncatewords:5 }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <code>{{ method.code }}</code>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ method.get_type_display|lower }}">
+                                {{ method.get_type_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">{{ method.get_provider_display }}</span>
+                        </td>
+                        <td>
+                            <small>
+                                {% if method.fee_type == 'percentage' %}{{ method.fee }}%
+                                {% elif method.fee_type == 'fixed' %}${{ method.fee|floatformat:2 }}
+                                {% else %}{% trans "Free" %}{% endif %}
+                            </small>
+                        </td>
+                        <td>
+                            <small>
+                                {% for currency in method.currencies.all %}{{ currency.code }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                                {% if not method.currencies.exists %}{% trans "All" %}{% endif %}
+                            </small>
+                        </td>
+                        <td>
+                            <span class="badge {% if method.test_mode %}bg-info{% else %}bg-secondary{% endif %}">
+                                {% if method.test_mode %}{% trans "Test" %}{% else %}{% trans "Live" %}{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge {% if method.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                {% if method.is_active %}{% trans "Active" %}{% else %}{% trans "Inactive" %}{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'payments:payment_method_detail' pk=method.id %}">
+                                            <i class="bi bi-eye me-1"></i> {% trans "View" %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'payments:payment_method_update' pk=method.id %}">
+                                            <i class="bi bi-pencil me-1"></i> {% trans "Edit" %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'payments:payment_list' %}?method={{ method.id }}">
+                                            <i class="bi bi-list me-1"></i> {% trans "Payments" %} ({{ method.payments.count }})
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'payments:payment_method_config' pk=method.id %}">
+                                            <i class="bi bi-gear me-1"></i> {% trans "Configure" %}
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item {% if method.is_active %}text-warning{% else %}text-success{% endif %} toggle-payment-status" 
+                                           data-method-id="{{ method.id }}" href="#">
+                                            <i class="bi {% if method.is_active %}bi-eye-slash{% else %}bi-eye{% endif %} me-1"></i>
+                                            {% if method.is_active %}{% trans "Deactivate" %}{% else %}{% trans "Activate" %}{% endif %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item {% if method.test_mode %}text-warning{% else %}text-info{% endif %} toggle-test-mode" 
+                                           data-method-id="{{ method.id }}" href="#">
+                                            <i class="bi {% if method.test_mode %}bi-toggle-on{% else %}bi-toggle-off{% endif %} me-1"></i>
+                                            {% if method.test_mode %}{% trans "Disable Test Mode" %}{% else %}{% trans "Enable Test Mode" %}{% endif %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item text-danger delete-payment-method" data-method-id="{{ method.id }}" href="#">
+                                            <i class="bi bi-trash me-1"></i> {% trans "Delete" %}
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="card-footer bg-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <p class="mb-0 text-muted small">
+                    {% trans "Showing" %} {{ methods.start_index }} - {{ methods.end_index }} {% trans "of" %} {{ methods.paginator.count }} {% trans "methods" %}
+                </p>
+            </div>
+            <div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                        {% trans "Bulk Actions" %}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item bulk-payment-action" data-action="activate">{% trans "Activate" %}</a></li>
+                        <li><a class="dropdown-item bulk-payment-action" data-action="deactivate">{% trans "Deactivate" %}</a></li>
+                        <li><a class="dropdown-item bulk-payment-action" data-action="enable_test">{% trans "Enable Test Mode" %}</a></li>
+                        <li><a class="dropdown-item bulk-payment-action" data-action="disable_test">{% trans "Disable Test Mode" %}</a></li>
+                        <li><a class="dropdown-item bulk-payment-action" data-action="delete">{% trans "Delete" %}</a></li>
+                    </ul>
+                </div>
+                
+                {% if methods.paginator.num_pages > 1 %}
+                <nav aria-label="Page navigation" class="d-inline-block ms-2">
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if methods.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ methods.previous_page_number }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% for num in methods.paginator.page_range %}
+                            {% if methods.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > methods.number|add:'-3' and num < methods.number|add:'3' %}
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">{{ num }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                        {% if methods.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ methods.next_page_number }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Payments Section -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">{% trans "Recent Payments" %}</h5>
+    </div>
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <p class="text-muted small mb-0">{% trans "Latest payment transactions." %}</p>
+            <a href="{% url 'payments:payment_list' %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-list me-1"></i> {% trans "View All" %}
+            </a>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>{% trans "ID" %}</th>
+                        <th>{% trans "Method" %}</th>
+                        <th>{% trans "Amount" %}</th>
+                        <th>{% trans "Currency" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Order" %}</th>
+                        <th>{% trans "Date" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in recent_payments %}
+                    <tr>
+                        <td>#{{ payment.id }}</td>
+                        <td>
+                            {% if payment.method.icon %}
+                            <img src="{{ payment.method.icon.url }}" alt="" class="me-1" style="width: 20px; height: 20px;">
+                            {% endif %}
+                            {{ payment.method.name }}
+                        </td>
+                        <td>${{ payment.amount|floatformat:2 }}</td>
+                        <td>{{ payment.currency }}</td>
+                        <td>
+                            <span class="badge bg-{{ payment.get_status_display|lower }}">
+                                {{ payment.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if payment.order %}
+                            <a href="{% url 'orders:order_detail' pk=payment.order.id %}">#{{ payment.order.order_number }}</a>
+                            {% else %}-{% endif %}
+                        </td>
+                        <td>
+                            <small>{{ payment.created_at|date:"M d, Y H:i" }}</small>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">
+                            {% trans "No recent payments found." %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+// Select all
+$('#selectAllPayments').on('change', function() {
+    $('input[name="selected[]"]').prop('checked', $(this).prop('checked'));
+});
+
+// Toggle status
+$('.toggle-payment-status').on('click', function(e) {
+    e.preventDefault();
+    const methodId = $(this).data('method-id');
+    
+    $.post('{% url "payments:toggle_payment_method_status" %}', {
+        method_id: methodId,
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+    }, function(data) {
+        if (data.success) {
+            location.reload();
+        } else {
+            toastr.error(data.error || '{% trans "Failed to update status." %}');
+        }
+    });
+});
+
+// Toggle test mode
+$('.toggle-test-mode').on('click', function(e) {
+    e.preventDefault();
+    const methodId = $(this).data('method-id');
+    
+    $.post('{% url "payments:toggle_test_mode" %}', {
+        method_id: methodId,
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+    }, function(data) {
+        if (data.success) {
+            location.reload();
+        } else {
+            toastr.error(data.error || '{% trans "Failed to update test mode." %}');
+        }
+    });
+});
+
+// Delete payment method
+$('.delete-payment-method').on('click', function(e) {
+    e.preventDefault();
+    const methodId = $(this).data('method-id');
+    
+    if (confirm('{% trans "Are you sure you want to delete this payment method?" %}')) {
+        $.post('{% url "payments:delete_payment_method" %}', {
+            method_id: methodId,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                toastr.error(data.error || '{% trans "Failed to delete payment method." %}');
+            }
+        });
+    }
+});
+
+// Bulk actions
+$('.bulk-payment-action').on('click', function(e) {
+    e.preventDefault();
+    const action = $(this).data('action');
+    const selected = [];
+    
+    $('input[name="selected[]"]:checked').each(function() {
+        selected.push($(this).val());
+    });
+    
+    if (selected.length === 0) {
+        toastr.error('{% trans "Please select at least one payment method." %}');
+        return;
+    }
+    
+    let message = '';
+    switch(action) {
+        case 'activate': message = '{% trans "Activate selected payment methods?" %}'; break;
+        case 'deactivate': message = '{% trans "Deactivate selected payment methods?" %}'; break;
+        case 'enable_test': message = '{% trans "Enable test mode for selected payment methods?" %}'; break;
+        case 'disable_test': message = '{% trans "Disable test mode for selected payment methods?" %}'; break;
+        case 'delete': message = '{% trans "Delete selected payment methods? This cannot be undone." %}'; break;
+    }
+    
+    if (confirm(message)) {
+        $.post('{% url "payments:bulk_payment_method_action" %}', {
+            action: action,
+            selected: selected,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                toastr.error(data.error || '{% trans "Failed to perform action." %}');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
