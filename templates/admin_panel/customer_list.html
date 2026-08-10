@@ -1,0 +1,411 @@
+{% extends "admin_panel/admin_base.html" %}
+{% load i18n static %}
+
+{% block page_title %}{% trans "Customers" %}{% endblock %}
+{% block page_description %}{% trans "Manage all customer accounts." %}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'accounts:user_create' %}" class="btn btn-primary">
+    <i class="bi bi-plus me-1"></i> {% trans "Add Customer" %}
+</a>
+<a href="{% url 'accounts:export_users' %}" class="btn btn-outline-primary">
+    <i class="bi bi-download me-1"></i> {% trans "Export" %}
+</a>
+{% endblock %}
+
+{% block main_content %}
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-people"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Total Customers" %}</h6>
+                        <h3 class="mb-0">{{ stats.total_customers }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-person-plus"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "New Today" %}</h6>
+                        <h3 class="mb-0">{{ stats.new_customers_today }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-person-check"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Active" %}</h6>
+                        <h3 class="mb-0">{{ stats.active_customers }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-person-x"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Inactive" %}</h6>
+                        <h3 class="mb-0">{{ stats.inactive_customers }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Search" %}</label>
+                <input type="text" name="q" class="form-control" placeholder="{% trans 'Name or email' %}" value="{{ request.GET.q }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Role" %}</label>
+                <select name="role" class="form-select">
+                    <option value="">{% trans "All Roles" %}</option>
+                    {% for role in user_roles %}
+                    <option value="{{ role.0 }}" {% if request.GET.role == role.0 %}selected{% endif %}>{{ role.1 }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Status" %}</label>
+                <select name="status" class="form-select">
+                    <option value="">{% trans "All Statuses" %}</option>
+                    <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>{% trans "Active" %}</option>
+                    <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>{% trans "Inactive" %}</option>
+                    <option value="banned" {% if request.GET.status == 'banned' %}selected{% endif %}>{% trans "Banned" %}</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">{% trans "Date Joined" %}</label>
+                <select name="date_joined" class="form-select">
+                    <option value="">{% trans "All Dates" %}</option>
+                    <option value="today" {% if request.GET.date_joined == 'today' %}selected{% endif %}>{% trans "Today" %}</option>
+                    <option value="this_week" {% if request.GET.date_joined == 'this_week' %}selected{% endif %}>{% trans "This Week" %}</option>
+                    <option value="this_month" {% if request.GET.date_joined == 'this_month' %}selected{% endif %}>{% trans "This Month" %}</option>
+                </select>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search me-1"></i> {% trans "Search" %}
+                </button>
+                <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle me-1"></i> {% trans "Reset" %}
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Customers Table -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>
+                            <input type="checkbox" id="selectAllCustomers">
+                        </th>
+                        <th>{% trans "Customer" %}</th>
+                        <th>{% trans "Email" %}</th>
+                        <th>{% trans "Phone" %}</th>
+                        <th>{% trans "Orders" %}</th>
+                        <th>{% trans "Total Spent" %}</th>
+                        <th>{% trans "Role" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Joined" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" name="selected[]" value="{{ user.id }}">
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0 me-2">
+                                    {% if user.profile_image %}
+                                    <img src="{{ user.profile_image.url }}" alt="{{ user.get_full_name }}" class="rounded-circle" width="40" height="40" style="object-fit: cover;">
+                                    {% else %}
+                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                        {{ user.get_full_name|slice:":1"|upper }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-0">{{ user.get_full_name|default:user.username }}</h6>
+                                    <small class="text-muted">{{ user.username }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.phone|default:"-" }}</td>
+                        <td>{{ user.orders.count }}</td>
+                        <td>${{ user.total_spent|default:0|floatformat:2 }}</td>
+                        <td>
+                            <span class="badge bg-{{ user.role }}">{{ user.get_role_display }}</span>
+                        </td>
+                        <td>
+                            <span class="badge {% if user.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                {% if user.is_active %}{% trans "Active" %}{% else %}{% trans "Inactive" %}{% endif %}
+                            </span>
+                        </td>
+                        <td>{{ user.date_joined|date:"M d, Y" }}</td>
+                        <td>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'accounts:user_detail' pk=user.id %}">
+                                            <i class="bi bi-eye me-1"></i> {% trans "View" %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'accounts:user_update' pk=user.id %}">
+                                            <i class="bi bi-pencil me-1"></i> {% trans "Edit" %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'orders:order_list' %}?user={{ user.id }}">
+                                            <i class="bi bi-cart me-1"></i> {% trans "View Orders" %}
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item {% if user.is_active %}text-warning{% else %}text-success{% endif %} toggle-status" data-user-id="{{ user.id }}" href="#">
+                                            <i class="bi {% if user.is_active %}bi-person-x{% else %}bi-person-check{% endif %} me-1"></i>
+                                            {% if user.is_active %}{% trans "Deactivate" %}{% else %}{% trans "Activate" %}{% endif %}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item text-danger delete-customer" data-user-id="{{ user.id }}" href="#">
+                                            <i class="bi bi-trash me-1"></i> {% trans "Delete" %}
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Card Footer -->
+    <div class="card-footer bg-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <p class="mb-0 text-muted small">
+                    {% trans "Showing" %} {{ users.start_index }} - {{ users.end_index }} {% trans "of" %} {{ users.paginator.count }} {% trans "customers" %}
+                </p>
+            </div>
+            <div>
+                <!-- Bulk Actions -->
+                <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                        {% trans "Bulk Actions" %}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <a class="dropdown-item bulk-customer-action" data-action="activate">
+                                <i class="bi bi-person-check me-1"></i> {% trans "Activate" %}
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item bulk-customer-action" data-action="deactivate">
+                                <i class="bi bi-person-x me-1"></i> {% trans "Deactivate" %}
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item bulk-customer-action" data-action="export_selected">
+                                <i class="bi bi-download me-1"></i> {% trans "Export Selected" %}
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item bulk-customer-action" data-action="delete">
+                                <i class="bi bi-trash me-1"></i> {% trans "Delete" %}
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Pagination -->
+                {% if users.paginator.num_pages > 1 %}
+                <nav aria-label="Page navigation" class="d-inline-block ms-2">
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if users.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ users.previous_page_number }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for num in users.paginator.page_range %}
+                            {% if users.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > users.number|add:'-3' and num < users.number|add:'3' %}
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">{{ num }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if users.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ users.next_page_number }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+// Select all checkboxes
+$('#selectAllCustomers').on('change', function() {
+    $('input[name="selected[]"]').prop('checked', $(this).prop('checked'));
+});
+
+// Toggle customer status
+$('.toggle-status').on('click', function(e) {
+    e.preventDefault();
+    const userId = $(this).data('user-id');
+    
+    $.post('{% url "accounts:toggle_user_status" %}', {
+        user_id: userId,
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+    }, function(data) {
+        if (data.success) {
+            location.reload();
+        } else {
+            toastr.error(data.error || '{% trans "Failed to toggle user status." %}');
+        }
+    });
+});
+
+// Delete customer
+$('.delete-customer').on('click', function(e) {
+    e.preventDefault();
+    const userId = $(this).data('user-id');
+    
+    if (confirm('{% trans "Are you sure you want to delete this customer? All their data will be removed." %}')) {
+        $.post('{% url "accounts:delete_user" %}', {
+            user_id: userId,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                toastr.error(data.error || '{% trans "Failed to delete customer." %}');
+            }
+        });
+    }
+});
+
+// Bulk actions
+$('.bulk-customer-action').on('click', function(e) {
+    e.preventDefault();
+    const action = $(this).data('action');
+    const selected = [];
+    
+    $('input[name="selected[]"]:checked').each(function() {
+        selected.push($(this).val());
+    });
+    
+    if (selected.length === 0) {
+        toastr.error('{% trans "Please select at least one customer." %}');
+        return;
+    }
+    
+    let message = '';
+    switch(action) {
+        case 'activate':
+            message = '{% trans "Are you sure you want to activate the selected customers?" %}';
+            break;
+        case 'deactivate':
+            message = '{% trans "Are you sure you want to deactivate the selected customers?" %}';
+            break;
+        case 'delete':
+            message = '{% trans "Are you sure you want to delete the selected customers? This action cannot be undone." %}';
+            break;
+        case 'export_selected':
+            exportSelectedCustomers(selected);
+            return;
+    }
+    
+    if (message && confirm(message)) {
+        $.post('{% url "accounts:bulk_user_action" %}', {
+            action: action,
+            selected: selected,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                toastr.error(data.error || '{% trans "Failed to perform bulk action." %}');
+            }
+        });
+    }
+});
+
+function exportSelectedCustomers(selected) {
+    const url = new URL('{% url "accounts:export_users" %}');
+    selected.forEach(function(id) {
+        url.searchParams.append('ids[]', id);
+    });
+    window.location.href = url.toString();
+}
+</script>
+{% endblock %}
