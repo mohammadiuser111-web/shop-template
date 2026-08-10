@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Page Not Found" %}{% endblock %}
+
+{% block content %}
+<!-- Main Content -->
+<div class="min-vh-100 d-flex align-items-center justify-content-center py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center">
+                <!-- Error Code -->
+                <div class="mb-4">
+                    <h1 class="display-1 fw-bold text-primary">404</h1>
+                </div>
+                
+                <!-- Error Message -->
+                <div class="mb-4">
+                    <h2 class="display-5 fw-bold">{% trans "Oops! Page Not Found" %}</h2>
+                    <p class="lead text-muted">{% trans "The page you're looking for doesn't exist or has been moved." %}</p>
+                </div>
+                
+                <!-- Illustration -->
+                <div class="mb-5">
+                    <img src="{% static 'images/404-illustration.svg' %}" alt="404 Illustration" class="img-fluid" style="max-height: 300px;">
+                </div>
+                
+                <!-- Actions -->
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="{% url 'home' %}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-house me-1"></i> {% trans "Go to Home" %}
+                    </a>
+                    <button onclick="history.back()" class="btn btn-outline-secondary btn-lg">
+                        <i class="bi bi-arrow-left me-1"></i> {% trans "Go Back" %}
+                    </button>
+                </div>
+                
+                <!-- Search -->
+                <div class="mt-5">
+                    <p class="text-muted mb-3">{% trans "Try searching for what you need" %}</p>
+                    <form method="get" action="{% url 'store:product_list' %}" class="d-flex justify-content-center gap-2">
+                        <input type="text" name="q" class="form-control form-control-lg" style="max-width: 400px;" placeholder="{% trans 'Search products...' %}">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+{{ block.super }}
+<style>
+.min-vh-100 {
+    min-height: 100vh;
+}
+</style>
+{% endblock %}

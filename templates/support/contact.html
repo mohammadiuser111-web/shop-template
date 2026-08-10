@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<div class="breadcrumb-wrapper">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{% trans "Contact Us" %}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- Contact Header -->
+<div class="py-5 bg-light">
+    <div class="container text-center">
+        <h1 class="display-4 fw-bold mb-3">{% trans "Contact Us" %}</h1>
+        <p class="lead text-muted max-w-800 mx-auto">{% trans "Have questions or need assistance? Our team is here to help you. Fill out the form below and we'll get back to you as soon as possible." %}</p>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Contact Form -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Contact Info -->
+                        <div class="col-lg-5 mb-4 mb-lg-0">
+                            <h3 class="h5 mb-4">{% trans "Get in Touch" %}</h3>
+                            
+                            <div class="d-flex align-items-start mb-4">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                        <i class="bi bi-geo-alt"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h5 class="mb-0">{% trans "Visit Us" %}</h5>
+                                    <p class="text-muted mb-0 small">
+                                        {% if site_settings.address %}
+                                        {{ site_settings.address }}
+                                        {% else %}
+                                        {% trans "123 Main Street, City, Country" %}
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-start mb-4">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                        <i class="bi bi-envelope"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h5 class="mb-0">{% trans "Email Us" %}</h5>
+                                    <p class="text-muted mb-0 small">
+                                        {% if site_settings.email %}
+                                        <a href="mailto:{{ site_settings.email }}" class="text-decoration-none">{{ site_settings.email }}</a>
+                                        {% else %}
+                                        <a href="mailto:info@example.com" class="text-decoration-none">{% trans "info@example.com" %}</a>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-start mb-4">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                        <i class="bi bi-telephone"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h5 class="mb-0">{% trans "Call Us" %}</h5>
+                                    <p class="text-muted mb-0 small">
+                                        {% if site_settings.phone %}
+                                        {{ site_settings.phone }}
+                                        {% else %}
+                                        {% trans "+1 (123) 456-7890" %}
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-start">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                        <i class="bi bi-clock"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h5 class="mb-0">{% trans "Business Hours" %}</h5>
+                                    <p class="text-muted mb-0 small">
+                                        {% if site_settings.business_hours %}
+                                        {{ site_settings.business_hours }}
+                                        {% else %}
+                                        {% trans "Monday - Friday: 9:00 AM - 6:00 PM" %}
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Social Media -->
+                            <div class="mt-4">
+                                <h5 class="mb-3">{% trans "Follow Us" %}</h5>
+                                <div class="d-flex gap-2">
+                                    {% if site_settings.facebook %}
+                                    <a href="{{ site_settings.facebook }}" class="btn btn-outline-primary">
+                                        <i class="bi bi-facebook"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if site_settings.twitter %}
+                                    <a href="{{ site_settings.twitter }}" class="btn btn-outline-info">
+                                        <i class="bi bi-twitter"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if site_settings.instagram %}
+                                    <a href="{{ site_settings.instagram }}" class="btn btn-outline-danger">
+                                        <i class="bi bi-instagram"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if site_settings.linkedin %}
+                                    <a href="{{ site_settings.linkedin }}" class="btn btn-outline-secondary">
+                                        <i class="bi bi-linkedin"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form -->
+                        <div class="col-lg-7">
+                            <h3 class="h5 mb-4">{% trans "Send Us a Message" %}</h3>
+                            
+                            <form method="post" id="contactForm">
+                                {% csrf_token %}
+                                
+                                {% if form.non_field_errors %}
+                                <div class="alert alert-danger mb-3">
+                                    {% for error in form.non_field_errors %}
+                                    <p class="mb-0">{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.name.id_for_label }}" class="form-label">{% trans "Name" %} <span class="text-danger">*</span></label>
+                                        {{ form.name }}
+                                        {% if form.name.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.name.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.email.id_for_label }}" class="form-label">{% trans "Email" %} <span class="text-danger">*</span></label>
+                                        {{ form.email }}
+                                        {% if form.email.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.email.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.phone.id_for_label }}" class="form-label">{% trans "Phone" %}</label>
+                                        {{ form.phone }}
+                                        {% if form.phone.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.phone.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.department.id_for_label }}" class="form-label">{% trans "Department" %}</label>
+                                        {{ form.department }}
+                                        {% if form.department.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.department.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.subject.id_for_label }}" class="form-label">{% trans "Subject" %} <span class="text-danger">*</span></label>
+                                    {{ form.subject }}
+                                    {% if form.subject.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.subject.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.message.id_for_label }}" class="form-label">{% trans "Message" %} <span class="text-danger">*</span></label>
+                                    {{ form.message }}
+                                    {% if form.message.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.message.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="bi bi-send me-1"></i> {% trans "Send Message" %}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Map (Optional) -->
+{% if site_settings.latitude and site_settings.longitude %}
+<div class="container pb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body p-0">
+                    <div id="contactMap" style="height: 400px; width: 100%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if site_settings.latitude and site_settings.longitude %}
+<script>
+function initMap() {
+    const map = L.map('contactMap').setView([{{ site_settings.latitude }}, {{ site_settings.longitude }}], 15);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+    
+    L.marker([{{ site_settings.latitude }}, {{ site_settings.longitude }}]).addTo(map)
+        .bindPopup('{{ site_settings.site_name|default:"Our Location" }}')
+        .openPopup();
+}
+
+// Load Leaflet library dynamically
+if (!window.L) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(link);
+    
+    $.getScript('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js', function() {
+        initMap();
+    });
+} else {
+    initMap();
+}
+</script>
+{% endif %}
+{% endblock %}

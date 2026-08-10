@@ -1,0 +1,414 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Admin Panel" %}{% endblock %}
+
+{% block body_class %}admin-panel{% endblock %}
+
+{% block content %}
+<!-- Admin Header -->
+<header class="admin-header bg-white border-bottom shadow-sm">
+    <div class="container-fluid">
+        <div class="d-flex align-items-center justify-content-between h-100">
+            <!-- Logo -->
+            <a href="{% url 'admin:index' %}" class="d-flex align-items-center text-decoration-none">
+                <div class="admin-logo bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; border-radius: 8px;">
+                    <i class="bi bi-shop"></i>
+                </div>
+                <div>
+                    <h5 class="mb-0 fw-bold">{% trans "Admin Panel" %}</h5>
+                    <small class="text-muted">{{ site_settings.site_name|default:"Shop Template" }}</small>
+                </div>
+            </a>
+
+            <!-- Search -->
+            <form method="get" action="{% url 'admin:index' %}" class="d-none d-md-block flex-grow-1 mx-4">
+                <div class="input-group">
+                    <input type="text" name="q" class="form-control" placeholder="{% trans 'Search...' %}">
+                    <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-search"></i></button>
+                </div>
+            </form>
+
+            <!-- User Menu -->
+            <div class="d-flex align-items-center gap-3">
+                <!-- Notifications -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary position-relative" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-bell"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge bg-danger rounded-pill" id="notificationBadge">
+                            0
+                            <span class="visually-hidden">{% trans "unread notifications" %}</span>
+                        </span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end p-0" style="width: 350px;">
+                        <div class="dropdown-header p-3">
+                            <h6 class="mb-0">{% trans "Notifications" %}</h6>
+                        </div>
+                        <div id="notificationsList" class="dropdown-body" style="max-height: 300px; overflow-y: auto;">
+                            <!-- Notifications will be loaded via AJAX -->
+                            <div class="text-center py-3">
+                                <i class="bi bi-inbox text-muted" style="font-size: 2rem;"></i>
+                                <p class="text-muted mb-0 small">{% trans "No new notifications" %}</p>
+                            </div>
+                        </div>
+                        <div class="dropdown-footer p-2 border-top">
+                            <a href="{% url 'notifications:notification_list' %}" class="btn btn-sm btn-outline-primary w-100">
+                                {% trans "View All Notifications" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Language -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-globe"></i> {{ request.LANGUAGE_CODE|upper }}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        {% for lang in LANGUAGES %}
+                        <li>
+                            <a class="dropdown-item" href="?language={{ lang.0 }}">
+                                {{ lang.1|title }} ({{ lang.0|upper }})
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- User -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary d-flex align-items-center" type="button" data-bs-toggle="dropdown">
+                        {% if user.profile_image %}
+                        <img src="{{ user.profile_image.url }}" alt="{{ user.get_full_name }}" class="rounded-circle me-2" width="30" height="30">
+                        {% else %}
+                        <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px; font-size: 0.8rem;">
+                            {{ user.get_full_name|slice:":1"|upper }}
+                        </div>
+                        {% endif %}
+                        <span>{{ user.get_full_name|default:user.username|truncatechars:15 }}</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{% url 'accounts:profile' %}"><i class="bi bi-person me-2"></i> {% trans "My Profile" %}</a></li>
+                        <li><a class="dropdown-item" href="{% url 'accounts:settings' %}"><i class="bi bi-gear me-2"></i> {% trans "Settings" %}</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'home' %}"><i class="bi bi-shop me-2"></i> {% trans "Visit Store" %}</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form method="post" action="{% url 'accounts:logout' %}">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item text-danger">
+                                    <i class="bi bi-box-arrow-right me-2"></i> {% trans "Logout" %}
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Main Content -->
+<div class="admin-main d-flex">
+    <!-- Sidebar -->
+    <aside class="admin-sidebar bg-dark text-white">
+        <div class="sidebar-header p-3 border-bottom">
+            <h6 class="mb-0 text-uppercase small">{% trans "Navigation" %}</h6>
+        </div>
+        <nav class="sidebar-nav flex-column">
+            <a href="{% url 'dashboard:dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard:dashboard' %}active{% endif %}">
+                <i class="bi bi-speedometer2 me-2"></i> {% trans "Dashboard" %}
+            </a>
+            
+            <!-- Orders -->
+            <div class="nav-section">
+                <h6 class="nav-section-title text-uppercase small text-muted mt-3 mb-1">{% trans "Orders" %}</h6>
+                <a href="{% url 'orders:order_list' %}" class="nav-link {% if request.resolver_match.url_name|stringformat:"s"|slice:":8" == 'orders:' %}active{% endif %}">
+                    <i class="bi bi-cart me-2"></i> {% trans "All Orders" %}
+                </a>
+                <a href="{% url 'orders:order_list' %}?status=pending" class="nav-link">
+                    <i class="bi bi-hourglass-split me-2"></i> {% trans "Pending" %}
+                    {% if stats.orders.pending > 0 %}
+                    <span class="badge bg-warning ms-auto">{{ stats.orders.pending }}</span>
+                    {% endif %}
+                </a>
+                <a href="{% url 'orders:order_list' %}?status=processing" class="nav-link">
+                    <i class="bi bi-arrow-repeat me-2"></i> {% trans "Processing" %}
+                </a>
+                <a href="{% url 'orders:order_list' %}?status=shipped" class="nav-link">
+                    <i class="bi bi-truck me-2"></i> {% trans "Shipped" %}
+                </a>
+            </div>
+
+            <!-- Products -->
+            <div class="nav-section">
+                <h6 class="nav-section-title text-uppercase small text-muted mt-3 mb-1">{% trans "Products" %}</h6>
+                <a href="{% url 'products:product_list' %}" class="nav-link {% if request.resolver_match.url_name|stringformat:"s"|slice:":10" == 'products:' %}active{% endif %}">
+                    <i class="bi bi-box me-2"></i> {% trans "All Products" %}
+                </a>
+                <a href="{% url 'products:category_list' %}" class="nav-link">
+                    <i class="bi bi-folder me-2"></i> {% trans "Categories" %}
+                </a>
+                <a href="{% url 'products:brand_list' %}" class="nav-link">
+                    <i class="bi bi-tags me-2"></i> {% trans "Brands" %}
+                </a>
+                <a href="{% url 'inventory:stock_list' %}" class="nav-link">
+                    <i class="bi bi-warehouse me-2"></i> {% trans "Inventory" %}
+                </a>
+            </div>
+
+            <!-- Customers -->
+            <div class="nav-section">
+                <h6 class="nav-section-title text-uppercase small text-muted mt-3 mb-1">{% trans "Customers" %}</h6>
+                <a href="{% url 'accounts:user_list' %}" class="nav-link {% if request.resolver_match.url_name|stringformat:"s"|slice:":8" == 'accounts:' %}active{% endif %}">
+                    <i class="bi bi-people me-2"></i> {% trans "All Customers" %}
+                </a>
+                <a href="{% url 'accounts:user_list' %}?role=customer" class="nav-link">
+                    <i class="bi bi-person me-2"></i> {% trans "Customers" %}
+                </a>
+                <a href="{% url 'accounts:user_list' %}?role=vendor" class="nav-link">
+                    <i class="bi bi-shop me-2"></i> {% trans "Vendors" %}
+                </a>
+            </div>
+
+            <!-- Marketing -->
+            <div class="nav-section">
+                <h6 class="nav-section-title text-uppercase small text-muted mt-3 mb-1">{% trans "Marketing" %}</h6>
+                <a href="{% url 'discounts:coupon_list' %}" class="nav-link">
+                    <i class="bi bi-percent me-2"></i> {% trans "Coupons" %}
+                </a>
+                <a href="{% url 'discounts:discount_list' %}" class="nav-link">
+                    <i class="bi bi-gift me-2"></i> {% trans "Discounts" %}
+                </a>
+                <a href="{% url 'ads:campaign_list' %}" class="nav-link">
+                    <i class="bi bi-megaphone me-2"></i> {% trans "Ad Campaigns" %}
+                </a>
+                <a href="{% url 'ads:ad_list' %}" class="nav-link">
+                    <i class="bi bi-image me-2"></i> {% trans "Ads" %}
+                </a>
+            </div>
+
+            <!-- Content -->
+            <div class="nav-section">
+                <h6 class="nav-section-title text-uppercase small text-muted mt-3 mb-1">{% trans "Content" %}</h6>
+                <a href="{% url 'blog:article_list' %}" class="nav-link">
+                    <i class="bi bi-file-text me-2"></i> {% trans "Blog" %}
+                </a>
+                <a href="{% url 'pages:page_list' %}" class="nav-link">
+                    <i class="bi bi-file-earmark me-2"></i> {% trans "Pages" %}
+                </a>
+                <a href="{% url 'reviews:product_reviews' product_slug='all' %}" class="nav-link">
+                    <i class="bi bi-star me-2"></i> {% trans "Reviews" %}
+                </a>
+            </div>
+
+            <!-- Support -->
+            <div class="nav-section">
+                <h6 class="nav-section-title text-uppercase small text-muted mt-3 mb-1">{% trans "Support" %}</h6>
+                <a href="{% url 'support:ticket_list' %}" class="nav-link">
+                    <i class="bi bi-ticket-perforated me-2"></i> {% trans "Tickets" %}
+                    {% if stats.support.open_tickets > 0 %}
+                    <span class="badge bg-danger ms-auto">{{ stats.support.open_tickets }}</span>
+                    {% endif %}
+                </a>
+                <a href="{% url 'support:faq_list' %}" class="nav-link">
+                    <i class="bi bi-question-circle me-2"></i> {% trans "FAQ" %}
+                </a>
+            </div>
+
+            <!-- Reports -->
+            <div class="nav-section">
+                <h6 class="nav-section-title text-uppercase small text-muted mt-3 mb-1">{% trans "Reports" %}</h6>
+                <a href="{% url 'dashboard:reports_dashboard' %}" class="nav-link">
+                    <i class="bi bi-graph-up me-2"></i> {% trans "Reports Dashboard" %}
+                </a>
+                <a href="{% url 'dashboard:sales_dashboard' %}" class="nav-link">
+                    <i class="bi bi-currency-dollar me-2"></i> {% trans "Sales" %}
+                </a>
+                <a href="{% url 'dashboard:products_dashboard' %}" class="nav-link">
+                    <i class="bi bi-box me-2"></i> {% trans "Products" %}
+                </a>
+                <a href="{% url 'dashboard:customers_dashboard' %}" class="nav-link">
+                    <i class="bi bi-people me-2"></i> {% trans "Customers" %}
+                </a>
+            </div>
+
+            <!-- Settings -->
+            <div class="nav-section">
+                <h6 class="nav-section-title text-uppercase small text-muted mt-3 mb-1">{% trans "Settings" %}</h6>
+                <a href="{% url 'core:site_settings' %}" class="nav-link">
+                    <i class="bi bi-gear me-2"></i> {% trans "Site Settings" %}
+                </a>
+                <a href="{% url 'core:theme_settings' %}" class="nav-link">
+                    <i class="bi bi-palette me-2"></i> {% trans "Theme" %}
+                </a>
+                <a href="{% url 'dashboard:payment_methods' %}" class="nav-link">
+                    <i class="bi bi-credit-card me-2"></i> {% trans "Payment Methods" %}
+                </a>
+                <a href="{% url 'shipping:shipping_methods' %}" class="nav-link">
+                    <i class="bi bi-truck me-2"></i> {% trans "Shipping Methods" %}
+                </a>
+                <a href="{% url 'dashboard:admin_note_list' %}" class="nav-link">
+                    <i class="bi bi-sticky me-2"></i> {% trans "Admin Notes" %}
+                </a>
+                <a href="{% url 'dashboard:system_log_list' %}" class="nav-link">
+                    <i class="bi bi-file-earmark-text me-2"></i> {% trans "System Logs" %}
+                </a>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- Content Area -->
+    <main class="admin-content flex-grow-1 p-4">
+        {% block admin_content %}{% endblock %}
+    </main>
+</div>
+
+<!-- Footer -->
+<footer class="admin-footer bg-white border-top py-3">
+    <div class="container-fluid">
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="text-muted small">
+                &copy; {{ now|date:"Y" }} {{ site_settings.site_name|default:"Shop Template" }}. 
+                {% trans "All rights reserved." %}
+            </div>
+            <div class="d-flex gap-3">
+                <a href="{% url 'home' %}" class="text-muted small text-decoration-none">{% trans "Visit Store" %}</a>
+                <a href="#" class="text-muted small text-decoration-none">{% trans "Documentation" %}</a>
+                <a href="#" class="text-muted small text-decoration-none">{% trans "Support" %}</a>
+            </div>
+        </div>
+    </div>
+</footer>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+// Load notifications
+function loadNotifications() {
+    $.get('{% url "notifications:get_recent_notifications_ajax" %}?limit=5', function(data) {
+        const notificationsList = $('#notificationsList');
+        const badge = $('#notificationBadge');
+        
+        if (data.notifications.length > 0) {
+            let html = '';
+            data.notifications.forEach(function(notification) {
+                html += `
+                    <a href="${notification.url || '{% url "notifications:notification_detail" 0 %}'.replace('0', notification.id)}" class="dropdown-item ${notification.is_read ? 'read' : 'unread'}">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="rounded-circle bg-light text-dark d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px;">
+                                    <i class="bi bi-bell-fill"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0 small">${notification.title}</h6>
+                                <p class="mb-0 text-muted extra-small">${notification.message}</p>
+                                <small class="text-muted extra-small">${notification.created_at}</small>
+                            </div>
+                        </div>
+                    </a>
+                `;
+            });
+            notificationsList.html(html);
+            
+            const unreadCount = data.notifications.filter(n => !n.is_read).length;
+            badge.text(unreadCount);
+            if (unreadCount > 0) {
+                badge.show();
+            } else {
+                badge.hide();
+            }
+        }
+    });
+}
+
+// Initial load
+loadNotifications();
+
+// Refresh every 30 seconds
+setInterval(loadNotifications, 30000);
+
+// Mark notification as read when clicked
+$(document).on('click', '.dropdown-item.unread', function() {
+    const notificationId = $(this).attr('href').split('/').pop();
+    $.post('{% url "notifications:mark_notification_read_ajax" 0 %}'.replace('0', notificationId), {
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+    }, function() {
+        loadNotifications();
+    });
+});
+
+// Sidebar toggle for mobile
+function toggleSidebar() {
+    $('.admin-sidebar').toggleClass('d-none');
+    $('.admin-main').toggleClass('sidebar-collapsed');
+}
+</script>
+{% endblock %}
+
+{% block styles %}
+{{ block.super }}
+<style>
+.admin-sidebar {
+    width: 280px;
+    min-height: 100vh;
+    transition: all 0.3s ease;
+}
+
+.admin-main {
+    transition: all 0.3s ease;
+}
+
+.admin-header {
+    height: 70px;
+}
+
+.nav-link {
+    padding: 12px 20px;
+    color: rgba(255, 255, 255, 0.8);
+    transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.nav-link.active {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    border-left: 3px solid #0d6efd;
+}
+
+.nav-section-title {
+    padding: 12px 20px;
+}
+
+@media (max-width: 992px) {
+    .admin-sidebar {
+        position: fixed;
+        left: -280px;
+        z-index: 1000;
+        height: 100vh;
+    }
+    
+    .admin-sidebar.d-block {
+        left: 0;
+    }
+    
+    .admin-main.sidebar-collapsed {
+        margin-left: 0;
+    }
+}
+
+.dropdown-item.unread {
+    background-color: rgba(13, 110, 253, 0.1);
+}
+
+.dropdown-item.read {
+    background-color: transparent;
+}
+</style>
+{% endblock %}

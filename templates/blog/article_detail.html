@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{{ article.title }}{% endblock %}
+{% block meta_title %}{{ meta_title }}{% endblock %}
+{% block meta_description %}{{ meta_description }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<div class="breadcrumb-wrapper">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'blog:article_list' %}">{% trans "Blog" %}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ article.title }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- Article Header -->
+<div class="py-5 bg-light">
+    <div class="container">
+        <article>
+            <header class="text-center mb-4">
+                {% if article.featured_image %}
+                <img src="{{ article.featured_image.url }}" alt="{{ article.title }}" class="img-fluid rounded shadow mb-4 max-height-500 w-100 object-fit-cover">
+                {% endif %}
+                
+                <div class="d-flex align-items-center justify-content-center mb-3">
+                    {% for category in article.categories.all %}
+                    <span class="badge bg-primary me-2">{{ category.name }}</span>
+                    {% endfor %}
+                </div>
+                
+                <h1 class="display-4 fw-bold mb-3">{{ article.title }}</h1>
+                
+                <div class="d-flex align-items-center justify-content-center text-muted">
+                    <div class="d-flex align-items-center me-4">
+                        {% if article.author %}
+                        {% if article.author.profile_image %}
+                        <img src="{{ article.author.profile_image.url }}" alt="{{ article.author.get_full_name }}" class="rounded-circle me-2" width="40" height="40">
+                        {% else %}
+                        <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px;">
+                            {{ article.author.get_full_name|slice:":1"|upper }}
+                        </div>
+                        {% endif %}
+                        <span>{{ article.get_author_name }}</span>
+                        {% else %}
+                        <span>{{ article.author_name }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="me-4">
+                        <i class="bi bi-calendar me-1"></i>
+                        {{ article.published_at|date:"M d, Y" }}
+                    </div>
+                    <div class="me-4">
+                        <i class="bi bi-eye me-1"></i>
+                        {{ article.view_count }} {% trans "views" %}
+                    </div>
+                    <div>
+                        <i class="bi bi-chat me-1"></i>
+                        {{ comments.count }} {% trans "comments" %}
+                    </div>
+                </div>
+            </header>
+        </article>
+    </div>
+</div>
+
+<!-- Article Content -->
+<div class="container py-5">
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <article class="prose max-w-none">
+                <!-- Excerpt -->
+                {% if article.excerpt %}
+                <div class="lead text-muted mb-4">{{ article.excerpt }}</div>
+                {% endif %}
+
+                <!-- Content -->
+                <div class="article-content mb-5">
+                    {{ article.content|safe }}
+                </div>
+
+                <!-- Tags -->
+                {% if article.tags.exists %}
+                <div class="mb-4">
+                    <h4 class="h6 mb-3">{% trans "Tags" %}</h4>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for tag in article.tags.all %}
+                        <a href="{% url 'blog:tag_detail' slug=tag.slug %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-tag me-1"></i> {{ tag.name }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Author Bio -->
+                {% if article.author %}
+                <div class="author-bio card mb-5">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            {% if article.author.profile_image %}
+                            <img src="{{ article.author.profile_image.url }}" alt="{{ article.author.get_full_name }}" class="rounded-circle me-3" width="80" height="80">
+                            {% else %}
+                            <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-3" style="width: 80px; height: 80px; font-size: 2rem;">
+                                {{ article.author.get_full_name|slice:":1"|upper }}
+                            </div>
+                            {% endif %}
+                            <div>
+                                <h5 class="mb-0">{{ article.get_author_name }}</h5>
+                                <small class="text-muted">{{ article.author.get_user_type_display }}</small>
+                            </div>
+                        </div>
+                        {% if article.author.bio %}
+                        <p class="mb-0">{{ article.author.bio }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Related Articles -->
+                {% if related_articles %}
+                <div class="related-articles mb-5">
+                    <h3 class="section-title mb-4">{% trans "Related Articles" %}</h3>
+                    <div class="row">
+                        {% for related in related_articles %}
+                        <div class="col-md-6 mb-4">
+                            <article class="card h-100 border-0 shadow-sm">
+                                {% if related.featured_image %}
+                                <img src="{{ related.featured_image.url }}" alt="{{ related.title }}" class="card-img-top">
+                                {% endif %}
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <small class="text-muted">{{ related.get_author_name }} &middot; {{ related.published_at|date:"M d, Y" }}</small>
+                                    </div>
+                                    <h5 class="card-title"><a href="{% url 'blog:article_detail' slug=related.slug %}" class="text-decoration-none">{{ related.title }}</a></h5>
+                                    <p class="card-text text-muted">{{ related.excerpt|truncatewords:15 }}</p>
+                                    <a href="{% url 'blog:article_detail' slug=related.slug %}" class="btn btn-sm btn-outline-primary">{% trans "Read More" %}</a>
+                                </div>
+                            </article>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Comments Section -->
+                <div class="comments-section">
+                    <h3 class="section-title mb-4">{% trans "Comments" %} ({{ comments.count }})</h3>
+
+                    <!-- Comment Form -->
+                    {% if user.is_authenticated %}
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">{% trans "Leave a Comment" %}</h5>
+                            <form method="post" action="{% url 'blog:add_comment' article.slug %}">
+                                {% csrf_token %}
+                                <div class="mb-3">
+                                    <textarea name="content" class="form-control" rows="4" placeholder="{% trans 'Share your thoughts...' %}" required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">{% trans "Post Comment" %}</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info mb-4">
+                        <i class="bi bi-info-circle me-2"></i>
+                        {% trans "Please" %} <a href="{% url 'accounts:login' %}">{% trans "log in" %}</a> {% trans "to post a comment." %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Comments List -->
+                    {% if comments %}
+                    <div class="comments-list">
+                        {% for comment in comments %}
+                        <div class="comment mb-4" id="comment-{{ comment.id }}">
+                            <div class="d-flex align-items-start">
+                                <div class="flex-shrink-0">
+                                    {% if comment.user %}
+                                    {% if comment.user.profile_image %}
+                                    <img src="{{ comment.user.profile_image.url }}" alt="{{ comment.get_author_name }}" class="rounded-circle" width="50" height="50">
+                                    {% else %}
+                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                        {{ comment.get_author_name|slice:":1"|upper }}
+                                    </div>
+                                    {% endif %}
+                                    {% else %}
+                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                        {{ comment.get_author_name|slice:":1"|upper }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <div class="comment-header d-flex align-items-center justify-content-between mb-2">
+                                        <div>
+                                            <h6 class="mb-0">{{ comment.get_author_name }}</h6>
+                                            <small class="text-muted">{{ comment.created_at|timesince }} {% trans "ago" %}</small>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-sm btn-outline-secondary helpful-btn" data-comment-id="{{ comment.id }}" data-rating="1">
+                                                <i class="bi bi-hand-thumbs-up"></i> <span>{{ comment.helpful_count }}</span>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-secondary helpful-btn" data-comment-id="{{ comment.id }}" data-rating="-1">
+                                                <i class="bi bi-hand-thumbs-down"></i> <span>{{ comment.not_helpful_count }}</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="comment-body mb-2">
+                                        <p class="mb-0">{{ comment.content }}</p>
+                                    </div>
+                                    
+                                    <!-- Replies -->
+                                    {% if comment.replies.exists %}
+                                    <div class="replies ms-4 mt-3">
+                                        {% for reply in comment.replies.all %}
+                                        <div class="reply mb-3">
+                                            <div class="d-flex align-items-start">
+                                                <div class="flex-shrink-0">
+                                                    {% if reply.user %}
+                                                    {% if reply.user.profile_image %}
+                                                    <img src="{{ reply.user.profile_image.url }}" alt="{{ reply.get_author_name }}" class="rounded-circle" width="40" height="40">
+                                                    {% else %}
+                                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; font-size: 0.8rem;">
+                                                        {{ reply.get_author_name|slice:":1"|upper }}
+                                                    </div>
+                                                    {% endif %}
+                                                    {% else %}
+                                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; font-size: 0.8rem;">
+                                                        {{ reply.get_author_name|slice:":1"|upper }}
+                                                    </div>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="flex-grow-1 ms-2">
+                                                    <div class="reply-header mb-1">
+                                                        <h6 class="mb-0 small">{{ reply.get_author_name }}</h6>
+                                                        <small class="text-muted extra-small">{{ reply.created_at|timesince }} {% trans "ago" %}</small>
+                                                    </div>
+                                                    <p class="mb-0 small">{{ reply.content }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">{% trans "No comments yet. Be the first to comment!" %}</div>
+                    {% endif %}
+                </div>
+            </article>
+        </div>
+
+        <!-- Sidebar -->
+        <aside class="col-lg-4">
+            <!-- Categories -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h3 class="h5 mb-0">{% trans "Categories" %}</h3>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        {% for category in categories %}
+                        <li class="mb-2">
+                            <a href="{% url 'blog:category_detail' slug=category.slug %}" class="text-decoration-none d-flex justify-content-between align-items-center {% if category == article.categories.first %}fw-bold{% endif %}">
+                                <span>{{ category.name }}</span>
+                                <span class="badge bg-light text-dark">{{ category.articles.count }}</span>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Tags -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h3 class="h5 mb-0">{% trans "Tags" %}</h3>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for tag in tags %}
+                        <a href="{% url 'blog:tag_detail' slug=tag.slug %}" class="btn btn-sm btn-outline-secondary {% if tag in article.tags.all %}active{% endif %}">
+                            {{ tag.name }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Share -->
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h3 class="h5 mb-0">{% trans "Share" %}</h3>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex gap-2">
+                        <a href="#" class="btn btn-outline-primary flex-grow-1">
+                            <i class="bi bi-facebook me-1"></i> Facebook
+                        </a>
+                        <a href="#" class="btn btn-outline-info flex-grow-1">
+                            <i class="bi bi-twitter me-1"></i> Twitter
+                        </a>
+                    </div>
+                    <div class="d-flex gap-2 mt-2">
+                        <a href="#" class="btn btn-outline-danger flex-grow-1">
+                            <i class="bi bi-google me-1"></i> Google+
+                        </a>
+                        <a href="#" class="btn btn-outline-secondary flex-grow-1">
+                            <i class="bi bi-envelope me-1"></i> Email
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Handle helpful/not helpful buttons
+$(document).on('click', '.helpful-btn', function() {
+    const commentId = $(this).data('comment-id');
+    const rating = $(this).data('rating');
+    const btn = $(this);
+    
+    $.post('{% url "blog:rate_comment" %}', {
+        comment_id: commentId,
+        rating: rating,
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+    }, function(response) {
+        if (response.success) {
+            // Update counts
+            const container = btn.closest('.comment-header').find('.d-flex.gap-2');
+            container.find('.helpful-btn').each(function() {
+                const r = $(this).data('rating');
+                if (r === 1) {
+                    $(this).find('span').text(response.helpful_count);
+                } else {
+                    $(this).find('span').text(response.not_helpful_count);
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

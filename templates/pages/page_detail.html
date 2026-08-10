@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{{ page.title }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<div class="breadcrumb-wrapper">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ page.title }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- Header -->
+<div class="py-5 bg-light">
+    <div class="container">
+        <h1 class="display-4 fw-bold mb-3">{{ page.title }}</h1>
+        {% if page.subtitle %}
+        <p class="lead text-muted">{{ page.subtitle }}</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <article class="page-content">
+                {{ page.content|safe }}
+            </article>
+        </div>
+    </div>
+</div>
+{% endblock %}

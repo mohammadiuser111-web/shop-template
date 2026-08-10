@@ -1,0 +1,81 @@
+<div class="card h-100 product-card">
+    <!-- Badges -->
+    <div class="position-absolute top-0 start-0 z-2">
+        {% if product.is_new %}
+        <span class="badge bg-success" style="border-radius: 0 0 8px 0;">{% trans "New" %}</span>
+        {% endif %}
+        {% if product.is_featured %}
+        <span class="badge bg-warning text-dark" style="border-radius: 0 0 8px 0; margin-top: 25px;">{% trans "Featured" %}</span>
+        {% endif %}
+        {% if product.is_on_sale %}
+        <span class="badge bg-danger" style="border-radius: 0 0 8px 0; margin-top: 50px;">{% trans "Sale" %}</span>
+        {% endif %}
+    </div>
+    
+    <!-- Wishlist -->
+    <button class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 z-2 mt-2 me-2 wishlist-toggle" data-product-id="{{ product.id }}">
+        <i class="bi {% if product in request.user.wishlist.products.all %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+    </button>
+    
+    <!-- Image -->
+    <a href="{{ product.get_absolute_url }}" class="product-image-wrapper">
+        {% if product.main_image %}
+        <img src="{{ product.main_image.url }}" alt="{{ product.name }}" class="card-img-top product-image" style="height: 200px; object-fit: cover;">
+        {% else %}
+        <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+            <i class="bi bi-image text-muted" style="font-size: 2rem;"></i>
+        </div>
+        {% endif %}
+    </a>
+    
+    <!-- Quick Actions -->
+    <div class="product-quick-actions position-absolute bottom-0 start-0 end-0 p-2 bg-white" style="transform: translateY(100%); transition: transform 0.3s;">
+        <div class="d-flex justify-content-center gap-2">
+            <button class="btn btn-sm btn-primary quick-add-to-cart" data-product-id="{{ product.id }}">
+                <i class="bi bi-cart-plus me-1"></i> {% trans "Add to Cart" %}
+            </button>
+            <a href="{{ product.get_absolute_url }}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-eye me-1"></i> {% trans "Quick View" %}
+            </a>
+        </div>
+    </div>
+    
+    <div class="card-body">
+        <!-- Category -->
+        <div class="text-muted small mb-1">
+            {% for category in product.categories.all|slice:":1" %}
+            <a href="{{ category.get_absolute_url }}" class="text-decoration-none">{{ category.name }}</a>
+            {% endfor %}
+        </div>
+        
+        <!-- Name -->
+        <h3 class="h6 mb-2">
+            <a href="{{ product.get_absolute_url }}" class="text-decoration-none">{{ product.name }}</a>
+        </h3>
+        
+        <!-- Rating -->
+        <div class="d-flex align-items-center gap-1 mb-2">
+            <div class="d-flex gap-1">
+                {% for i in "12345" %}
+                <i class="bi bi-star{% if forloop.counter <= product.rating %}-fill text-warning{% else %} text-muted{% endif %}"></i>
+                {% endfor %}
+            </div>
+            <small class="text-muted">({{ product.review_count }})</small>
+        </div>
+        
+        <!-- Price -->
+        <div class="d-flex align-items-center gap-2 mb-3">
+            {% if product.is_on_sale %}
+            <span class="text-muted text-decoration-line-through">${{ product.regular_price|floatformat:2 }}</span>
+            <span class="fw-bold text-danger">${{ product.sale_price|floatformat:2 }}</span>
+            {% else %}
+            <span class="fw-bold">${{ product.price|floatformat:2 }}</span>
+            {% endif %}
+        </div>
+        
+        <!-- Stock -->
+        {% if not product.is_in_stock %}
+        <div class="text-danger small">{% trans "Out of Stock" %}</div>
+        {% endif %}
+    </div>
+</div>

@@ -1,0 +1,380 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<div class="breadcrumb-wrapper">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+                {% if category %}
+                {% for ancestor in category.get_ancestors %}
+                <li class="breadcrumb-item"><a href="{{ ancestor.get_absolute_url }}">{{ ancestor.name }}</a></li>
+                {% endfor %}
+                <li class="breadcrumb-item active" aria-current="page">{{ category.name }}</li>
+                {% elif tag %}
+                <li class="breadcrumb-item"><a href="{% url 'store:product_list' %}">{% trans "Shop" %}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ tag.name }}</li>
+                {% elif brand %}
+                <li class="breadcrumb-item"><a href="{% url 'store:product_list' %}">{% trans "Shop" %}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ brand.name }}</li>
+                {% else %}
+                <li class="breadcrumb-item active" aria-current="page">{% trans "Shop" %}</li>
+                {% endif %}
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- Header -->
+<div class="py-5 bg-light">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                {% if category %}
+                <h1 class="display-4 fw-bold mb-3">{{ category.name }}</h1>
+                <p class="lead text-muted">{{ category.description|truncatewords:20 }}</p>
+                {% elif tag %}
+                <h1 class="display-4 fw-bold mb-3">{% trans "Tag" %}: {{ tag.name }}</h1>
+                <p class="lead text-muted">{{ tag.description|truncatewords:20 }}</p>
+                {% elif brand %}
+                <h1 class="display-4 fw-bold mb-3">{{ brand.name }}</h1>
+                <p class="lead text-muted">{{ brand.description|truncatewords:20 }}</p>
+                {% else %}
+                <h1 class="display-4 fw-bold mb-3">{% trans "Our Products" %}</h1>
+                <p class="lead text-muted">{% trans "Discover our amazing collection of products." %}</p>
+                {% endif %}
+            </div>
+            <div class="col-lg-6 text-lg-end">
+                <!-- Sort Options -->
+                <div class="d-flex align-items-center justify-content-lg-end gap-2 mb-3 mb-lg-0">
+                    <span class="text-muted small">{% trans "Sort by" %}:</span>
+                    <form method="get" class="d-flex gap-2">
+                        <input type="hidden" name="q" value="{{ request.GET.q }}">
+                        <input type="hidden" name="category" value="{{ request.GET.category }}">
+                        <input type="hidden" name="tag" value="{{ request.GET.tag }}">
+                        <input type="hidden" name="brand" value="{{ request.GET.brand }}">
+                        <input type="hidden" name="min_price" value="{{ request.GET.min_price }}">
+                        <input type="hidden" name="max_price" value="{{ request.GET.max_price }}">
+                        <select name="sort" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="">{% trans "Default" %}</option>
+                            <option value="price_asc" {% if request.GET.sort == 'price_asc' %}selected{% endif %}>{% trans "Price: Low to High" %}</option>
+                            <option value="price_desc" {% if request.GET.sort == 'price_desc' %}selected{% endif %}>{% trans "Price: High to Low" %}</option>
+                            <option value="newest" {% if request.GET.sort == 'newest' %}selected{% endif %}>{% trans "Newest First" %}</option>
+                            <option value="oldest" {% if request.GET.sort == 'oldest' %}selected{% endif %}>{% trans "Oldest First" %}</option>
+                            <option value="name_asc" {% if request.GET.sort == 'name_asc' %}selected{% endif %}>{% trans "Name: A-Z" %}</option>
+                            <option value="name_desc" {% if request.GET.sort == 'name_desc' %}selected{% endif %}>{% trans "Name: Z-A" %}</option>
+                            <option value="rating" {% if request.GET.sort == 'rating' %}selected{% endif %}>{% trans "Top Rated" %}</option>
+                            <option value="popular" {% if request.GET.sort == 'popular' %}selected{% endif %}>{% trans "Most Popular" %}</option>
+                        </select>
+                    </form>
+                </div>
+                
+                <!-- View Toggle -->
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-secondary {% if view_mode == 'grid' %}active{% endif %}" id="gridView">
+                        <i class="bi bi-grid"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary {% if view_mode == 'list' %}active{% endif %}" id="listView">
+                        <i class="bi bi-list"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="container py-5">
+    <div class="row">
+        <!-- Sidebar Filters -->
+        <div class="col-lg-3 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <!-- Search -->
+                    <form method="get" class="mb-4">
+                        <div class="input-group">
+                            <input type="text" name="q" class="form-control" placeholder="{% trans 'Search products...' %}" value="{{ request.GET.q }}">
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i></button>
+                        </div>
+                    </form>
+
+                    <!-- Categories -->
+                    <div class="mb-4">
+                        <h5 class="mb-3">{% trans "Categories" %}</h5>
+                        <div class="d-flex flex-column gap-1">
+                            <a href="{% url 'store:product_list' %}" class="btn btn-outline-{{ not category and not request.GET.q and not request.GET.tag and not request.GET.brand|yesno:'primary,secondary' }} btn-sm">
+                                {% trans "All Categories" %}
+                            </a>
+                            {% for c in categories %}
+                            <a href="{{ c.get_absolute_url }}" class="btn btn-outline-{{ c.id == category.id|yesno:'primary,secondary' }} btn-sm text-start">
+                                {{ c.name }} ({{ c.product_count }})
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Price Range -->
+                    <div class="mb-4">
+                        <h5 class="mb-3">{% trans "Price Range" %}</h5>
+                        <form method="get" id="priceRangeForm">
+                            <input type="hidden" name="q" value="{{ request.GET.q }}">
+                            <input type="hidden" name="category" value="{{ request.GET.category }}">
+                            <input type="hidden" name="tag" value="{{ request.GET.tag }}">
+                            <input type="hidden" name="brand" value="{{ request.GET.brand }}">
+                            <input type="hidden" name="sort" value="{{ request.GET.sort }}">
+                            <div class="d-flex gap-2 mb-2">
+                                <div class="flex-grow-1">
+                                    <label for="minPrice" class="form-label small">{% trans "Min" %}</label>
+                                    <input type="number" id="minPrice" name="min_price" class="form-control form-control-sm" value="{{ request.GET.min_price }}" placeholder="0">
+                                </div>
+                                <div class="flex-grow-1">
+                                    <label for="maxPrice" class="form-label small">{% trans "Max" %}</label>
+                                    <input type="number" id="maxPrice" name="max_price" class="form-control form-control-sm" value="{{ request.GET.max_price }}" placeholder="1000">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-sm w-100">{% trans "Apply" %}</button>
+                        </form>
+                    </div>
+
+                    <!-- Brands -->
+                    <div class="mb-4">
+                        <h5 class="mb-3">{% trans "Brands" %}</h5>
+                        <div class="form-check">
+                            <input type="radio" name="brand_filter" id="allBrands" class="form-check-input" {% if not request.GET.brand %}checked{% endif %}>
+                            <label for="allBrands" class="form-check-label">{% trans "All Brands" %}</label>
+                        </div>
+                        {% for brand_item in brands %}
+                        <div class="form-check">
+                            <input type="radio" name="brand_filter" id="brand{{ brand_item.id }}" class="form-check-input" {% if request.GET.brand == brand_item.slug %}checked{% endif %}>
+                            <label for="brand{{ brand_item.id }}" class="form-check-label">{{ brand_item.name }} ({{ brand_item.product_count }})</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Tags -->
+                    <div class="mb-4">
+                        <h5 class="mb-3">{% trans "Popular Tags" %}</h5>
+                        <div class="d-flex flex-wrap gap-1">
+                            {% for tag_item in popular_tags %}
+                            <a href="{% url 'store:product_list' %}?tag={{ tag_item.slug }}" class="btn btn-outline-{{ tag_item.slug == tag.slug|yesno:'primary,secondary' }} btn-sm">
+                                {{ tag_item.name }}
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Rating Filter -->
+                    <div class="mb-4">
+                        <h5 class="mb-3">{% trans "Rating" %}</h5>
+                        {% for i in "54321" %}
+                        <div class="form-check">
+                            <input type="radio" name="rating" id="rating{{ i }}" class="form-check-input" {% if request.GET.rating == i %}checked{% endif %}>
+                            <label for="rating{{ i }}" class="form-check-label">
+                                <div class="d-flex align-items-center gap-1">
+                                    {% for j in "12345" %}
+                                    <i class="bi bi-star{% if forloop.counter <= i %}-fill text-warning{% else %} text-muted{% endif %}"></i>
+                                    {% endfor %}
+                                    <span class="ms-2">& Up</span>
+                                </div>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Availability -->
+                    <div class="mb-4">
+                        <h5 class="mb-3">{% trans "Availability" %}</h5>
+                        <div class="form-check">
+                            <input type="radio" name="availability" id="allAvailability" class="form-check-input" {% if request.GET.in_stock != '1' %}checked{% endif %}>
+                            <label for="allAvailability" class="form-check-label">{% trans "All" %}</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="radio" name="availability" id="inStock" class="form-check-input" {% if request.GET.in_stock == '1' %}checked{% endif %}>
+                            <label for="inStock" class="form-check-label">{% trans "In Stock Only" %}</label>
+                        </div>
+                    </div>
+
+                    <!-- Reset Filters -->
+                    <div class="mb-4">
+                        <a href="{% url 'store:product_list' %}" class="btn btn-outline-danger w-100">
+                            <i class="bi bi-x-circle me-1"></i> {% trans "Reset Filters" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products -->
+        <div class="col-lg-9">
+            <!-- Results Count -->
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <p class="mb-0 text-muted">
+                    {% trans "Showing" %} {{ products.start_index }} - {{ products.end_index }} {% trans "of" %} {{ products.paginator.count }} {% trans "products" %}
+                </p>
+                
+                <!-- Pagination Top -->
+                {% if products.paginator.num_pages > 1 %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if products.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ products.previous_page_number }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for num in products.paginator.page_range %}
+                            {% if products.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > products.number|add:'-3' and num < products.number|add:'3' %}
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">{{ num }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if products.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ products.next_page_number }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+
+            <!-- Products Grid/List -->
+            <div id="productsContainer">
+                {% if view_mode == 'list' %}
+                {% include "store/_product_list.html" with products=products %}
+                {% else %}
+                {% include "store/_product_grid.html" with products=products %}
+                {% endif %}
+            </div>
+
+            <!-- No Products -->
+            {% if not products %}
+            <div class="text-center py-5">
+                <div class="mb-3">
+                    <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+                </div>
+                <h3 class="mb-2">{% trans "No products found" %}</h3>
+                <p class="text-muted mb-4">{% trans "Try adjusting your search or filters." %}</p>
+                <a href="{% url 'store:product_list' %}" class="btn btn-primary">
+                    <i class="bi bi-arrow-left me-1"></i> {% trans "Back to Shop" %}
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- Pagination Bottom -->
+            {% if products.paginator.num_pages > 1 %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if products.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ products.previous_page_number }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">
+                            {% trans "Previous" %}
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in products.paginator.page_range %}
+                        {% if products.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                        {% elif num > products.number|add:'-3' and num < products.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">{{ num }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if products.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ products.next_page_number }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">
+                            {% trans "Next" %}
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+// View mode toggle
+$('#gridView, #listView').on('click', function() {
+    const mode = $(this).attr('id') === 'gridView' ? 'grid' : 'list';
+    
+    $.get('{% url "store:product_list" %}?view=' + mode + '{% for key, value in request.GET.items %}{% ifnotequal key 'view' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}', function(data) {
+        $('#productsContainer').html(
+            mode === 'grid' ? $(data).find('#productGridTemplate').html() : $(data).find('#productListTemplate').html()
+        );
+    });
+    
+    // Update active state
+    $('#gridView, #listView').removeClass('active');
+    $(this).addClass('active');
+});
+
+// Brand filter
+$('input[name="brand_filter"]').on('change', function() {
+    const brandSlug = $(this).attr('id').replace('brand', '');
+    const url = new URL(window.location.href);
+    
+    if (brandSlug) {
+        url.searchParams.set('brand', brandSlug);
+    } else {
+        url.searchParams.delete('brand');
+    }
+    
+    window.location.href = url.toString();
+});
+
+// Rating filter
+$('input[name="rating"]').on('change', function() {
+    const rating = $(this).val();
+    const url = new URL(window.location.href);
+    
+    if (rating) {
+        url.searchParams.set('rating', rating);
+    } else {
+        url.searchParams.delete('rating');
+    }
+    
+    window.location.href = url.toString();
+});
+
+// Availability filter
+$('input[name="availability"]').on('change', function() {
+    const inStock = $(this).attr('id') === 'inStock' ? '1' : '';
+    const url = new URL(window.location.href);
+    
+    if (inStock) {
+        url.searchParams.set('in_stock', inStock);
+    } else {
+        url.searchParams.delete('in_stock');
+    }
+    
+    window.location.href = url.toString();
+});
+
+// Price range form submission
+$('#priceRangeForm').on('submit', function(e) {
+    const minPrice = $('#minPrice').val();
+    const maxPrice = $('#maxPrice').val();
+    
+    if (minPrice && maxPrice && parseFloat(minPrice) > parseFloat(maxPrice)) {
+        e.preventDefault();
+        alert('{% trans "Minimum price cannot be greater than maximum price." %}');
+    }
+});
+</script>
+{% endblock %}

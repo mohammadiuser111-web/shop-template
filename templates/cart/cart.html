@@ -1,0 +1,496 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Shopping Cart" %}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<div class="breadcrumb-wrapper">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{% trans "Shopping Cart" %}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- Header -->
+<div class="py-5 bg-light">
+    <div class="container">
+        <h1 class="display-4 fw-bold mb-3">{% trans "Shopping Cart" %}</h1>
+        <p class="lead text-muted">{% trans "Review your items and proceed to checkout." %}</p>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="container py-5">
+    {% if cart.items %}
+    <div class="row">
+        <!-- Cart Items -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>{% trans "Product" %}</th>
+                                    <th>{% trans "Price" %}</th>
+                                    <th>{% trans "Quantity" %}</th>
+                                    <th>{% trans "Subtotal" %}</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in cart.items %}
+                                <tr class="cart-item" data-cart-item-id="{{ item.id }}">
+                                    <!-- Product -->
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-shrink-0 me-3">
+                                                {% if item.product.main_image %}
+                                                <img src="{{ item.product.main_image.url }}" alt="{{ item.product.name }}" class="rounded" width="60" height="60" style="object-fit: cover;">
+                                                {% else %}
+                                                <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                                    <i class="bi bi-image text-muted"></i>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-0">{{ item.product.name }}</h6>
+                                                <small class="text-muted">{{ item.variant_name if item.variant_name else '' }}</small>
+                                                <div class="d-flex flex-wrap gap-1 mt-1">
+                                                    {% for attribute in item.variant_attributes %}
+                                                    <span class="badge bg-light text-dark">{{ attribute.name }}: {{ attribute.value }}</span>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <!-- Price -->
+                                    <td>
+                                        {% if item.product.is_on_sale %}
+                                        <span class="text-muted text-decoration-line-through">${{ item.product.regular_price|floatformat:2 }}</span>
+                                        <span class="fw-bold text-danger">${{ item.product.sale_price|floatformat:2 }}</span>
+                                        {% else %}
+                                        <span class="fw-bold">${{ item.product.price|floatformat:2 }}</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Quantity -->
+                                    <td>
+                                        <div class="input-group input-group-sm" style="width: 120px;">
+                                            <button type="button" class="btn btn-outline-secondary update-quantity minus" data-cart-item-id="{{ item.id }}">-</button>
+                                            <input type="number" value="{{ item.quantity }}" min="1" max="{{ item.product.stock_quantity }}" class="form-control text-center quantity-input" data-cart-item-id="{{ item.id }}">
+                                            <button type="button" class="btn btn-outline-secondary update-quantity plus" data-cart-item-id="{{ item.id }}">+</button>
+                                        </div>
+                                    </td>
+
+                                    <!-- Subtotal -->
+                                    <td class="subtotal">${{ item.total|floatformat:2 }}</td>
+
+                                    <!-- Remove -->
+                                    <td class="text-end">
+                                        <button type="button" class="btn btn-sm btn-outline-danger remove-item" data-cart-item-id="{{ item.id }}">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Cart Footer -->
+                <div class="card-footer bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{% url 'store:product_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i> {% trans "Continue Shopping" %}
+                        </a>
+                        <button type="button" class="btn btn-outline-danger clear-cart">
+                            <i class="bi bi-trash me-1"></i> {% trans "Clear Cart" %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coupon Code -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">{% trans "Coupon Code" %}</h5>
+                    <form method="post" id="couponForm">
+                        {% csrf_token %}
+                        <div class="input-group">
+                            <input type="text" name="coupon_code" class="form-control" placeholder="{% trans 'Enter coupon code' %}">
+                            <button type="submit" class="btn btn-primary">{% trans "Apply" %}</button>
+                        </div>
+                    </form>
+                    
+                    {% if cart.coupon %}
+                    <div class="mt-3">
+                        <div class="alert alert-success mb-0">
+                            <i class="bi bi-check-circle me-2"></i>
+                            {% trans "Coupon" %} "{{ cart.coupon.code }}" {% trans "applied successfully!" %}
+                            <button type="button" class="btn btn-sm btn-outline-danger float-end remove-coupon" data-coupon-id="{{ cart.coupon.id }}">
+                                <i class="bi bi-trash me-1"></i> {% trans "Remove" %}
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Cart Notes -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">{% trans "Order Notes" %}</h5>
+                    <form method="post" id="cartNotesForm">
+                        {% csrf_token %}
+                        <textarea name="notes" class="form-control" rows="3" placeholder="{% trans 'Add special instructions for your order...' %}">{{ cart.notes }}</textarea>
+                        <button type="submit" class="btn btn-primary mt-2">{% trans "Save Notes" %}</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cart Summary -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h3 class="h5 mb-0">{% trans "Cart Summary" %}</h3>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>{% trans "Subtotal" %}:</span>
+                        <span>${{ cart.subtotal|floatformat:2 }}</span>
+                    </div>
+                    
+                    {% if cart.discount_amount > 0 %}
+                    <div class="d-flex justify-content-between mb-2 text-success">
+                        <span>{% trans "Discount" %} ({{ cart.coupon.code }}):</span>
+                        <span>- ${{ cart.discount_amount|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if cart.shipping_cost > 0 %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>{% trans "Shipping" %}:</span>
+                        <span>${{ cart.shipping_cost|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if cart.tax_amount > 0 %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>{% trans "Tax" %}:</span>
+                        <span>${{ cart.tax_amount|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <hr class="my-3">
+                    
+                    <div class="d-flex justify-content-between fw-bold h4 mb-4">
+                        <span>{% trans "Total" %}:</span>
+                        <span>${{ cart.total|floatformat:2 }}</span>
+                    </div>
+
+                    <!-- Proceed to Checkout -->
+                    <a href="{% url 'checkout:checkout' %}" class="btn btn-primary btn-lg w-100">
+                        <i class="bi bi-arrow-right me-1"></i> {% trans "Proceed to Checkout" %}
+                    </a>
+
+                    <!-- Payment Options -->
+                    <div class="mt-4">
+                        <h6 class="mb-3">{% trans "Accepted Payment Methods" %}</h6>
+                        <div class="d-flex flex-wrap gap-2">
+                            <i class="bi bi-credit-card text-primary" style="font-size: 1.5rem;"></i>
+                            <i class="bi bi-paypal text-primary" style="font-size: 1.5rem;"></i>
+                            <i class="bi bi-apple-pay text-primary" style="font-size: 1.5rem;"></i>
+                            <i class="bi bi-google-pay text-primary" style="font-size: 1.5rem;"></i>
+                        </div>
+                    </div>
+
+                    <!-- Trust Badges -->
+                    <div class="mt-4">
+                        <div class="d-flex flex-wrap gap-2">
+                            <img src="{% static 'images/trust-badge-1.png' %}" alt="Trust Badge" class="img-fluid" height="30">
+                            <img src="{% static 'images/trust-badge-2.png' %}" alt="Trust Badge" class="img-fluid" height="30">
+                            <img src="{% static 'images/trust-badge-3.png' %}" alt="Trust Badge" class="img-fluid" height="30">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estimated Shipping -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">{% trans "Estimate Shipping" %}</h5>
+                    <form method="post" id="shippingEstimateForm">
+                        {% csrf_token %}
+                        <div class="mb-2">
+                            <label for="country" class="form-label small">{% trans "Country" %}</label>
+                            <select id="country" name="country" class="form-select form-select-sm">
+                                <option value="">{% trans "Select Country" %}</option>
+                                {% for country in countries %}
+                                <option value="{{ country.code }}">{{ country.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-2">
+                            <label for="state" class="form-label small">{% trans "State/Province" %}</label>
+                            <select id="state" name="state" class="form-select form-select-sm">
+                                <option value="">{% trans "Select State" %}</option>
+                            </select>
+                        </div>
+                        <div class="mb-2">
+                            <label for="postal_code" class="form-label small">{% trans "Postal/Zip Code" %}</label>
+                            <input type="text" id="postal_code" name="postal_code" class="form-control form-control-sm">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm w-100">{% trans "Calculate" %}</button>
+                    </form>
+                    
+                    <div id="shippingEstimateResult" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Empty Cart -->
+    <div class="text-center py-5">
+        <div class="mb-4">
+            <i class="bi bi-cart-x text-muted" style="font-size: 5rem;"></i>
+        </div>
+        <h2 class="mb-2">{% trans "Your Cart is Empty" %}</h2>
+        <p class="text-muted mb-4">{% trans "Looks like you haven't added anything to your cart yet." %}</p>
+        <div class="d-flex justify-content-center gap-3">
+            <a href="{% url 'store:product_list' %}" class="btn btn-primary">
+                <i class="bi bi-shop me-1"></i> {% trans "Continue Shopping" %}
+            </a>
+            <a href="{% url 'accounts:wishlist' %}" class="btn btn-outline-primary">
+                <i class="bi bi-heart me-1"></i> {% trans "View Wishlist" %}
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+// Update quantity
+$('.update-quantity').on('click', function() {
+    const cartItemId = $(this).data('cart-item-id');
+    const input = $(`input[data-cart-item-id="${cartItemId}"]`);
+    let quantity = parseInt(input.val());
+    
+    if ($(this).hasClass('minus')) {
+        quantity = Math.max(1, quantity - 1);
+    } else if ($(this).hasClass('plus')) {
+        quantity = quantity + 1;
+    }
+    
+    input.val(quantity);
+    updateCartItemQuantity(cartItemId, quantity);
+});
+
+// Quantity input change
+$('.quantity-input').on('change', function() {
+    const cartItemId = $(this).data('cart-item-id');
+    const quantity = parseInt($(this).val());
+    updateCartItemQuantity(cartItemId, quantity);
+});
+
+// Update cart item quantity via AJAX
+function updateCartItemQuantity(cartItemId, quantity) {
+    $.post('{% url "cart:update_cart_item" %}', {
+        cart_item_id: cartItemId,
+        quantity: quantity,
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+    }, function(data) {
+        if (data.success) {
+            // Update subtotal
+            $(`tr[data-cart-item-id="${cartItemId}"] .subtotal`).text('$' + data.subtotal);
+            
+            // Update cart totals
+            $('#cartSubtotal').text('$' + data.cart_subtotal);
+            $('#cartTotal').text('$' + data.cart_total);
+            $('#cartCount').text(data.cart_count);
+            
+            // Update shipping if needed
+            if (data.shipping_cost) {
+                $('#shippingCost').text('$' + data.shipping_cost);
+            }
+            
+            toastr.success('{% trans "Cart updated!" %}');
+        } else {
+            toastr.error(data.error || '{% trans "Failed to update cart." %}');
+            // Revert quantity
+            $(`input[data-cart-item-id="${cartItemId}"]`).val(data.current_quantity);
+        }
+    });
+}
+
+// Remove item
+$('.remove-item').on('click', function() {
+    const cartItemId = $(this).data('cart-item-id');
+    
+    if (confirm('{% trans "Are you sure you want to remove this item?" %}')) {
+        $.post('{% url "cart:remove_from_cart" %}', {
+            cart_item_id: cartItemId,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                // Remove row from table
+                $(`tr[data-cart-item-id="${cartItemId}"]`).remove();
+                
+                // Update cart totals
+                $('#cartSubtotal').text('$' + data.cart_subtotal);
+                $('#cartTotal').text('$' + data.cart_total);
+                $('#cartCount').text(data.cart_count);
+                
+                toastr.success('{% trans "Item removed from cart!" %}');
+                
+                // Check if cart is empty
+                if (data.cart_count === 0) {
+                    location.reload();
+                }
+            } else {
+                toastr.error(data.error || '{% trans "Failed to remove item." %}');
+            }
+        });
+    }
+});
+
+// Clear cart
+$('.clear-cart').on('click', function() {
+    if (confirm('{% trans "Are you sure you want to clear your cart?" %}')) {
+        $.post('{% url "cart:clear_cart" %}', {
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                toastr.error(data.error || '{% trans "Failed to clear cart." %}');
+            }
+        });
+    }
+});
+
+// Apply coupon
+$('#couponForm').on('submit', function(e) {
+    e.preventDefault();
+    
+    const form = $(this);
+    const couponCode = form.find('input[name="coupon_code"]').val();
+    
+    $.post('{% url "cart:apply_coupon" %}', {
+        coupon_code: couponCode,
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+    }, function(data) {
+        if (data.success) {
+            toastr.success(data.message);
+            location.reload();
+        } else {
+            toastr.error(data.error || '{% trans "Invalid coupon code." %}');
+        }
+    });
+});
+
+// Remove coupon
+$('.remove-coupon').on('click', function() {
+    const couponId = $(this).data('coupon-id');
+    
+    $.post('{% url "cart:remove_coupon" %}', {
+        coupon_id: couponId,
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+    }, function(data) {
+        if (data.success) {
+            toastr.success('{% trans "Coupon removed!" %}');
+            location.reload();
+        } else {
+            toastr.error(data.error || '{% trans "Failed to remove coupon." %}');
+        }
+    });
+});
+
+// Save cart notes
+$('#cartNotesForm').on('submit', function(e) {
+    e.preventDefault();
+    
+    const form = $(this);
+    const notes = form.find('textarea[name="notes"]').val();
+    
+    $.post('{% url "cart:save_notes" %}', {
+        notes: notes,
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+    }, function(data) {
+        if (data.success) {
+            toastr.success('{% trans "Notes saved!" %}');
+        } else {
+            toastr.error(data.error || '{% trans "Failed to save notes." %}');
+        }
+    });
+});
+
+// Shipping estimate
+$('#shippingEstimateForm').on('submit', function(e) {
+    e.preventDefault();
+    
+    const form = $(this);
+    const country = form.find('select[name="country"]').val();
+    const state = form.find('select[name="state"]').val();
+    const postalCode = form.find('input[name="postal_code"]').val();
+    
+    if (!country) {
+        toastr.error('{% trans "Please select a country." %}');
+        return;
+    }
+    
+    $.post('{% url "shipping:calculate_shipping" %}', {
+        country: country,
+        state: state,
+        postal_code: postalCode,
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+    }, function(data) {
+        if (data.success) {
+            let html = '<div class="alert alert-success mb-0">';
+            html += '<h6 class="mb-2">{% trans "Available Shipping Methods" %}:</h6>';
+            
+            data.methods.forEach(function(method) {
+                html += `<div class="d-flex justify-content-between mb-1">`;
+                html += `<span>${method.name} (${method.estimated_delivery})</span>`;
+                html += `<span class="fw-bold">$${method.cost.toFixed(2)}</span>`;
+                html += `</div>`;
+            });
+            
+            html += '</div>';
+            $('#shippingEstimateResult').html(html);
+        } else {
+            toastr.error(data.error || '{% trans "Failed to calculate shipping." %}');
+        }
+    });
+});
+
+// Country change - load states
+$('select[name="country"]').on('change', function() {
+    const countryCode = $(this).val();
+    const stateSelect = $('#state');
+    
+    stateSelect.empty().append('<option value="">{% trans "Select State" %}</option>');
+    
+    if (countryCode) {
+        $.get('{% url "shipping:get_states" %}?country=' + countryCode, function(data) {
+            if (data.states) {
+                data.states.forEach(function(state) {
+                    stateSelect.append(`<option value="${state.code}">${state.name}</option>`);
+                });
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

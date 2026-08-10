@@ -1,0 +1,18 @@
+{% extends "admin_panel/base.html" %}
+{% load i18n static %}
+
+{% block admin_content %}
+<!-- Page Header -->
+<div class="page-header d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h1 class="display-5 fw-bold mb-0">{% block page_title %}{% endblock %}</h1>
+        <p class="text-muted mb-0">{% block page_description %}{% endblock %}</p>
+    </div>
+    <div class="d-flex gap-2">
+        {% block page_actions %}{% endblock %}
+    </div>
+</div>
+
+<!-- Main Content -->
+{% block main_content %}{% endblock %}
+{% endblock %}

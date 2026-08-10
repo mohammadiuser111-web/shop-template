@@ -1,0 +1,203 @@
+<script id="productListTemplate" type="text/template">
+{% load i18n static %}
+<div class="space-y-3">
+    {% for product in products %}
+    <div class="card product-card">
+        <div class="card-body">
+            <div class="row">
+                <!-- Image -->
+                <div class="col-md-2 mb-3 mb-md-0">
+                    <a href="{{ product.get_absolute_url }}">
+                        {% if product.main_image %}
+                        <img src="{{ product.main_image.url }}" alt="{{ product.name }}" class="img-fluid rounded" style="width: 120px; height: 120px; object-fit: cover;">
+                        {% else %}
+                        <div class="bg-light d-flex align-items-center justify-content-center rounded" style="width: 120px; height: 120px;">
+                            <i class="bi bi-image text-muted" style="font-size: 2rem;"></i>
+                        </div>
+                        {% endif %}
+                    </a>
+                </div>
+                
+                <!-- Details -->
+                <div class="col-md-7">
+                    <!-- Name -->
+                    <h3 class="h5 mb-1">
+                        <a href="{{ product.get_absolute_url }}" class="text-decoration-none">{{ product.name }}</a>
+                    </h3>
+                    
+                    <!-- Category & Brand -->
+                    <div class="text-muted small mb-2">
+                        {% for category in product.categories.all|slice:":1" %}
+                        <a href="{{ category.get_absolute_url }}" class="text-decoration-none">{{ category.name }}</a>
+                        {% endfor %}
+                        {% if product.brand %}
+                        | <a href="{% url 'store:product_list' %}?brand={{ product.brand.slug }}" class="text-decoration-none">{{ product.brand.name }}</a>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Description -->
+                    <p class="text-muted small mb-2">{{ product.short_description|truncatewords:20 }}</p>
+                    
+                    <!-- Rating -->
+                    <div class="d-flex align-items-center gap-1 mb-2">
+                        <div class="d-flex gap-1">
+                            {% for i in "12345" %}
+                            <i class="bi bi-star{% if forloop.counter <= product.rating %}-fill text-warning{% else %} text-muted{% endif %}"></i>
+                            {% endfor %}
+                        </div>
+                        <small class="text-muted">({{ product.review_count }} {% trans "reviews" %})</small>
+                    </div>
+                    
+                    <!-- Features -->
+                    <div class="d-flex flex-wrap gap-2">
+                        {% if product.is_new %}
+                        <span class="badge bg-success">{% trans "New" %}</span>
+                        {% endif %}
+                        {% if product.is_featured %}
+                        <span class="badge bg-warning text-dark">{% trans "Featured" %}</span>
+                        {% endif %}
+                        {% if product.is_on_sale %}
+                        <span class="badge bg-danger">{% trans "Sale" %}</span>
+                        {% endif %}
+                        {% if not product.is_in_stock %}
+                        <span class="badge bg-secondary">{% trans "Out of Stock" %}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Actions & Price -->
+                <div class="col-md-3 d-flex flex-column align-items-md-end">
+                    <!-- Price -->
+                    <div class="mb-3">
+                        {% if product.is_on_sale %}
+                        <div class="text-muted text-decoration-line-through small">${{ product.regular_price|floatformat:2 }}</div>
+                        <div class="fw-bold text-danger h4">${{ product.sale_price|floatformat:2 }}</div>
+                        {% else %}
+                        <div class="fw-bold h4">${{ product.price|floatformat:2 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary btn-sm quick-add-to-cart" data-product-id="{{ product.id }}">
+                            <i class="bi bi-cart-plus me-1"></i> {% trans "Add to Cart" %}
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm wishlist-toggle" data-product-id="{{ product.id }}">
+                            <i class="bi {% if product in request.user.wishlist.products.all %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Compare -->
+                    <div class="mt-2">
+                        <a href="#" class="text-muted small text-decoration-none compare-toggle" data-product-id="{{ product.id }}">
+                            <i class="bi bi-arrow-left-right me-1"></i> {% trans "Compare" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+</script>
+
+<!-- Product List -->
+<div class="space-y-3" id="productList">
+    {% for product in products %}
+    <div class="card product-card">
+        <div class="card-body">
+            <div class="row">
+                <!-- Image -->
+                <div class="col-md-2 mb-3 mb-md-0">
+                    <a href="{{ product.get_absolute_url }}">
+                        {% if product.main_image %}
+                        <img src="{{ product.main_image.url }}" alt="{{ product.name }}" class="img-fluid rounded" style="width: 120px; height: 120px; object-fit: cover;">
+                        {% else %}
+                        <div class="bg-light d-flex align-items-center justify-content-center rounded" style="width: 120px; height: 120px;">
+                            <i class="bi bi-image text-muted" style="font-size: 2rem;"></i>
+                        </div>
+                        {% endif %}
+                    </a>
+                </div>
+                
+                <!-- Details -->
+                <div class="col-md-7">
+                    <!-- Name -->
+                    <h3 class="h5 mb-1">
+                        <a href="{{ product.get_absolute_url }}" class="text-decoration-none">{{ product.name }}</a>
+                    </h3>
+                    
+                    <!-- Category & Brand -->
+                    <div class="text-muted small mb-2">
+                        {% for category in product.categories.all|slice:":1" %}
+                        <a href="{{ category.get_absolute_url }}" class="text-decoration-none">{{ category.name }}</a>
+                        {% endfor %}
+                        {% if product.brand %}
+                        | <a href="{% url 'store:product_list' %}?brand={{ product.brand.slug }}" class="text-decoration-none">{{ product.brand.name }}</a>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Description -->
+                    <p class="text-muted small mb-2">{{ product.short_description|truncatewords:20 }}</p>
+                    
+                    <!-- Rating -->
+                    <div class="d-flex align-items-center gap-1 mb-2">
+                        <div class="d-flex gap-1">
+                            {% for i in "12345" %}
+                            <i class="bi bi-star{% if forloop.counter <= product.rating %}-fill text-warning{% else %} text-muted{% endif %}"></i>
+                            {% endfor %}
+                        </div>
+                        <small class="text-muted">({{ product.review_count }} {% trans "reviews" %})</small>
+                    </div>
+                    
+                    <!-- Features -->
+                    <div class="d-flex flex-wrap gap-2">
+                        {% if product.is_new %}
+                        <span class="badge bg-success">{% trans "New" %}</span>
+                        {% endif %}
+                        {% if product.is_featured %}
+                        <span class="badge bg-warning text-dark">{% trans "Featured" %}</span>
+                        {% endif %}
+                        {% if product.is_on_sale %}
+                        <span class="badge bg-danger">{% trans "Sale" %}</span>
+                        {% endif %}
+                        {% if not product.is_in_stock %}
+                        <span class="badge bg-secondary">{% trans "Out of Stock" %}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Actions & Price -->
+                <div class="col-md-3 d-flex flex-column align-items-md-end">
+                    <!-- Price -->
+                    <div class="mb-3">
+                        {% if product.is_on_sale %}
+                        <div class="text-muted text-decoration-line-through small">${{ product.regular_price|floatformat:2 }}</div>
+                        <div class="fw-bold text-danger h4">${{ product.sale_price|floatformat:2 }}</div>
+                        {% else %}
+                        <div class="fw-bold h4">${{ product.price|floatformat:2 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary btn-sm quick-add-to-cart" data-product-id="{{ product.id }}">
+                            <i class="bi bi-cart-plus me-1"></i> {% trans "Add to Cart" %}
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm wishlist-toggle" data-product-id="{{ product.id }}">
+                            <i class="bi {% if product in request.user.wishlist.products.all %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Compare -->
+                    <div class="mt-2">
+                        <a href="#" class="text-muted small text-decoration-none compare-toggle" data-product-id="{{ product.id }}">
+                            <i class="bi bi-arrow-left-right me-1"></i> {% trans "Compare" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>

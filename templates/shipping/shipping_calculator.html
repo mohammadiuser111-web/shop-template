@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<div class="breadcrumb-wrapper">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{% trans "Shipping Calculator" %}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- Header -->
+<div class="py-5 bg-light">
+    <div class="container text-center">
+        <h1 class="display-4 fw-bold mb-3">{% trans "Shipping Calculator" %}</h1>
+        <p class="lead text-muted max-w-800 mx-auto">{% trans "Calculate shipping costs for your cart items to different destinations." %}</p>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Cart Items -->
+                        <div class="col-lg-6 mb-4 mb-lg-0">
+                            <h3 class="h5 mb-3">{% trans "Your Cart Items" %}</h3>
+                            
+                            {% if cart.items %}
+                            <div class="cart-items">
+                                {% for item in cart.items %}
+                                <div class="cart-item d-flex align-items-center mb-3 pb-3 border-bottom">
+                                    <div class="flex-shrink-0">
+                                        {% if item.product.main_image %}
+                                        <img src="{{ item.product.main_image.url }}" alt="{{ item.product.name }}" class="rounded" width="60" height="60">
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-0">{{ item.product.name }}</h6>
+                                        <small class="text-muted">{{ item.quantity }} x ${{ item.product.price|floatformat:2 }}</small>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <span class="fw-bold">${{ item.total|floatformat:2 }}</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="cart-summary">
+                                <div class="d-flex justify-content-between fw-bold">
+                                    <span>{% trans "Subtotal" %}:</span>
+                                    <span>${{ cart.subtotal|floatformat:2 }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between text-muted">
+                                    <span>{% trans "Items" %}:</span>
+                                    <span>{{ cart.total_items }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between text-muted">
+                                    <span>{% trans "Weight" %}:</span>
+                                    <span>{{ cart.total_weight }} kg</span>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-info">{% trans "Your cart is empty." %}</div>
+                            <a href="{% url 'store:product_list' %}" class="btn btn-primary">
+                                <i class="bi bi-cart me-1"></i> {% trans "Continue Shopping" %}
+                            </a>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-lg-1 d-none d-lg-block">
+                            <div class="vr h-100"></div>
+                        </div>
+
+                        <!-- Calculator Form -->
+                        <div class="col-lg-5">
+                            <h3 class="h5 mb-3">{% trans "Calculate Shipping" %}</h3>
+                            
+                            <form method="post" id="shippingForm">
+                                {% csrf_token %}
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.country.id_for_label }}" class="form-label">{% trans "Country" %} <span class="text-danger">*</span></label>
+                                    {{ form.country }}
+                                    {% if form.country.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.country.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.state.id_for_label }}" class="form-label">{% trans "State/Province" %}</label>
+                                    {{ form.state }}
+                                    {% if form.state.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.state.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.city.id_for_label }}" class="form-label">{% trans "City" %}</label>
+                                    {{ form.city }}
+                                    {% if form.city.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.city.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.postal_code.id_for_label }}" class="form-label">{% trans "Postal/Zip Code" %}</label>
+                                    {{ form.postal_code }}
+                                    {% if form.postal_code.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.postal_code.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="bi bi-truck me-1"></i> {% trans "Calculate Shipping" %}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results -->
+            {% if form.is_bound and not form.errors %}
+            <div class="card mt-4">
+                <div class="card-header bg-white">
+                    <h3 class="h5 mb-0">{% trans "Available Shipping Methods" %}</h3>
+                </div>
+                <div class="card-body">
+                    {% if methods %}
+                    <div class="shipping-methods">
+                        {% for method in methods %}
+                        <div class="shipping-method card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    {% if method.icon %}
+                                    <img src="{{ method.icon }}" alt="{{ method.name }}" class="me-3" height="30">
+                                    {% else %}
+                                    <i class="bi bi-truck me-3 text-primary" style="font-size: 1.5rem;"></i>
+                                    {% endif %}
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-0">{{ method.name }}</h6>
+                                        <small class="text-muted">{{ method.description|truncatewords:10 }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <h6 class="mb-0">${{ method.cost|floatformat:2 }}</h6>
+                                        <small class="text-muted">{{ method.estimated_delivery }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info mb-0">{% trans "No shipping methods available for this destination." %}</div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Info -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="mb-3">{% trans "Shipping Information" %}</h6>
+                            <ul class="list-unstyled small">
+                                <li class="mb-2"><i class="bi bi-truck text-primary me-2"></i> {% trans "Free shipping on orders over $50" %}</li>
+                                <li class="mb-2"><i class="bi bi-clock text-primary me-2"></i> {% trans "Estimated delivery: 3-5 business days" %}</li>
+                                <li class="mb-2"><i class="bi bi-shield-check text-primary me-2"></i> {% trans "All orders are insured" %}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="mb-3">{% trans "Need Help?" %}</h6>
+                            <ul class="list-unstyled small">
+                                <li class="mb-2"><a href="{% url 'support:contact' %}" class="text-decoration-none"><i class="bi bi-envelope me-2"></i> {% trans "Contact Support" %}</a></li>
+                                <li class="mb-2"><a href="{% url 'shipping:pickup_locations' %}" class="text-decoration-none"><i class="bi bi-geo-alt me-2"></i> {% trans "Pickup Locations" %}</a></li>
+                                <li class="mb-2"><a href="{% url 'shipping:shipping_policy' %}" class="text-decoration-none"><i class="bi bi-file-text me-2"></i> {% trans "Shipping Policy" %}</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<div class="breadcrumb-wrapper">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'cart:view_cart' %}">{% trans "Shopping Cart" %}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'orders:checkout' %}">{% trans "Checkout" %}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{% trans "Payment" %}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- Header -->
+<div class="py-4 bg-light">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-5 fw-bold mb-2">{% trans "Payment Gateway" %}</h1>
+                <p class="lead text-muted mb-0">{% trans "Complete your order by selecting a payment method." %}</p>
+            </div>
+            <div class="col-lg-4 text-lg-end">
+                <div class="order-summary-card">
+                    <h5 class="mb-3">{% trans "Order Summary" %}</h5>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>{% trans "Subtotal" %}:</span>
+                        <span>${{ order.subtotal|floatformat:2 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>{% trans "Shipping" %}:</span>
+                        <span>${{ order.shipping_cost|floatformat:2 }}</span>
+                    </div>
+                    {% if order.discount %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>{% trans "Discount" %}:</span>
+                        <span class="text-success">- ${{ order.discount|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    {% if order.tax %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>{% trans "Tax" %}:</span>
+                        <span>${{ order.tax|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    <hr>
+                    <div class="d-flex justify-content-between fw-bold">
+                        <span>{% trans "Total" %}:</span>
+                        <span>${{ order.total_amount|floatformat:2 }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="container py-5">
+    <div class="row">
+        <!-- Payment Methods -->
+        <div class="col-lg-8">
+            <!-- New Payment Method -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h3 class="h5 mb-0">{% trans "Select Payment Method" %}</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="paymentForm">
+                        {% csrf_token %}
+                        
+                        <!-- Gateway Selection -->
+                        <div class="mb-4">
+                            <h6 class="mb-3">{% trans "Choose a Payment Gateway" %}</h6>
+                            <div class="row">
+                                {% for gateway in gateways %}
+                                <div class="col-md-4 mb-3">
+                                    <div class="card h-100 border-2 {% if forloop.first %}border-primary{% endif %} cursor-pointer gateway-card" data-gateway-id="{{ gateway.id }}">
+                                        <div class="card-body text-center">
+                                            {% if gateway.logo %}
+                                            <img src="{{ gateway.logo.url }}" alt="{{ gateway.display_name }}" class="mb-2" height="40">
+                                            {% endif %}
+                                            <h6 class="mb-1">{{ gateway.display_name }}</h6>
+                                            <small class="text-muted">{{ gateway.description|truncatewords:5 }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <input type="hidden" name="gateway" id="selectedGateway" value="{{ gateways.first.id }}" required>
+                        </div>
+
+                        <!-- Saved Payment Methods -->
+                        {% if saved_methods %}
+                        <div class="mb-4">
+                            <h6 class="mb-3">{% trans "Or use a saved payment method" %}</h6>
+                            <div class="row">
+                                {% for method in saved_methods %}
+                                <div class="col-md-4 mb-3">
+                                    <div class="card h-100 border-2 cursor-pointer saved-method-card" data-method-id="{{ method.id }}">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center">
+                                                <i class="bi bi-credit-card me-2 text-primary"></i>
+                                                <div class="flex-grow-1">
+                                                    <h6 class="mb-0">{{ method.card_type|title }} ****{{ method.last_four }}</h6>
+                                                    <small class="text-muted">{{ method.card_holder }}</small>
+                                                </div>
+                                                {% if method.is_default %}
+                                                <span class="badge bg-primary">{% trans "Default" %}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="form-check mb-3">
+                                <input type="checkbox" class="form-check-input" id="useNewCard" name="use_new_card" value="1" checked>
+                                <label class="form-check-label" for="useNewCard">{% trans "Use a new card" %}</label>
+                            </div>
+                            <input type="hidden" name="payment_method" id="selectedMethod" value="">
+                        </div>
+                        {% endif %}
+
+                        <!-- New Card Form -->
+                        <div id="newCardForm">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="card_number" class="form-label">{% trans "Card Number" %} <span class="text-danger">*</span></label>
+                                    <input type="text" name="card_number" id="card_number" class="form-control" placeholder="1234 5678 9012 3456" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="card_holder" class="form-label">{% trans "Card Holder Name" %} <span class="text-danger">*</span></label>
+                                    <input type="text" name="card_holder" id="card_holder" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="expiry_month" class="form-label">{% trans "Expiry Month" %} <span class="text-danger">*</span></label>
+                                    <select name="expiry_month" id="expiry_month" class="form-select" required>
+                                        {% for month in "01 02 03 04 05 06 07 08 09 10 11 12"|split %}
+                                        <option value="{{ month }}">{{ month }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="expiry_year" class="form-label">{% trans "Expiry Year" %} <span class="text-danger">*</span></label>
+                                    <select name="expiry_year" id="expiry_year" class="form-select" required>
+                                        {% for year in "2024 2025 2026 2027 2028 2029 2030"|split %}
+                                        <option value="{{ year }}">{{ year }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="cvv" class="form-label">{% trans "CVV" %} <span class="text-danger">*</span></label>
+                                    <input type="text" name="cvv" id="cvv" class="form-control" placeholder="123" required>
+                                </div>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input type="checkbox" class="form-check-input" name="save_card" id="save_card" value="1">
+                                <label class="form-check-label" for="save_card">{% trans "Save this card for future payments" %}</label>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-lock me-1"></i> {% trans "Complete Payment" %}
+                            </button>
+                            <a href="{% url 'orders:checkout' %}" class="btn btn-outline-secondary btn-lg">
+                                <i class="bi bi-arrow-left me-1"></i> {% trans "Back to Checkout" %}
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Payment Info -->
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h3 class="h5 mb-0">{% trans "Payment Information" %}</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>{% trans "Order Details" %}</h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><strong>{% trans "Order Number" %}:</strong> #{{ order.order_number }}</li>
+                                <li class="mb-2"><strong>{% trans "Date" %}:</strong> {{ order.created_at|date:"M d, Y H:i" }}</li>
+                                <li class="mb-2"><strong>{% trans "Total Amount" %}:</strong> ${{ order.total_amount|floatformat:2 }}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>{% trans "Billing Address" %}</h6>
+                            <address>
+                                {{ order.billing_address.first_name }} {{ order.billing_address.last_name }}<br>
+                                {% if order.billing_address.company %}{{ order.billing_address.company }}<br>{% endif %}
+                                {{ order.billing_address.address_line_1 }}<br>
+                                {% if order.billing_address.address_line_2 %}{{ order.billing_address.address_line_2 }}<br>{% endif %}
+                                {{ order.billing_address.city }}, {{ order.billing_address.state }} {{ order.billing_address.postal_code }}<br>
+                                {{ order.billing_address.country }}<br>
+                                {% trans "Phone" %}: {{ order.billing_address.phone }}<br>
+                                {% trans "Email" %}: {{ order.billing_address.email }}
+                            </address>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Summary Sidebar -->
+        <aside class="col-lg-4">
+            <div class="card sticky-top" style="top: 20px;">
+                <div class="card-header bg-white">
+                    <h3 class="h5 mb-0">{% trans "Order Summary" %}</h3>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                        <span>{% trans "Subtotal" %}:</span>
+                        <span>${{ order.subtotal|floatformat:2 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                        <span>{% trans "Shipping" %}:</span>
+                        <span>${{ order.shipping_cost|floatformat:2 }}</span>
+                    </div>
+                    {% if order.discount %}
+                    <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                        <span>{% trans "Discount" %}:</span>
+                        <span class="text-success">- ${{ order.discount|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    {% if order.tax %}
+                    <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                        <span>{% trans "Tax" %}:</span>
+                        <span>${{ order.tax|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="d-flex justify-content-between fw-bold fs-4 pt-2 border-top">
+                        <span>{% trans "Total" %}:</span>
+                        <span>${{ order.total_amount|floatformat:2 }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Info -->
+            <div class="card mt-4">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-shield-check text-primary" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="mb-2">{% trans "Secure Payment" %}</h5>
+                    <p class="text-muted small mb-0">{% trans "Your payment information is encrypted and securely processed." %}</p>
+                </div>
+            </div>
+
+            <!-- Accepted Cards -->
+            <div class="card mt-4">
+                <div class="card-header bg-white">
+                    <h3 class="h5 mb-0">{% trans "Accepted Payment Methods" %}</h3>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2 justify-content-center">
+                        <img src="{% static 'images/cards/visa.png' %}" alt="Visa" height="30" class="opacity-50">
+                        <img src="{% static 'images/cards/mastercard.png' %}" alt="Mastercard" height="30" class="opacity-50">
+                        <img src="{% static 'images/cards/amex.png' %}" alt="American Express" height="30" class="opacity-50">
+                        <img src="{% static 'images/cards/discover.png' %}" alt="Discover" height="30" class="opacity-50">
+                        <img src="{% static 'images/cards/paypal.png' %}" alt="PayPal" height="30" class="opacity-50">
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Gateway selection
+$(document).on('click', '.gateway-card', function() {
+    const gatewayId = $(this).data('gateway-id');
+    $('.gateway-card').removeClass('border-primary');
+    $(this).addClass('border-primary');
+    $('#selectedGateway').val(gatewayId);
+});
+
+// Saved method selection
+$(document).on('click', '.saved-method-card', function() {
+    const methodId = $(this).data('method-id');
+    $('.saved-method-card').removeClass('border-primary');
+    $(this).addClass('border-primary');
+    $('#selectedMethod').val(methodId);
+    $('#useNewCard').prop('checked', false);
+    $('#newCardForm').hide();
+});
+
+// Toggle between new and saved card
+$('#useNewCard').on('change', function() {
+    if ($(this).is(':checked')) {
+        $('#selectedMethod').val('');
+        $('.saved-method-card').removeClass('border-primary');
+        $('#newCardForm').show();
+    } else {
+        $('#newCardForm').hide();
+    }
+});
+
+// Format card number
+$('#card_number').on('input', function() {
+    let val = $(this).val().replace(/\D/g, '');
+    val = val.replace(/(.{4})/g, '$1 ').trim();
+    $(this).val(val);
+});
+</script>
+{% endblock %}

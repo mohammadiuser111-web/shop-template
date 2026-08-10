@@ -1,0 +1,361 @@
+{% extends "admin_panel/base.html" %}
+{% load i18n static %}
+
+{% block admin_content %}
+<!-- Dashboard Header -->
+<div class="dashboard-header d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h1 class="display-5 fw-bold mb-0">{% trans "Dashboard" %}</h1>
+        <p class="text-muted mb-0">{% trans "Welcome back! Here's what's happening with your store." %}</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary" id="refreshDashboard">
+            <i class="bi bi-arrow-clockwise me-1"></i> {% trans "Refresh" %}
+        </button>
+        <a href="{% url 'dashboard:dashboard_layout' %}" class="btn btn-outline-primary">
+            <i class="bi bi-gear me-1"></i> {% trans "Customize" %}
+        </a>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-currency-dollar"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Today's Sales" %}</h6>
+                        <h3 class="mb-0">${{ stats.sales.today|floatformat:2 }}</h3>
+                        <small class="text-success"><i class="bi bi-arrow-up me-1"></i> +12.5%</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-cart"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Today's Orders" %}</h6>
+                        <h3 class="mb-0">{{ stats.orders.today }}</h3>
+                        <small class="text-success"><i class="bi bi-arrow-up me-1"></i> +8.3%</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-people"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "New Customers" %}</h6>
+                        <h3 class="mb-0">{{ stats.customers.new_today }}</h3>
+                        <small class="text-success"><i class="bi bi-arrow-up me-1"></i> +5.2%</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">{% trans "Pending Orders" %}</h6>
+                        <h3 class="mb-0">{{ stats.orders.pending }}</h3>
+                        <small class="text-warning">{{ stats.orders.pending }} {% trans "need attention" %}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-header bg-white">
+                <h3 class="h5 mb-0">{% trans "Sales Overview" %}</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="salesChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header bg-white">
+                <h3 class="h5 mb-0">{% trans "Order Status" %}</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="orderStatusChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row mb-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header bg-white d-flex align-items-center justify-content-between">
+                <h3 class="h5 mb-0">{% trans "Recent Orders" %}</h3>
+                <a href="{% url 'orders:order_list' %}" class="btn btn-sm btn-outline-primary">{% trans "View All" %}</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>{% trans "Order" %}</th>
+                                <th>{% trans "Customer" %}</th>
+                                <th>{% trans "Amount" %}</th>
+                                <th>{% trans "Status" %}</th>
+                                <th>{% trans "Date" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_activity.recent_orders %}
+                            <tr>
+                                <td>#{{ order.order_number }}</td>
+                                <td>{{ order.user.get_full_name|default:order.user.username|truncatechars:15 }}</td>
+                                <td>${{ order.total_amount|floatformat:2 }}</td>
+                                <td>
+                                    <span class="badge 
+                                        {% if order.status == 'pending' %}bg-warning
+                                        {% elif order.status == 'processing' %}bg-info
+                                        {% elif order.status == 'shipped' %}bg-primary
+                                        {% elif order.status == 'delivered' %}bg-success
+                                        {% elif order.status == 'completed' %}bg-success
+                                        {% elif order.status == 'cancelled' %}bg-secondary
+                                        {% elif order.status == 'refunded' %}bg-danger{% endif %}">
+                                        {{ order.get_status_display|truncatechars:10 }}
+                                    </span>
+                                </td>
+                                <td>{{ order.created_at|date:"M d" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header bg-white d-flex align-items-center justify-content-between">
+                <h3 class="h5 mb-0">{% trans "Recent Customers" %}</h3>
+                <a href="{% url 'accounts:user_list' %}" class="btn btn-sm btn-outline-primary">{% trans "View All" %}</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>{% trans "Name" %}</th>
+                                <th>{% trans "Email" %}</th>
+                                <th>{% trans "Orders" %}</th>
+                                <th>{% trans "Joined" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for customer in recent_activity.recent_customers %}
+                            <tr>
+                                <td>{{ customer.get_full_name|default:customer.username|truncatechars:15 }}</td>
+                                <td>{{ customer.email|truncatechars:20 }}</td>
+                                <td>{{ customer.orders.count }}</td>
+                                <td>{{ customer.date_joined|date:"M d, Y" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+{% if quick_actions %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h3 class="h5 mb-0">{% trans "Quick Actions" %}</h3>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2">
+                    {% for action in quick_actions %}
+                    <a href="{{ action.url }}" class="btn btn-outline-primary">
+                        <i class="{{ action.icon }} me-1"></i> {{ action.name }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- System Logs -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-white d-flex align-items-center justify-content-between">
+                <h3 class="h5 mb-0">{% trans "System Activity" %}</h3>
+                <a href="{% url 'dashboard:system_log_list' %}" class="btn btn-sm btn-outline-primary">{% trans "View All" %}</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>{% trans "Action" %}</th>
+                                <th>{% trans "Message" %}</th>
+                                <th>{% trans "User" %}</th>
+                                <th>{% trans "Time" %}</th>
+                                <th>{% trans "Level" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in recent_activity.system_logs %}
+                            <tr>
+                                <td>{{ log.action|truncatechars:20 }}</td>
+                                <td>{{ log.message|truncatechars:50 }}</td>
+                                <td>{{ log.user.get_full_name|default:log.user.username|truncatechars:15 if log.user else "System" }}</td>
+                                <td>{{ log.created_at|timesince }} {% trans "ago" %}</td>
+                                <td>
+                                    <span class="badge 
+                                        {% if log.level == 'info' %}bg-info
+                                        {% elif log.level == 'success' %}bg-success
+                                        {% elif log.level == 'warning' %}bg-warning
+                                        {% elif log.level == 'error' %}bg-danger
+                                        {% elif log.level == 'debug' %}bg-secondary{% endif %}">
+                                        {{ log.level }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+// Sales Chart
+const salesCtx = document.getElementById('salesChart');
+if (salesCtx) {
+    new Chart(salesCtx, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [{
+                label: '{% trans "Sales" %}',
+                data: [1200, 1900, 3000, 5000, 7000, 9000, 11000, 13000, 10000, 15000, 17000, 20000],
+                borderColor: '#0d6efd',
+                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Order Status Chart
+const orderStatusCtx = document.getElementById('orderStatusChart');
+if (orderStatusCtx) {
+    new Chart(orderStatusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['{% trans "Pending" %}', '{% trans "Processing" %}', '{% trans "Shipped" %}', '{% trans "Delivered" %}', '{% trans "Cancelled" %}'],
+            datasets: [{
+                data: [{{ stats.orders.pending }}, {{ stats.orders.processing }}, {{ stats.orders.shipped }}, {{ stats.orders.delivered }}, {{ stats.orders.cancelled }}],
+                backgroundColor: [
+                    '#ffc107',
+                    '#0dcaf0',
+                    '#0d6efd',
+                    '#198754',
+                    '#6c757d'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+// Refresh dashboard
+$('#refreshDashboard').on('click', function() {
+    $(this).html('<i class="bi bi-arrow-clockwise spin me-1"></i> {% trans "Refreshing" %}...');
+    
+    $.get('{% url "dashboard:dashboard" %}', function(data) {
+        location.reload();
+    }).fail(function() {
+        alert('{% trans "Failed to refresh dashboard." %}');
+        $('#refreshDashboard').html('<i class="bi bi-arrow-clockwise me-1"></i> {% trans "Refresh" %}');
+    });
+});
+</script>
+{% endblock %}

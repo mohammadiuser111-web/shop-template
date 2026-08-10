@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<div class="breadcrumb-wrapper">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'support:ticket_list' %}">{% trans "My Tickets" %}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{% trans "Create Ticket" %}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- Header -->
+<div class="py-5 bg-light">
+    <div class="container text-center">
+        <h1 class="display-4 fw-bold mb-3">{% trans "Create Support Ticket" %}</h1>
+        <p class="lead text-muted max-w-800 mx-auto">{% trans "Fill out the form below to create a new support ticket. Our team will review your request and get back to you as soon as possible." %}</p>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger mb-4">
+                            {% for error in form.non_field_errors %}
+                            <p class="mb-0">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.category.id_for_label }}" class="form-label">{% trans "Category" %} <span class="text-danger">*</span></label>
+                                {{ form.category }}
+                                <small class="text-muted d-block">{% trans "Select the category that best fits your issue" %}</small>
+                                {% if form.category.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.category.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.priority.id_for_label }}" class="form-label">{% trans "Priority" %} <span class="text-danger">*</span></label>
+                                {{ form.priority }}
+                                <small class="text-muted d-block">{% trans "How urgent is your issue?" %}</small>
+                                {% if form.priority.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.priority.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.title.id_for_label }}" class="form-label">{% trans "Subject" %} <span class="text-danger">*</span></label>
+                            {{ form.title }}
+                            <small class="text-muted d-block">{% trans "Briefly describe your issue in one sentence" %}</small>
+                            {% if form.title.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.title.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">{% trans "Description" %} <span class="text-danger">*</span></label>
+                            {{ form.description }}
+                            <small class="text-muted d-block">{% trans "Provide detailed information about your issue" %}</small>
+                            {% if form.description.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.description.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.attachments.id_for_label }}" class="form-label">{% trans "Attachments" %}</label>
+                            {{ form.attachments }}
+                            <small class="text-muted d-block">{% trans "Upload any relevant files (max 10MB each)" %}</small>
+                            {% if form.attachments.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.attachments.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- File Upload Preview -->
+                        <div id="filePreview" class="mb-4"></div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-send me-1"></i> {% trans "Create Ticket" %}
+                            </button>
+                            <a href="{% url 'support:ticket_list' %}" class="btn btn-outline-secondary btn-lg">
+                                <i class="bi bi-x me-1"></i> {% trans "Cancel" %}
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Sidebar -->
+        <aside class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h3 class="h5 mb-0">{% trans "Need Help?" %}</h3>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">{% trans "Before creating a ticket, you might find the answer in our FAQ section." %}</p>
+                    <a href="{% url 'support:faq_list' %}" class="btn btn-primary w-100">
+                        <i class="bi bi-question-circle me-1"></i> {% trans "View FAQs" %}
+                    </a>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h3 class="h5 mb-0">{% trans "Ticket Guidelines" %}</h3>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><i class="bi bi-check-circle text-primary me-2"></i> {% trans "Be as detailed as possible" %}</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-primary me-2"></i> {% trans "Include relevant screenshots or files" %}</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-primary me-2"></i> {% trans "Use the appropriate category" %}</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-primary me-2"></i> {% trans "Be patient - we'll respond as soon as possible" %}</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h3 class="h5 mb-0">{% trans "Response Time" %}</h3>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="flex-shrink-0">
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                <i class="bi bi-clock"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <p class="mb-0 small">{% trans "Our typical response time is 24-48 hours during business days." %}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// File upload preview
+$(document).ready(function() {
+    const fileInput = $('input[name="attachments"]');
+    const filePreview = $('#filePreview');
+    
+    fileInput.on('change', function() {
+        const files = this.files;
+        if (files.length > 0) {
+            let html = '<div class="mb-3"><h6>' + '{% trans "Selected Files" %}' + ':</h6><ul class="list-unstyled mb-0">';
+            for (let i = 0; i < files.length; i++) {
+                html += '<li class="d-flex align-items-center mb-2"><i class="bi bi-file-earmark me-2"></i>' + files[i].name + ' (' + (files[i].size / 1024 / 1024).toFixed(2) + ' MB)</li>';
+            }
+            html += '</ul></div>';
+            filePreview.html(html);
+        } else {
+            filePreview.html('');
+        }
+    });
+});
+</script>
+{% endblock %}

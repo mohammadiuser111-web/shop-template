@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<div class="breadcrumb-wrapper">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{% trans "FAQ" %}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- Header -->
+<div class="py-5 bg-light">
+    <div class="container text-center">
+        <h1 class="display-4 fw-bold mb-3">{% trans "Frequently Asked Questions" %}</h1>
+        <p class="lead text-muted max-w-800 mx-auto">{% trans "Find answers to common questions about our products, services, and policies." %}</p>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="container py-5">
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Search -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-8">
+                            <input type="text" name="q" class="form-control" placeholder="{% trans 'Search FAQs...' %}" value="{{ query }}">
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-search me-1"></i> {% trans "Search" %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- FAQs -->
+            {% if faqs %}
+            <div class="accordion" id="faqAccordion">
+                {% for faq in faqs %}
+                <div class="accordion-item mb-3">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-{{ faq.id }}">
+                            <span class="me-3">{{ forloop.counter }}.</span>
+                            {{ faq.question }}
+                        </button>
+                    </h2>
+                    <div id="faq-{{ faq.id }}" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            {{ faq.answer|safe }}
+                            
+                            {% if faq.category %}
+                            <div class="mt-3">
+                                <span class="badge bg-light text-dark">{{ faq.category.name }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="alert alert-info">{% trans "No FAQs found matching your search." %}</div>
+            {% endif %}
+
+            <!-- Pagination -->
+            {% if faqs.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-5">
+                <ul class="pagination justify-content-center">
+                    {% if faqs.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if query %}&q={{ query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}" aria-label="First">
+                            <i class="bi bi-chevron-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ faqs.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}" aria-label="Previous">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in faqs.paginator.page_range %}
+                    {% if faqs.number == num %}
+                    <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                    {% elif num > faqs.number|add:'-3' and num < faqs.number|add:'3' %}
+                    <li class="page-item"><a class="page-link" href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}">{{ num }}</a></li>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if faqs.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ faqs.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}" aria-label="Next">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ faqs.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}" aria-label="Last">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <aside class="col-lg-4">
+            <!-- Categories -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h3 class="h5 mb-0">{% trans "Categories" %}</h3>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <a href="{% url 'support:faq_list' %}" class="text-decoration-none {% if not current_category %}fw-bold{% endif %}">
+                                {% trans "All Categories" %}
+                            </a>
+                        </li>
+                        {% for category in categories %}
+                        <li class="mb-2">
+                            <a href="{% url 'support:faq_list' %}?category={{ category.slug }}" class="text-decoration-none d-flex justify-content-between align-items-center {% if current_category == category.slug %}fw-bold{% endif %}">
+                                <span>{{ category.name }}</span>
+                                <span class="badge bg-light text-dark">{{ category.faqs.count }}</span>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Popular FAQs -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h3 class="h5 mb-0">{% trans "Popular FAQs" %}</h3>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        {% for faq in popular_faqs %}
+                        <li class="mb-3 pb-3 border-bottom">
+                            <a href="{% url 'support:faq_detail' slug=faq.slug %}" class="text-decoration-none">
+                                <h6 class="mb-1">{{ faq.question|truncatewords:10 }}</h6>
+                                <small class="text-muted">{{ faq.view_count }} {% trans "views" %}</small>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Need Help? -->
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="h5 mb-3">{% trans "Still need help?" %}</h3>
+                    <p class="text-muted mb-3">{% trans "Can't find the answer you're looking for?" %}</p>
+                    <a href="{% url 'support:contact' %}" class="btn btn-primary w-100 mb-2">
+                        <i class="bi bi-envelope me-1"></i> {% trans "Contact Us" %}
+                    </a>
+                    <a href="{% url 'support:create_ticket' %}" class="btn btn-outline-primary w-100">
+                        <i class="bi bi-ticket-perforated me-1"></i> {% trans "Create Ticket" %}
+                    </a>
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+{% endblock %}

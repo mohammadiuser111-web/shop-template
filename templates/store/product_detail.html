@@ -1,0 +1,461 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{{ product.name }} - {{ site_settings.site_name|default:"Shop Template" }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<div class="breadcrumb-wrapper">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'store:product_list' %}">{% trans "Shop" %}</a></li>
+                {% for category in product.categories.all|slice:":1" %}
+                {% for ancestor in category.get_ancestors %}
+                <li class="breadcrumb-item"><a href="{{ ancestor.get_absolute_url }}">{{ ancestor.name }}</a></li>
+                {% endfor %}
+                <li class="breadcrumb-item"><a href="{{ category.get_absolute_url }}">{{ category.name }}</a></li>
+                {% endfor %}
+                <li class="breadcrumb-item active" aria-current="page">{{ product.name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="container py-5">
+    <div class="row">
+        <!-- Gallery -->
+        <div class="col-lg-6">
+            <div class="product-gallery">
+                <!-- Main Image -->
+                <div class="main-image mb-3">
+                    <img id="mainProductImage" src="{{ product.main_image.url }}" alt="{{ product.name }}" class="img-fluid rounded" style="max-height: 500px; object-fit: contain;">
+                </div>
+                
+                <!-- Thumbnails -->
+                <div class="thumbnails d-flex gap-2 overflow-x-auto pb-2">
+                    {% if product.main_image %}
+                    <img src="{{ product.main_image.url }}" alt="{{ product.name }}" class="thumbnail img-thumbnail" data-src="{{ product.main_image.url }}" style="width: 80px; height: 80px; cursor: pointer; object-fit: cover; border: 2px solid #0d6efd;">
+                    {% endif %}
+                    {% for image in product.images.all %}
+                    <img src="{{ image.image.url }}" alt="{{ image.alt_text|default:product.name }}" class="thumbnail img-thumbnail" data-src="{{ image.image.url }}" style="width: 80px; height: 80px; cursor: pointer; object-fit: cover;">
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Details -->
+        <div class="col-lg-6">
+            <div class="product-details ps-lg-4">
+                <!-- Brand -->
+                {% if product.brand %}
+                <div class="mb-2">
+                    <a href="{% url 'store:product_list' %}?brand={{ product.brand.slug }}" class="text-decoration-none">
+                        <span class="text-muted small">{% trans "Brand" %}:</span>
+                        <span class="fw-bold ms-1">{{ product.brand.name }}</span>
+                    </a>
+                </div>
+                {% endif %}
+
+                <!-- Name -->
+                <h1 class="display-5 fw-bold mb-3">{{ product.name }}</h1>
+
+                <!-- Rating -->
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <div class="d-flex gap-1">
+                        {% for i in "12345" %}
+                        <i class="bi bi-star{% if forloop.counter <= product.rating %}-fill text-warning{% else %} text-muted{% endif %}" style="font-size: 1.2rem;"></i>
+                        {% endfor %}
+                    </div>
+                    <a href="#reviews" class="text-decoration-none text-muted">{{ product.review_count }} {% trans "reviews" %}</a>
+                </div>
+
+                <!-- Price -->
+                <div class="mb-4">
+                    {% if product.is_on_sale %}
+                    <div class="text-muted text-decoration-line-through h4">${{ product.regular_price|floatformat:2 }}</div>
+                    <div class="fw-bold text-danger h2">${{ product.sale_price|floatformat:2 }}</div>
+                    {% else %}
+                    <div class="fw-bold h2">${{ product.price|floatformat:2 }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Short Description -->
+                <div class="mb-4">
+                    <p class="lead">{{ product.short_description }}</p>
+                </div>
+
+                <!-- SKU -->
+                {% if product.sku %}
+                <div class="mb-3">
+                    <span class="text-muted small">{% trans "SKU" %}:</span>
+                    <span class="ms-2">{{ product.sku }}</span>
+                </div>
+                {% endif %}
+
+                <!-- Stock -->
+                <div class="mb-4">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small">{% trans "Availability" %}:</span>
+                        {% if product.is_in_stock %}
+                        <span class="badge bg-success">{% trans "In Stock" %} ({{ product.stock_quantity }} {% trans "available" %})</span>
+                        {% else %}
+                        <span class="badge bg-danger">{% trans "Out of Stock" %}</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Variants -->
+                {% if product.variants.exists %}
+                <div class="mb-4">
+                    <div class="row">
+                        {% for attribute in product.variant_attributes %}
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-bold">{{ attribute.name }} <span class="text-danger">*</span></label>
+                            <select class="form-select variant-select" data-attribute-id="{{ attribute.id }}">
+                                <option value="">{% trans "Select" %} {{ attribute.name }}</option>
+                                {% for value in attribute.values.all %}
+                                <option value="{{ value.id }}" {% if forloop.first %}selected{% endif %} data-price="{{ value.price_adjustment }}">{{ value.value }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Quantity -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">{% trans "Quantity" %}</label>
+                    <div class="input-group">
+                        <button type="button" class="btn btn-outline-secondary quantity-btn minus">-</button>
+                        <input type="number" id="quantityInput" value="1" min="1" max="{{ product.stock_quantity }}" class="form-control text-center">
+                        <button type="button" class="btn btn-outline-secondary quantity-btn plus">+</button>
+                    </div>
+                    {% if product.stock_quantity > 0 %}
+                    <div class="form-text">{{ product.stock_quantity }} {% trans "available" %}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Actions -->
+                <div class="d-flex gap-2 mb-4">
+                    <button type="button" class="btn btn-primary btn-lg px-4 add-to-cart" data-product-id="{{ product.id }}">
+                        <i class="bi bi-cart-plus me-2"></i> {% trans "Add to Cart" %}
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-lg px-4 wishlist-toggle" data-product-id="{{ product.id }}">
+                        <i class="bi {% if product in request.user.wishlist.products.all %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+                    </button>
+                </div>
+
+                <!-- Compare -->
+                <div class="mb-4">
+                    <a href="#" class="text-muted text-decoration-none compare-toggle" data-product-id="{{ product.id }}">
+                        <i class="bi bi-arrow-left-right me-1"></i> {% trans "Add to Compare" %}
+                    </a>
+                </div>
+
+                <!-- Payment Options -->
+                <div class="mb-4">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small">{% trans "Secure Payment" %}:</span>
+                        <div class="d-flex gap-1">
+                            <i class="bi bi-credit-card text-primary"></i>
+                            <i class="bi bi-paypal text-primary"></i>
+                            <i class="bi bi-apple-pay text-primary"></i>
+                            <i class="bi bi-google-pay text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Share -->
+                <div class="mb-4">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small">{% trans "Share" %}:</span>
+                        <div class="d-flex gap-1">
+                            <a href="#" class="btn btn-sm btn-outline-secondary"><i class="bi bi-facebook"></i></a>
+                            <a href="#" class="btn btn-sm btn-outline-secondary"><i class="bi bi-twitter"></i></a>
+                            <a href="#" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pinterest"></i></a>
+                            <a href="#" class="btn btn-sm btn-outline-secondary"><i class="bi bi-envelope"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Description & Details -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <!-- Tabs -->
+                    <ul class="nav nav-tabs card-header-tabs" id="productTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="descriptionTab" data-bs-toggle="tab" data-bs-target="#description" type="button" role="tab">
+                                {% trans "Description" %}
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="detailsTab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab">
+                                {% trans "Details" %}
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="reviewsTab" data-bs-toggle="tab" data-bs-target="#reviews" type="button" role="tab">
+                                {% trans "Reviews" %} ({{ product.review_count }})
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="shippingTab" data-bs-toggle="tab" data-bs-target="#shipping" type="button" role="tab">
+                                {% trans "Shipping & Returns" %}
+                            </button>
+                        </li>
+                    </ul>
+
+                    <!-- Tab Content -->
+                    <div class="tab-content p-3">
+                        <!-- Description -->
+                        <div class="tab-pane fade show active" id="description" role="tabpanel">
+                            <div class="product-description">
+                                {{ product.description|safe }}
+                            </div>
+                        </div>
+
+                        <!-- Details -->
+                        <div class="tab-pane fade" id="details" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <table class="table table-sm">
+                                        <tbody>
+                                            {% if product.sku %}
+                                            <tr>
+                                                <th>{% trans "SKU" %}:</th>
+                                                <td>{{ product.sku }}</td>
+                                            </tr>
+                                            {% endif %}
+                                            {% if product.weight %}
+                                            <tr>
+                                                <th>{% trans "Weight" %}:</th>
+                                                <td>{{ product.weight }} kg</td>
+                                            </tr>
+                                            {% endif %}
+                                            {% if product.dimensions %}
+                                            <tr>
+                                                <th>{% trans "Dimensions" %}:</th>
+                                                <td>{{ product.dimensions }}</td>
+                                            </tr>
+                                            {% endif %}
+                                            {% if product.material %}
+                                            <tr>
+                                                <th>{% trans "Material" %}:</th>
+                                                <td>{{ product.material }}</td>
+                                            </tr>
+                                            {% endif %}
+                                            {% if product.color %}
+                                            <tr>
+                                                <th>{% trans "Color" %}:</th>
+                                                <td>{{ product.color }}</td>
+                                            </tr>
+                                            {% endif %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <table class="table table-sm">
+                                        <tbody>
+                                            {% if product.brand %}
+                                            <tr>
+                                                <th>{% trans "Brand" %}:</th>
+                                                <td>{{ product.brand.name }}</td>
+                                            </tr>
+                                            {% endif %}
+                                            <tr>
+                                                <th>{% trans "Categories" %}:</th>
+                                                <td>
+                                                    {% for category in product.categories.all %}
+                                                    <a href="{{ category.get_absolute_url }}" class="text-decoration-none">{{ category.name }}</a>{% if not forloop.last %}, {% endif %}
+                                                    {% endfor %}
+                                                </td>
+                                            </tr>
+                                            {% for tag in product.tags.all %}
+                                            <tr>
+                                                <th>{% trans "Tags" %}:</th>
+                                                <td>
+                                                    {% for tag in product.tags.all %}
+                                                    <a href="{% url 'store:product_list' %}?tag={{ tag.slug }}" class="text-decoration-none">{{ tag.name }}</a>{% if not forloop.last %}, {% endif %}
+                                                    {% endfor %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                            <tr>
+                                                <th>{% trans "Created" %}:</th>
+                                                <td>{{ product.created_at|date:"F j, Y" }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>{% trans "Updated" %}:</th>
+                                                <td>{{ product.updated_at|date:"F j, Y" }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Reviews -->
+                        <div class="tab-pane fade" id="reviews" role="tabpanel">
+                            {% include "reviews/_product_reviews_section.html" with product=product reviews=product.reviews.all %}
+                        </div>
+
+                        <!-- Shipping & Returns -->
+                        <div class="tab-pane fade" id="shipping" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>{% trans "Shipping" %}</h5>
+                                    <ul class="list-unstyled">
+                                        <li class="mb-2"><i class="bi bi-truck me-2 text-primary"></i> {% trans "Free shipping on orders over $50" %}</li>
+                                        <li class="mb-2"><i class="bi bi-clock me-2 text-primary"></i> {% trans "Estimated delivery: 3-5 business days" %}</li>
+                                        <li class="mb-2"><i class="bi bi-shield-check me-2 text-primary"></i> {% trans "All orders are insured" %}</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5>{% trans "Returns" %}</h5>
+                                    <ul class="list-unstyled">
+                                        <li class="mb-2"><i class="bi bi-arrow-return-left me-2 text-primary"></i> {% trans "30-day return policy" %}</li>
+                                        <li class="mb-2"><i class="bi bi-wallet me-2 text-primary"></i> {% trans "Money back guarantee" %}</li>
+                                        <li class="mb-2"><i class="bi bi-telephone me-2 text-primary"></i> {% trans "24/7 customer support" %}</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Products -->
+    {% if related_products %}
+    <div class="row mt-5">
+        <div class="col-12">
+            <h3 class="mb-4">{% trans "You May Also Like" %}</h3>
+            <div class="row">
+                {% for related in related_products %}
+                <div class="col-md-3 mb-4">
+                    {% include "store/_product_card.html" with product=related %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recently Viewed -->
+    {% if recently_viewed %}
+    <div class="row mt-5">
+        <div class="col-12">
+            <h3 class="mb-4">{% trans "Recently Viewed" %}</h3>
+            <div class="row">
+                {% for viewed in recently_viewed %}
+                <div class="col-md-3 mb-4">
+                    {% include "store/_product_card.html" with product=viewed %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+// Thumbnail click
+$('.thumbnail').on('click', function() {
+    const src = $(this).data('src');
+    $('#mainProductImage').attr('src', src);
+    
+    // Update active thumbnail
+    $('.thumbnail').css('border-color', '#dee2e6');
+    $(this).css('border-color', '#0d6efd');
+});
+
+// Quantity buttons
+$('.quantity-btn.minus').on('click', function() {
+    const input = $('#quantityInput');
+    const currentValue = parseInt(input.val());
+    const minValue = parseInt(input.attr('min')) || 1;
+    
+    if (currentValue > minValue) {
+        input.val(currentValue - 1);
+    }
+});
+
+$('.quantity-btn.plus').on('click', function() {
+    const input = $('#quantityInput');
+    const currentValue = parseInt(input.val());
+    const maxValue = parseInt(input.attr('max')) || 999;
+    
+    if (currentValue < maxValue) {
+        input.val(currentValue + 1);
+    }
+});
+
+// Add to cart with variant selection
+$('.add-to-cart').on('click', function() {
+    const productId = $(this).data('product-id');
+    const quantity = $('#quantityInput').val();
+    
+    // Get selected variants
+    const variants = {};
+    $('.variant-select').each(function() {
+        const attributeId = $(this).data('attribute-id');
+        const valueId = $(this).val();
+        if (valueId) {
+            variants[attributeId] = valueId;
+        }
+    });
+    
+    // Add to cart via AJAX
+    $.post('{% url "cart:add_to_cart" %}', {
+        product_id: productId,
+        quantity: quantity,
+        variants: JSON.stringify(variants),
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+    }, function(data) {
+        if (data.success) {
+            // Update cart count
+            $('#cartCount').text(data.cart_count);
+            
+            // Show success message
+            toastr.success('{% trans "Product added to cart!" %}');
+            
+            // Show cart sidebar
+            openCartSidebar();
+        } else {
+            toastr.error(data.error || '{% trans "Failed to add product to cart." %}');
+        }
+    });
+});
+
+// Variant selection - update price
+$('.variant-select').on('change', function() {
+    // Calculate total price based on selected variants
+    let basePrice = {{ product.price|default:0 }};
+    let totalPrice = basePrice;
+    
+    $('.variant-select').each(function() {
+        const selectedOption = $(this).find('option:selected');
+        const priceAdjustment = parseFloat(selectedOption.data('price')) || 0;
+        totalPrice += priceAdjustment;
+    });
+    
+    // Update displayed price
+    if (totalPrice !== basePrice) {
+        // You can update the price display here
+    }
+});
+</script>
+{% endblock %}
