@@ -52,6 +52,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'apps.core.middleware.theme_middleware',
+    'apps.dashboard_admin.middleware.AdminUserSettingsMiddleware',
+    'apps.dashboard_admin.middleware.AdminThemeMiddleware',
+    'apps.dashboard_admin.middleware.AdminActivityMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'

@@ -20,6 +20,29 @@ from api.views.core_views import (
     HealthCheckAPIView,
 )
 
+from api.views.dashboard_admin_views import (
+    AdminDashboardViewSet,
+    DashboardWidgetViewSet,
+    AdminMenuViewSet,
+    AdminMenuItemViewSet,
+    AdminQuickActionViewSet,
+    AdminSettingsViewSet,
+    AdminUserSettingsViewSet,
+    AdminActivityViewSet,
+    DashboardStatsAPIView,
+    AdminSettingsAPIView,
+)
+
+# Add dashboard_admin URLs to router
+main_router.register(r'admin/dashboards', AdminDashboardViewSet, basename='admin-dashboard')
+main_router.register(r'admin/widgets', DashboardWidgetViewSet, basename='dashboard-widget')
+main_router.register(r'admin/menus', AdminMenuViewSet, basename='admin-menu')
+main_router.register(r'admin/menu-items', AdminMenuItemViewSet, basename='admin-menu-item')
+main_router.register(r'admin/quick-actions', AdminQuickActionViewSet, basename='admin-quick-action')
+main_router.register(r'admin/settings', AdminSettingsViewSet, basename='admin-settings')
+main_router.register(r'admin/user-settings', AdminUserSettingsViewSet, basename='admin-user-settings')
+main_router.register(r'admin/activities', AdminActivityViewSet, basename='admin-activity')
+
 from api.views.accounts_views import (
     UserViewSet,
     UserProfileViewSet,
@@ -333,6 +356,10 @@ urlpatterns = [
     
     # Site stats
     path('stats/', SiteStatsAPIView.as_view(), name='site-stats'),
+    
+    # Admin dashboard stats
+    path('admin/stats/', DashboardStatsAPIView.as_view({'get': 'list'}), name='admin-dashboard-stats'),
+    path('admin/settings/', AdminSettingsAPIView.as_view({'get': 'get', 'post': 'post'}), name='admin-settings'),
     
     # Include router URLs
     path('', include(main_router.urls)),
