@@ -81,7 +81,7 @@
 
 ### Remaining Tasks
 - [x] Admin panel customization (Completed - All models, views, forms, signals, middleware, API endpoints created)
-- [ ] Payment system integration (Stripe, PayPal, etc.)
+- [x] Payment system integration (Completed - Zarinpal, IDPay, Pay.ir, NextPay gateways with full processing, wallet, history)
 - [ ] Ads system implementation
 - [ ] Testing (unit tests, integration tests)
 - [ ] Performance optimizations
