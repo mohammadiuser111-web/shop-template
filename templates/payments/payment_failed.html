@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ page_title|default:"پرداخت ناموفق" }}{% endblock %}
+
+{% block content %}
+<!-- Error Section -->
+<section class="py-16 bg-red-50">
+    <div class="max-w-4xl mx-auto px-4 text-center">
+        <!-- Error Icon -->
+        <div class="mb-8">
+            <svg class="w-24 h-24 mx-auto text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+        </div>
+        
+        <!-- Error Message -->
+        <h1 class="text-3xl font-bold text-red-600 mb-4">
+            {% trans "پرداخت ناموفق بود" %}
+        </h1>
+        
+        <p class="text-lg text-gray-600 mb-8">
+            {{ message|default:"متاسفانه پرداخت شما با خطا مواجه شد. لطفاً دوباره تلاش کنید یا از درگاه دیگری استفاده نمایید." }}
+        </p>
+        
+        <!-- Error Details (if available) -->
+        {% if transaction %}
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8 max-w-2xl mx-auto">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                {% trans "جزئیات تراکنش" %}
+            </h2>
+            
+            <div class="space-y-4 text-right">
+                <div class="flex justify-between">
+                    <span class="text-gray-500">{% trans "شناسه تراکنش:" %}</span>
+                    <span class="font-medium">{{ transaction.transaction_id }}</span>
+                </div>
+                
+                <div class="flex justify-between">
+                    <span class="text-gray-500">{% trans "مبلغ:" %}</span>
+                    <span class="font-medium">{{ transaction.amount|intcomma }} {% trans "تومان" %}</span>
+                </div>
+                
+                <div class="flex justify-between">
+                    <span class="text-gray-500">{% trans "درگاه پرداخت:" %}</span>
+                    <span class="font-medium">{{ transaction.gateway.title if transaction.gateway else transaction.gateway.name }}</span>
+                </div>
+                
+                {% if transaction.error_message %}
+                <div class="flex justify-between">
+                    <span class="text-gray-500">{% trans "پیام خطا:" %}</span>
+                    <span class="font-medium text-red-500">{{ transaction.error_message }}</span>
+                </div>
+                {% endif %}
+                
+                {% if transaction.error_code %}
+                <div class="flex justify-between">
+                    <span class="text-gray-500">{% trans "کد خطا:" %}</span>
+                    <span class="font-medium">{{ transaction.error_code }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="{% if transaction and transaction.order %}{% url 'payments:select_gateway' %}?order_id={{ transaction.order.pk }}{% else %}{% url 'store:home' %}{% endif %}" 
+               class="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                {% trans "تلاش مجدد" %}
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+            </a>
+            
+            <a href="{% url 'orders:order_detail' pk=transaction.order.pk %}" 
+               class="inline-flex items-center justify-center px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                {% trans "مشاهده سفارش" %}
+            </a>
+            
+            <a href="{% url 'store:home' %}" 
+               class="inline-flex items-center justify-center px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                {% trans "بازگشت به صفحه اصلی" %}
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Suggestions Section -->
+<section class="py-8">
+    <div class="max-w-4xl mx-auto px-4">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                {% trans "پیشنهادات" %}
+            </h2>
+            
+            <ul class="space-y-3 text-right">
+                <li class="flex items-start">
+                    <svg class="w-5 h-5 text-blue-500 mt-1 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span>{% trans "مطمئن شوید که اطلاعات کارت بانکی خود را صحیح وارد کرده‌اید." %}</span>
+                </li>
+                <li class="flex items-start">
+                    <svg class="w-5 h-5 text-blue-500 mt-1 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span>{% trans "از وجود موجودی کافی در کارت خود مطمئن شوید." %}</span>
+                </li>
+                <li class="flex items-start">
+                    <svg class="w-5 h-5 text-blue-500 mt-1 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span>{% trans "در صورت بروز مشکل، از درگاه پرداخت دیگری استفاده کنید." %}</span>
+                </li>
+                <li class="flex items-start">
+                    <svg class="w-5 h-5 text-blue-500 mt-1 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span>{% trans "در صورت نیاز، با پشتیبانی تماس بگیرید." %}</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ page_title|default:"تاریخچه پرداخت‌ها" }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumbs -->
+<nav class="py-4" aria-label="breadcrumb">
+    <div class="max-w-6xl mx-auto px-4">
+        <ol class="flex items-center justify-end space-x-2 text-sm">
+            <li>
+                <a href="{% url 'store:home' %}" class="text-gray-500 hover:text-blue-600">{% trans "خانه" %}</a>
+            </li>
+            <li class="text-gray-400">/</li>
+            <li class="text-gray-800">{% trans "تاریخچه پرداخت‌ها" %}</li>
+        </ol>
+    </div>
+</nav>
+
+<!-- Header -->
+<section class="py-4">
+    <div class="max-w-6xl mx-auto px-4">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+            <h1 class="text-2xl font-bold text-gray-800">{% trans "تاریخچه پرداخت‌ها" %}</h1>
+            
+            <div class="flex items-center gap-4 mt-4 md:mt-0">
+                <!-- Stats -->
+                <div class="flex gap-6 text-sm">
+                    <div class="text-center">
+                        <div class="font-bold text-gray-800">{{ transactions.paginator.count }}</div>
+                        <div class="text-gray-500">{% trans "کل تراکنش‌ها" %}</div>
+                    </div>
+                    
+                    {% with successful_count=transactions.object_list|filter_by_status:"success"|length %}
+                    <div class="text-center">
+                        <div class="font-bold text-green-600">{{ successful_count }}</div>
+                        <div class="text-gray-500">{% trans "موفق" %}</div>
+                    </div>
+                    {% endwith %}
+                    
+                    {% with failed_count=transactions.object_list|filter_by_status:"failed"|length %}
+                    <div class="text-center">
+                        <div class="font-bold text-red-600">{{ failed_count }}</div>
+                        <div class="text-gray-500">{% trans "ناموفق" %}</div>
+                    </div>
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Filter Section -->
+<section class="py-4">
+    <div class="max-w-6xl mx-auto px-4">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <form method="get" class="flex flex-col md:flex-row gap-4">
+                <div class="flex-1">
+                    <label for="status" class="block text-sm font-medium text-gray-700 mb-1">{% trans "وضعیت" %}</label>
+                    <select id="status" name="status" 
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">{% trans "همه" %}</option>
+                        <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>{% trans "در انتظار" %}</option>
+                        <option value="success" {% if current_status == 'success' %}selected{% endif %}>{% trans "موفق" %}</option>
+                        <option value="failed" {% if current_status == 'failed' %}selected{% endif %}>{% trans "ناموفق" %}</option>
+                        <option value="cancelled" {% if current_status == 'cancelled' %}selected{% endif %}>{% trans "لغو شده" %}</option>
+                        <option value="refunded" {% if current_status == 'refunded' %}selected{% endif %}>{% trans "استرداد شده" %}</option>
+                    </select>
+                </div>
+                
+                <div class="flex-1">
+                    <label for="gateway" class="block text-sm font-medium text-gray-700 mb-1">{% trans "درگاه پرداخت" %}</label>
+                    <select id="gateway" name="gateway" 
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">{% trans "همه" %}</option>
+                        {% for gateway in gateways %}
+                        <option value="{{ gateway.id }}" {% if current_gateway == gateway.id|stringformat:"s" %}selected{% endif %}>{{ gateway.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="flex items-end">
+                    <button type="submit" 
+                            class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        {% trans "فیلتر" %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- Transactions Table -->
+<section class="py-4">
+    <div class="max-w-6xl mx-auto px-4">
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase">{% trans "تاریخ" %}</th>
+                        <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase">{% trans "شناسه تراکنش" %}</th>
+                        <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase">{% trans "درگاه" %}</th>
+                        <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase">{% trans "مبلغ" %}</th>
+                        <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase">{% trans "نوع" %}</th>
+                        <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase">{% trans "وضعیت" %}</th>
+                        <th class="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase">{% trans "عملیات" %}</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for transaction in transactions %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 text-right text-sm text-gray-500">
+                            {{ transaction.created_at|date:"Y/m/d"|default:"-" }}<br>
+                            <span class="text-xs">{{ transaction.created_at|time:"H:i"|default:"-" }}</span>
+                        </td>
+                        <td class="px-6 py-4 text-right text-sm font-medium">
+                            <a href="{% url 'payments:payment_detail' transaction_id=transaction.pk %}" 
+                               class="text-blue-600 hover:text-blue-800">
+                                {{ transaction.transaction_id }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 text-right text-sm">
+                            {{ transaction.gateway.title if transaction.gateway else "-" }}
+                        </td>
+                        <td class="px-6 py-4 text-right text-sm font-medium">
+                            {{ transaction.amount|intcomma }} {% trans "تومان" %}
+                        </td>
+                        <td class="px-6 py-4 text-right text-sm">
+                            {{ transaction.get_transaction_type_display|default:"-" }}
+                        </td>
+                        <td class="px-6 py-4 text-right text-sm">
+                            {% if transaction.status == 'success' %}
+                                <span class="text-green-600 font-medium">{% trans "موفق" %}</span>
+                            {% elif transaction.status == 'pending' %}
+                                <span class="text-yellow-600 font-medium">{% trans "در انتظار" %}</span>
+                            {% elif transaction.status == 'failed' %}
+                                <span class="text-red-600 font-medium">{% trans "ناموفق" %}</span>
+                            {% elif transaction.status == 'cancelled' %}
+                                <span class="text-gray-600 font-medium">{% trans "لغو شده" %}</span>
+                            {% else %}
+                                <span class="text-purple-600 font-medium">{% trans "استرداد شده" %}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-center text-sm">
+                            <div class="flex items-center justify-center gap-2">
+                                <a href="{% url 'payments:payment_detail' transaction_id=transaction.pk %}" 
+                                   class="text-blue-600 hover:text-blue-800" title="{% trans 'مشاهده جزئیات' %}">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                </a>
+                                
+                                {% if transaction.status == 'success' %}
+                                <a href="{% url 'payments:receipt' transaction_id=transaction.pk %}" 
+                                   class="text-green-600 hover:text-green-800" title="{% trans 'رسید' %}">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                </a>
+                                {% endif %}
+                                
+                                {% if transaction.status == 'pending' %}
+                                <a href="{% url 'payments:select_gateway' %}?order_id={{ transaction.order.pk }}" 
+                                   class="text-yellow-600 hover:text-yellow-800" title="{% trans 'تلاش مجدد' %}">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                    </svg>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-8 text-center text-sm text-gray-500">
+                            {% trans "تراکنشی یافت نشد" %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <!-- Pagination -->
+            {% if transactions.has_other_pages %}
+            <div class="p-6">
+                <nav class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-gray-500">
+                            {% trans "نمایش" %} {{ transactions.start_index }} {% trans "تا" %} {{ transactions.end_index }} {% trans "از" %} {{ transactions.paginator.count }} {% trans "مورد" %}
+                        </span>
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                        {% if transactions.has_previous %}
+                        <a href="?page={{ transactions.previous_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_gateway %}&gateway={{ current_gateway }}{% endif %}" 
+                           class="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            {% trans "قبلی" %}
+                        </a>
+                        {% endif %}
+                        
+                        <span class="px-3 py-1">{{ transactions.number }} / {{ transactions.paginator.num_pages }}</span>
+                        
+                        {% if transactions.has_next %}
+                        <a href="?page={{ transactions.next_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_gateway %}&gateway={{ current_gateway }}{% endif %}" 
+                           class="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            {% trans "بعدی" %}
+                        </a>
+                        {% endif %}
+                    </div>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+{% endblock %}

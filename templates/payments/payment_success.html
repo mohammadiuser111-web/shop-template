@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ page_title|default:"پرداخت موفق" }}{% endblock %}
+
+{% block content %}
+<!-- Success Section -->
+<section class="py-16 bg-green-50">
+    <div class="max-w-4xl mx-auto px-4 text-center">
+        <!-- Success Icon -->
+        <div class="mb-8">
+            <svg class="w-24 h-24 mx-auto text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+        </div>
+        
+        <!-- Success Message -->
+        <h1 class="text-3xl font-bold text-green-600 mb-4">
+            {% trans "پرداخت با موفقیت انجام شد!" %}
+        </h1>
+        
+        <p class="text-lg text-gray-600 mb-8">
+            {% trans "تراکنش شما با موفقیت پردازش شد. سفارش شما ثبت شده و به زودی پردازش خواهد شد." %}
+        </p>
+        
+        <!-- Transaction Details -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8 max-w-2xl mx-auto">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                {% trans "جزئیات تراکنش" %}
+            </h2>
+            
+            <div class="space-y-4 text-right">
+                <div class="flex justify-between">
+                    <span class="text-gray-500">{% trans "شناسه تراکنش:" %}</span>
+                    <span class="font-medium">{{ transaction.transaction_id }}</span>
+                </div>
+                
+                {% if ref_id %}
+                <div class="flex justify-between">
+                    <span class="text-gray-500">{% trans "کد پیگیری:" %}</span>
+                    <span class="font-medium">{{ ref_id }}</span>
+                </div>
+                {% endif %}
+                
+                <div class="flex justify-between">
+                    <span class="text-gray-500">{% trans "مبلغ:" %}</span>
+                    <span class="font-medium">{{ transaction.amount|intcomma }} {% trans "تومان" %}</span>
+                </div>
+                
+                <div class="flex justify-between">
+                    <span class="text-gray-500">{% trans "درگاه پرداخت:" %}</span>
+                    <span class="font-medium">{{ transaction.gateway.title if transaction.gateway else transaction.gateway.name }}</span>
+                </div>
+                
+                <div class="flex justify-between">
+                    <span class="text-gray-500">{% trans "تاریخ:" %}</span>
+                    <span class="font-medium">{{ transaction.completed_at|date:"Y/m/d H:i" }}</span>
+                </div>
+                
+                {% if transaction.order %}
+                <div class="flex justify-between">
+                    <span class="text-gray-500">{% trans "شماره سفارش:" %}</span>
+                    <span class="font-medium">{{ transaction.order.code }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="{% url 'orders:order_detail' pk=transaction.order.pk %}" 
+               class="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                {% trans "مشاهده سفارش" %}
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+            </a>
+            
+            <a href="{% url 'store:home' %}" 
+               class="inline-flex items-center justify-center px-6 py-3 border-2 border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
+                {% trans "بازگشت به صفحه اصلی" %}
+            </a>
+            
+            <a href="{% url 'payments:receipt' transaction_id=transaction.pk %}" 
+               class="inline-flex items-center justify-center px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                {% trans "دریافت رسید" %}
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Order Summary -->
+{% if transaction.order %}
+<section class="py-8">
+    <div class="max-w-4xl mx-auto px-4">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">{% trans "خلاصه سفارش" %}</h2>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{% trans "محصول" %}</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{% trans "تعداد" %}</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{% trans "قیمت" %}</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{% trans "مبلغ" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for item in transaction.order.items.all %}
+                        <tr>
+                            <td class="px-4 py-4 text-right">
+                                <div class="text-sm font-medium text-gray-900">{{ item.product.name }}</div>
+                                {% if item.variant %}
+                                <div class="text-xs text-gray-500">{{ item.variant.name }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-4 text-right text-sm text-gray-500">{{ item.quantity }}</td>
+                            <td class="px-4 py-4 text-right text-sm text-gray-500">{{ item.unit_price|intcomma }} {% trans "تومان" %}</td>
+                            <td class="px-4 py-4 text-right text-sm font-medium text-gray-900">{{ item.total_price|intcomma }} {% trans "تومان" %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="bg-gray-50">
+                        <tr>
+                            <th colspan="3" class="px-4 py-3 text-right text-sm font-medium text-gray-500">{% trans "جمع" %}</th>
+                            <th class="px-4 py-3 text-right text-sm font-bold text-gray-900">{{ transaction.order.subtotal|intcomma }} {% trans "تومان" %}</th>
+                        </tr>
+                        <tr>
+                            <th colspan="3" class="px-4 py-3 text-right text-sm font-medium text-gray-500">{% trans "تخفیف" %}</th>
+                            <th class="px-4 py-3 text-right text-sm font-bold text-green-600">-{{ transaction.order.discount_amount|intcomma }} {% trans "تومان" %}</th>
+                        </tr>
+                        <tr>
+                            <th colspan="3" class="px-4 py-3 text-right text-sm font-medium text-gray-500">{% trans "هزینه ارسال" %}</th>
+                            <th class="px-4 py-3 text-right text-sm font-bold text-gray-900">{{ transaction.order.shipping_cost|intcomma }} {% trans "تومان" %}</th>
+                        </tr>
+                        <tr>
+                            <th colspan="3" class="px-4 py-3 text-right text-sm font-bold text-gray-900">{% trans "مبلغ نهایی" %}</th>
+                            <th class="px-4 py-3 text-right text-lg font-bold text-blue-600">{{ transaction.order.total_amount|intcomma }} {% trans "تومان" %}</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Print receipt functionality
+function printReceipt() {
+    window.print();
+}
+</script>
+{% endblock %}

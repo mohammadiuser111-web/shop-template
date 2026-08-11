@@ -178,6 +178,7 @@ THEME_CONFIG_PATH = os.path.join(BASE_DIR, 'theme', 'config.json')
 SITE_NAME = 'Shop Template'
 SITE_DESCRIPTION = 'قالب حرفه‌ای فروشگاهی'
 SITE_LOGO = '/static/icons/logo.svg'
+SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
 
 # Payment gateway settings
 PAYMENT_GATEWAYS = {
@@ -188,6 +189,14 @@ PAYMENT_GATEWAYS = {
     'idpay': {
         'API_KEY': os.environ.get('IDPAY_API_KEY', ''),
         'SANDBOX': os.environ.get('IDPAY_SANDBOX', 'True').lower() == 'true',
+    },
+    'payir': {
+        'API_KEY': os.environ.get('PAYIR_API_KEY', ''),
+        'SANDBOX': os.environ.get('PAYIR_SANDBOX', 'True').lower() == 'true',
+    },
+    'nextpay': {
+        'API_KEY': os.environ.get('NEXTPAY_API_KEY', ''),
+        'SANDBOX': os.environ.get('NEXTPAY_SANDBOX', 'True').lower() == 'true',
     },
 }
 

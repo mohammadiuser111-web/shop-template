@@ -1,5 +1,6 @@
 """
 Views for payments app.
+Integrates with Iranian payment gateways (Zarinpal, IDPay, Pay.ir, NextPay).
 """
 import json
 import uuid
@@ -14,450 +15,355 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q, Sum, Count
 from django.conf import settings
 
-from .models import (
-    Payment, PaymentMethod, Transaction, Refund, PaymentGateway,
-    Wallet, WalletTransaction
-)
+from .models import PaymentGateway, Transaction, Wallet, WalletTransaction
 from .forms import (
-    PaymentMethodForm, WalletTopUpForm, RefundRequestForm,
-    PaymentForm
+    PaymentGatewayForm,
+    WalletDepositForm,
+    WalletWithdrawForm,
+    PaymentForm,
+    RefundForm,
+    PaymentSearchForm,
 )
+from .services import PaymentService
 from apps.orders.models import Order
-from apps.discounts.models import Coupon
 
 
 # ==================== PAYMENT GATEWAY VIEWS ====================
 
 @login_required
-@require_http_methods(["GET", "POST"])
-def payment_gateway(request, order_id):
-    """Payment gateway selection and processing."""
+def payment_gateway_select(request):
+    """Select payment gateway for an order."""
+    order_id = request.GET.get('order_id')
+    
+    if not order_id:
+        messages.error(request, _(' Order ID is required.'))
+        return redirect('store:home')
+    
     order = get_object_or_404(Order, pk=order_id, user=request.user)
     
     # Check if order can be paid
     if order.status not in ['pending', 'failed', 'cancelled']:
-        messages.error(request, _('This order cannot be paid.'))
+        messages.error(request, _('این سفارش قابل پرداخت نیست.'))
         return redirect('orders:order_detail', pk=order_id)
     
-    # Get available payment methods
-    available_gateways = PaymentGateway.objects.filter(is_active=True)
-    
-    # Get user's saved payment methods
-    saved_methods = PaymentMethod.objects.filter(
-        user=request.user,
-        is_active=True
-    )
+    # Get available gateways
+    gateways = PaymentService.get_active_gateways()
     
     if request.method == 'POST':
-        gateway_id = request.POST.get('gateway')
-        payment_method_id = request.POST.get('payment_method')
-        use_new_card = request.POST.get('use_new_card') == '1'
+        gateway_type = request.POST.get('gateway')
         
-        gateway = get_object_or_404(PaymentGateway, pk=gateway_id, is_active=True)
+        if not gateway_type:
+            messages.error(request, _('لطفاً یک درگاه پرداخت انتخاب کنید.'))
+            return redirect('payments:select_gateway')
         
-        # Create payment record
-        payment = Payment.objects.create(
+        # Create transaction
+        transaction, result = PaymentService.create_payment(
             order=order,
             user=request.user,
-            gateway=gateway,
+            gateway_type=gateway_type,
             amount=order.total_amount,
-            currency=order.currency,
-            status='pending',
-            transaction_id=f'PAY-{uuid.uuid4().hex[:12].upper()}',
+            currency='IRR',
+            description=f'پرداخت سفارش #{order.code}'
         )
         
-        # Handle different payment methods
-        if use_new_card:
-            # Process new card payment
-            return process_new_card_payment(request, order, payment, gateway)
-        elif payment_method_id:
-            # Use saved payment method
-            saved_method = get_object_or_404(PaymentMethod, pk=payment_method_id, user=request.user)
-            return process_saved_payment(request, order, payment, gateway, saved_method)
+        if not result['success']:
+            messages.error(request, result.get('message', _('خطا در ایجاد تراکنش')))
+            return redirect('payments:select_gateway')
+        
+        # Process payment
+        redirect_url, result = PaymentService.process_payment(transaction, gateway_type)
+        
+        if result['success'] and redirect_url:
+            return redirect(redirect_url)
         else:
-            # Redirect to gateway
-            return redirect_to_gateway(request, order, payment, gateway)
+            messages.error(request, result.get('message', _('خطا در اتصال به درگاه')))
+            return redirect('payments:select_gateway')
     
     context = {
         'order': order,
-        'gateways': available_gateways,
-        'saved_methods': saved_methods,
-        'title': _('Payment Gateway'),
+        'gateways': gateways,
+        'page_title': _('انتخاب درگاه پرداخت'),
     }
     return render(request, 'payments/payment_gateway.html', context)
 
 
-def process_new_card_payment(request, order, payment, gateway):
-    """Process payment with new card."""
-    # In a real implementation, this would integrate with the payment gateway API
-    # For demo purposes, we'll simulate the process
+@login_required
+def payment_process(request, gateway_type):
+    """Process payment for a specific gateway."""
+    order_id = request.GET.get('order_id')
     
-    # Get card details from form
-    card_number = request.POST.get('card_number')
-    expiry_month = request.POST.get('expiry_month')
-    expiry_year = request.POST.get('expiry_year')
-    cvv = request.POST.get('cvv')
-    card_holder = request.POST.get('card_holder')
-    save_card = request.POST.get('save_card') == '1'
+    if not order_id:
+        return JsonResponse({'success': False, 'message': 'Order ID is required'}, status=400)
     
-    # Simulate payment processing
-    # In production, you would:
-    # 1. Send request to payment gateway API
-    # 2. Get token/response
-    # 3. Process the payment
-    # 4. Handle the response
+    order = get_object_or_404(Order, pk=order_id, user=request.user)
     
-    # For demo, simulate successful payment
-    import random
-    success = random.random() > 0.2  # 80% success rate for demo
+    # Create transaction
+    transaction, result = PaymentService.create_payment(
+        order=order,
+        user=request.user,
+        gateway_type=gateway_type,
+        amount=order.total_amount,
+        currency='IRR',
+        description=f'پرداخت سفارش #{order.code}'
+    )
     
-    if success:
-        # Payment successful
-        payment.status = 'completed'
-        payment.save()
-        
-        # Update order status
-        order.status = 'paid'
-        order.payment_status = 'paid'
-        order.save()
-        
-        # Save card if requested
-        if save_card and card_number:
-            PaymentMethod.objects.create(
-                user=request.user,
-                gateway=gateway,
-                card_type='credit' if card_number.startswith('4') else 'debit',
-                last_four=card_number[-4:],
-                card_holder=card_holder,
-                is_default=False,
-            )
-        
-        # Create transaction
-        Transaction.objects.create(
-            payment=payment,
-            amount=payment.amount,
-            currency=payment.currency,
-            status='completed',
-            gateway_response='Payment successful',
-            transaction_id=payment.transaction_id,
-        )
-        
-        messages.success(request, _('Payment successful! Your order has been placed.'))
-        return redirect('orders:order_confirmation', pk=order.pk)
+    if not result['success']:
+        return JsonResponse({'success': False, 'message': result.get('message')})
+    
+    # Process payment
+    redirect_url, result = PaymentService.process_payment(transaction, gateway_type)
+    
+    if result['success'] and redirect_url:
+        return JsonResponse({'success': True, 'redirect_url': redirect_url})
     else:
-        # Payment failed
-        payment.status = 'failed'
-        payment.failure_reason = 'Insufficient funds'
-        payment.save()
-        
-        Transaction.objects.create(
-            payment=payment,
-            amount=payment.amount,
-            currency=payment.currency,
-            status='failed',
-            gateway_response='Insufficient funds',
-            transaction_id=payment.transaction_id,
-        )
-        
-        messages.error(request, _('Payment failed. Please try again.'))
-        return redirect('payments:payment_gateway', order_id=order.pk)
+        return JsonResponse({'success': False, 'message': result.get('message')})
 
 
-def process_saved_payment(request, order, payment, gateway, saved_method):
-    """Process payment with saved payment method."""
-    # In a real implementation, use the saved token
-    # For demo, simulate the process
-    
-    import random
-    success = random.random() > 0.2
-    
-    if success:
-        payment.status = 'completed'
-        payment.save()
-        
-        order.status = 'paid'
-        order.payment_status = 'paid'
-        order.save()
-        
-        Transaction.objects.create(
-            payment=payment,
-            amount=payment.amount,
-            currency=payment.currency,
-            status='completed',
-            gateway_response='Payment successful with saved method',
-            transaction_id=payment.transaction_id,
-        )
-        
-        messages.success(request, _('Payment successful!'))
-        return redirect('orders:order_confirmation', pk=order.pk)
-    else:
-        payment.status = 'failed'
-        payment.save()
-        
-        Transaction.objects.create(
-            payment=payment,
-            amount=payment.amount,
-            currency=payment.currency,
-            status='failed',
-            gateway_response='Payment failed',
-            transaction_id=payment.transaction_id,
-        )
-        
-        messages.error(request, _('Payment failed. Please try another method.'))
-        return redirect('payments:payment_gateway', order_id=order.pk)
-
-
-def redirect_to_gateway(request, order, payment, gateway):
-    """Redirect to external payment gateway."""
-    # In a real implementation, this would redirect to the gateway
-    # For demo, we'll just show a confirmation page
-    
-    context = {
-        'order': order,
-        'payment': payment,
-        'gateway': gateway,
-        'title': _('Redirecting to Payment Gateway'),
-    }
-    return render(request, 'payments/redirect_to_gateway.html', context)
-
-
-# ==================== PAYMENT CALLBACKS ====================
+# ==================== CALLBACK VIEWS ====================
 
 @csrf_exempt
-@require_http_methods(["POST"])
-def payment_callback(request, gateway_name):
-    """Handle payment gateway callback."""
-    # In a real implementation, verify the callback signature
-    # and process the payment status
+def zarinpal_callback(request):
+    """Handle Zarinpal callback."""
+    authority = request.GET.get('Authority')
+    status = request.GET.get('Status')
     
-    gateway = get_object_or_404(PaymentGateway, name=gateway_name, is_active=True)
+    if status != 'OK':
+        transaction = Transaction.objects.filter(gateway_reference=authority).first()
+        if transaction:
+            transaction.status = 'failed'
+            transaction.error_message = f'Status: {status}'
+            transaction.save()
+        return render(request, 'payments/payment_failed.html', {
+            'message': _('پرداخت ناموفق بود'),
+            'page_title': _('خطا در پرداخت')
+        })
     
-    # Get payment from request
-    transaction_id = request.POST.get('transaction_id')
-    status = request.POST.get('status')
-    amount = request.POST.get('amount')
+    # Verify payment
+    transaction, result = PaymentService.verify_payment(
+        'zarinpal',
+        {'Authority': authority, 'Status': status}
+    )
     
-    try:
-        payment = Payment.objects.get(transaction_id=transaction_id)
+    if transaction and result['success']:
+        # Update order status
+        if transaction.order:
+            transaction.order.status = 'paid'
+            transaction.order.payment_status = 'paid'
+            transaction.order.save()
         
-        if status == 'completed':
-            payment.status = 'completed'
-            payment.save()
-            
-            # Update order
-            payment.order.status = 'paid'
-            payment.order.payment_status = 'paid'
-            payment.order.save()
-            
-            # Create transaction
-            Transaction.objects.create(
-                payment=payment,
-                amount=amount,
-                currency=payment.currency,
-                status='completed',
-                gateway_response='Payment completed via callback',
-                transaction_id=transaction_id,
-            )
-            
-            return JsonResponse({'status': 'success'})
-        elif status == 'failed':
-            payment.status = 'failed'
-            payment.failure_reason = request.POST.get('reason', 'Payment failed')
-            payment.save()
-            
-            Transaction.objects.create(
-                payment=payment,
-                amount=amount,
-                currency=payment.currency,
-                status='failed',
-                gateway_response=payment.failure_reason,
-                transaction_id=transaction_id,
-            )
-            
-            return JsonResponse({'status': 'failed'})
-        
-    except Payment.DoesNotExist:
-        pass
-    
-    return JsonResponse({'status': 'error', 'message': 'Invalid transaction'}, status=400)
-
-
-@require_http_methods(["GET"])
-def payment_success(request, payment_id):
-    """Payment success page."""
-    payment = get_object_or_404(Payment, pk=payment_id)
-    
-    if payment.status != 'completed':
-        return redirect('payments:payment_failed', payment_id=payment_id)
-    
-    context = {
-        'payment': payment,
-        'title': _('Payment Successful'),
-    }
-    return render(request, 'payments/payment_success.html', context)
-
-
-@require_http_methods(["GET"])
-def payment_failed(request, payment_id):
-    """Payment failed page."""
-    payment = get_object_or_404(Payment, pk=payment_id)
-    
-    context = {
-        'payment': payment,
-        'title': _('Payment Failed'),
-    }
-    return render(request, 'payments/payment_failed.html', context)
-
-
-# ==================== PAYMENT METHODS ====================
-
-@login_required
-@require_http_methods(["GET", "POST"])
-def payment_methods(request):
-    """Manage user's payment methods."""
-    methods = PaymentMethod.objects.filter(
-        user=request.user
-    ).select_related('gateway').order_by('-is_default', '-created_at')
-    
-    if request.method == 'POST':
-        form = PaymentMethodForm(data=request.POST)
-        if form.is_valid():
-            method = PaymentMethod.objects.create(
-                user=request.user,
-                gateway=form.cleaned_data.get('gateway'),
-                card_type=form.cleaned_data.get('card_type'),
-                last_four=form.cleaned_data.get('last_four'),
-                card_holder=form.cleaned_data.get('card_holder'),
-                expiry_month=form.cleaned_data.get('expiry_month'),
-                expiry_year=form.cleaned_data.get('expiry_year'),
-                is_default=form.cleaned_data.get('is_default'),
-            )
-            
-            # If this is the first method, make it default
-            if not methods.exists():
-                method.is_default = True
-                method.save()
-            
-            messages.success(request, _('Payment method added successfully.'))
-            return redirect('payments:payment_methods')
-        else:
-            messages.error(request, _('Please correct the errors below.'))
+        return render(request, 'payments/payment_success.html', {
+            'transaction': transaction,
+            'ref_id': result.get('ref_id'),
+            'page_title': _('پرداخت موفق')
+        })
     else:
-        form = PaymentMethodForm()
-    
-    context = {
-        'methods': methods,
-        'form': form,
-        'title': _('Payment Methods'),
-    }
-    return render(request, 'payments/payment_methods.html', context)
+        return render(request, 'payments/payment_failed.html', {
+            'message': result.get('message', _('تایید پرداخت ناموفق بود')),
+            'page_title': _('خطا در پرداخت')
+        })
 
+
+@csrf_exempt
+def idpay_callback(request):
+    """Handle IDPay callback."""
+    order_id = request.GET.get('order_id')
+    id = request.GET.get('id')
+    status = request.GET.get('status')
+    
+    if status != '10':
+        transaction = Transaction.objects.filter(transaction_id=order_id).first()
+        if transaction:
+            transaction.status = 'failed'
+            transaction.error_message = f'Status: {status}'
+            transaction.save()
+        return render(request, 'payments/payment_failed.html', {
+            'message': _('پرداخت ناموفق بود'),
+            'page_title': _('خطا در پرداخت')
+        })
+    
+    # Verify payment
+    transaction, result = PaymentService.verify_payment(
+        'idpay',
+        {'order_id': order_id, 'id': id, 'status': status}
+    )
+    
+    if transaction and result['success']:
+        # Update order status
+        if transaction.order:
+            transaction.order.status = 'paid'
+            transaction.order.payment_status = 'paid'
+            transaction.order.save()
+        
+        return render(request, 'payments/payment_success.html', {
+            'transaction': transaction,
+            'page_title': _('پرداخت موفق')
+        })
+    else:
+        return render(request, 'payments/payment_failed.html', {
+            'message': result.get('message', _('تایید پرداخت ناموفق بود')),
+            'page_title': _('خطا در پرداخت')
+        })
+
+
+@csrf_exempt
+def payir_callback(request):
+    """Handle Pay.ir callback."""
+    token = request.GET.get('token')
+    status = request.GET.get('status')
+    
+    if status != '1':
+        transaction = Transaction.objects.filter(gateway_reference=token).first()
+        if transaction:
+            transaction.status = 'failed'
+            transaction.error_message = f'Status: {status}'
+            transaction.save()
+        return render(request, 'payments/payment_failed.html', {
+            'message': _('پرداخت ناموفق بود'),
+            'page_title': _('خطا در پرداخت')
+        })
+    
+    # Verify payment
+    transaction, result = PaymentService.verify_payment(
+        'payir',
+        {'token': token, 'status': status}
+    )
+    
+    if transaction and result['success']:
+        # Update order status
+        if transaction.order:
+            transaction.order.status = 'paid'
+            transaction.order.payment_status = 'paid'
+            transaction.order.save()
+        
+        return render(request, 'payments/payment_success.html', {
+            'transaction': transaction,
+            'page_title': _('پرداخت موفق')
+        })
+    else:
+        return render(request, 'payments/payment_failed.html', {
+            'message': result.get('message', _('تایید پرداخت ناموفق بود')),
+            'page_title': _('خطا در پرداخت')
+        })
+
+
+@csrf_exempt
+def nextpay_callback(request):
+    """Handle NextPay callback."""
+    trans_id = request.GET.get('trans_id')
+    order_id = request.GET.get('order_id')
+    
+    # Verify payment
+    transaction, result = PaymentService.verify_payment(
+        'nextpay',
+        {'trans_id': trans_id, 'order_id': order_id}
+    )
+    
+    if transaction and result['success']:
+        # Update order status
+        if transaction.order:
+            transaction.order.status = 'paid'
+            transaction.order.payment_status = 'paid'
+            transaction.order.save()
+        
+        return render(request, 'payments/payment_success.html', {
+            'transaction': transaction,
+            'page_title': _('پرداخت موفق')
+        })
+    else:
+        return render(request, 'payments/payment_failed.html', {
+            'message': result.get('message', _('تایید پرداخت ناموفق بود')),
+            'page_title': _('خطا در پرداخت')
+        })
+
+
+# ==================== WALLET VIEWS ====================
 
 @login_required
-@require_http_methods(["POST"])
-def delete_payment_method(request, method_id):
-    """Delete a payment method."""
-    method = get_object_or_404(PaymentMethod, pk=method_id, user=request.user)
-    
-    method.is_active = False
-    method.save()
-    
-    messages.success(request, _('Payment method deleted.'))
-    return redirect('payments:payment_methods')
-
-
-@login_required
-@require_http_methods(["POST"])
-def set_default_payment_method(request, method_id):
-    """Set a payment method as default."""
-    method = get_object_or_404(PaymentMethod, pk=method_id, user=request.user)
-    
-    # Clear default from all other methods
-    PaymentMethod.objects.filter(
-        user=request.user
-    ).update(is_default=False)
-    
-    # Set this as default
-    method.is_default = True
-    method.save()
-    
-    messages.success(request, _('Default payment method updated.'))
-    return redirect('payments:payment_methods')
-
-
-# ==================== WALLET ====================
-
-@login_required
-@require_http_methods(["GET"])
-def wallet(request):
+def wallet_view(request):
     """User's wallet page."""
     wallet, created = Wallet.objects.get_or_create(user=request.user)
     
-    # Get transactions
+    # Get recent transactions
     transactions = WalletTransaction.objects.filter(
         wallet=wallet
-    ).select_related('payment').order_by('-created_at')[:20]
+    ).select_related('transaction').order_by('-created_at')[:10]
     
-    # Get balance
-    balance = wallet.balance
-    
-    # Get top-up form
-    top_up_form = WalletTopUpForm()
+    # Forms
+    deposit_form = WalletDepositForm()
+    withdraw_form = WalletWithdrawForm()
+    withdraw_form.context = {'user': request.user}
     
     context = {
         'wallet': wallet,
-        'balance': balance,
         'transactions': transactions,
-        'top_up_form': top_up_form,
-        'title': _('My Wallet'),
+        'deposit_form': deposit_form,
+        'withdraw_form': withdraw_form,
+        'page_title': _('کیف پول من'),
     }
     return render(request, 'payments/wallet.html', context)
 
 
 @login_required
 @require_http_methods(["POST"])
-def wallet_top_up(request):
-    """Top up wallet."""
+def wallet_deposit(request):
+    """Deposit money to wallet."""
+    form = WalletDepositForm(data=request.POST)
+    
+    if not form.is_valid():
+        messages.error(request, _('لطفاً مقادیر را صحیح وارد کنید.'))
+        return redirect('payments:wallet')
+    
+    amount = form.cleaned_data['amount']
+    description = form.cleaned_data.get('description', '')
+    
     wallet, created = Wallet.objects.get_or_create(user=request.user)
     
-    form = WalletTopUpForm(data=request.POST)
-    if form.is_valid():
-        amount = form.cleaned_data.get('amount')
-        
-        # Create pending transaction
-        transaction = WalletTransaction.objects.create(
-            wallet=wallet,
-            amount=amount,
-            transaction_type='credit',
-            status='pending',
-            description=f'Top up ${amount}',
-            reference_id=f'TOPUP-{uuid.uuid4().hex[:12].upper()}',
-        )
-        
-        # In a real implementation, redirect to payment gateway
-        # For demo, simulate immediate credit
-        transaction.status = 'completed'
-        transaction.save()
-        
-        wallet.balance += amount
-        wallet.save()
-        
-        messages.success(request, _('Your wallet has been topped up.'))
-    else:
-        messages.error(request, _('Please correct the errors below.'))
+    # For demo: directly add to wallet
+    # In production: create a transaction and redirect to payment gateway
+    try:
+        wallet.add_balance(amount, description)
+        messages.success(request, _('موجودی کیف پول با موفقیت افزایش یافت.'))
+    except Exception as e:
+        messages.error(request, str(e))
     
     return redirect('payments:wallet')
 
 
 @login_required
-@require_http_methods(["GET"])
+@require_http_methods(["POST"])
+def wallet_withdraw(request):
+    """Withdraw money from wallet."""
+    form = WalletWithdrawForm(data=request.POST)
+    form.context = {'user': request.user}
+    
+    if not form.is_valid():
+        for field, errors in form.errors.items():
+            for error in errors:
+                messages.error(request, error)
+        return redirect('payments:wallet')
+    
+    amount = form.cleaned_data['amount']
+    description = form.cleaned_data.get('description', '')
+    
+    wallet, created = Wallet.objects.get_or_create(user=request.user)
+    
+    try:
+        wallet.subtract_balance(amount, description)
+        messages.success(request, _('برداشت از کیف پول با موفقیت انجام شد.'))
+    except Exception as e:
+        messages.error(request, str(e))
+    
+    return redirect('payments:wallet')
+
+
+@login_required
 def wallet_transactions(request):
     """Wallet transaction history."""
     wallet, created = Wallet.objects.get_or_create(user=request.user)
     
     transactions = WalletTransaction.objects.filter(
         wallet=wallet
-    ).select_related('payment').order_by('-created_at')
+    ).select_related('transaction').order_by('-created_at')
     
     # Filter by type
     transaction_type = request.GET.get('type')
@@ -479,181 +385,187 @@ def wallet_transactions(request):
         'wallet': wallet,
         'transactions': transactions_page,
         'current_type': transaction_type,
-        'title': _('Wallet Transactions'),
+        'page_title': _('تاریخچه تراکنش‌های کیف پول'),
     }
     return render(request, 'payments/wallet_transactions.html', context)
 
 
-# ==================== REFUNDS ====================
+# ==================== PAYMENT HISTORY VIEWS ====================
 
 @login_required
-@require_http_methods(["GET"])
-def refunds(request):
-    """List user's refund requests."""
-    refunds = Refund.objects.filter(
-        user=request.user
-    ).select_related('payment__order').order_by('-created_at')
-    
-    # Pagination
-    paginator = Paginator(refunds, 10)
-    page = request.GET.get('page')
-    
-    try:
-        refunds_page = paginator.page(page)
-    except PageNotAnInteger:
-        refunds_page = paginator.page(1)
-    except EmptyPage:
-        refunds_page = paginator.page(paginator.num_pages)
-    
-    context = {
-        'refunds': refunds_page,
-        'title': _('My Refunds'),
-    }
-    return render(request, 'payments/refunds.html', context)
-
-
-@login_required
-@require_http_methods(["GET", "POST"])
-def request_refund(request, payment_id):
-    """Request a refund for a payment."""
-    payment = get_object_or_404(Payment, pk=payment_id, user=request.user)
-    
-    # Check if refund is possible
-    if payment.status != 'completed':
-        messages.error(request, _('Refund is not available for this payment.'))
-        return redirect('payments:refunds')
-    
-    # Check if already requested
-    existing_refund = Refund.objects.filter(
-        payment=payment,
-        user=request.user
-    ).first()
-    
-    if existing_refund:
-        messages.error(request, _('You have already requested a refund for this payment.'))
-        return redirect('payments:refunds')
-    
-    if request.method == 'POST':
-        form = RefundRequestForm(data=request.POST)
-        if form.is_valid():
-            refund = Refund.objects.create(
-                payment=payment,
-                user=request.user,
-                amount=form.cleaned_data.get('amount'),
-                reason=form.cleaned_data.get('reason'),
-                description=form.cleaned_data.get('description'),
-                status='pending',
-                reference_id=f'REF-{uuid.uuid4().hex[:12].upper()}',
-            )
-            
-            messages.success(request, _('Your refund request has been submitted.'))
-            return redirect('payments:refunds')
-        else:
-            messages.error(request, _('Please correct the errors below.'))
-    else:
-        form = RefundRequestForm()
-    
-    context = {
-        'payment': payment,
-        'form': form,
-        'title': _('Request Refund'),
-    }
-    return render(request, 'payments/request_refund.html', context)
-
-
-@login_required
-@require_http_methods(["GET"])
-def refund_detail(request, refund_id):
-    """Refund detail page."""
-    refund = get_object_or_404(Refund, pk=refund_id, user=request.user)
-    
-    context = {
-        'refund': refund,
-        'title': f"{_('Refund')} #{refund.reference_id}",
-    }
-    return render(request, 'payments/refund_detail.html', context)
-
-
-# ==================== PAYMENT HISTORY ====================
-
-@login_required
-@require_http_methods(["GET"])
 def payment_history(request):
     """User's payment history."""
-    payments = Payment.objects.filter(
+    transactions = Transaction.objects.filter(
         user=request.user
     ).select_related('order', 'gateway').order_by('-created_at')
     
     # Filter by status
     status_filter = request.GET.get('status')
     if status_filter:
-        payments = payments.filter(status=status_filter)
+        transactions = transactions.filter(status=status_filter)
     
     # Filter by gateway
     gateway_filter = request.GET.get('gateway')
     if gateway_filter:
-        payments = payments.filter(gateway__id=gateway_filter)
+        transactions = transactions.filter(gateway__id=gateway_filter)
     
     # Pagination
-    paginator = Paginator(payments, 10)
+    paginator = Paginator(transactions, 10)
     page = request.GET.get('page')
     
     try:
-        payments_page = paginator.page(page)
+        transactions_page = paginator.page(page)
     except PageNotAnInteger:
-        payments_page = paginator.page(1)
+        transactions_page = paginator.page(1)
     except EmptyPage:
-        payments_page = paginator.page(paginator.num_pages)
+        transactions_page = paginator.page(paginator.num_pages)
     
     gateways = PaymentGateway.objects.filter(is_active=True)
     
     context = {
-        'payments': payments_page,
+        'transactions': transactions_page,
         'gateways': gateways,
         'current_status': status_filter,
         'current_gateway': gateway_filter,
-        'title': _('Payment History'),
+        'page_title': _('تاریخچه پرداخت‌ها'),
     }
     return render(request, 'payments/payment_history.html', context)
 
 
 @login_required
-@require_http_methods(["GET"])
-def payment_detail(request, payment_id):
+def payment_detail(request, transaction_id):
     """Payment detail page."""
-    payment = get_object_or_404(Payment, pk=payment_id, user=request.user)
-    
-    transactions = Transaction.objects.filter(
-        payment=payment
-    ).order_by('-created_at')
+    transaction = get_object_or_404(Transaction, pk=transaction_id, user=request.user)
     
     context = {
-        'payment': payment,
-        'transactions': transactions,
-        'title': f"{_('Payment')} #{payment.transaction_id}",
+        'transaction': transaction,
+        'page_title': f"{_('جزئیات تراکنش')} #{transaction.transaction_id}",
     }
     return render(request, 'payments/payment_detail.html', context)
 
 
-# ==================== AJAX VIEWS ====================
+@login_required
+def payment_receipt(request, transaction_id):
+    """Payment receipt page."""
+    transaction = get_object_or_404(Transaction, pk=transaction_id, user=request.user)
+    
+    context = {
+        'transaction': transaction,
+        'page_title': f"{_('رسید پرداخت')} #{transaction.transaction_id}",
+    }
+    return render(request, 'payments/receipt.html', context)
+
+
+# ==================== PAYMENT GATEWAY MANAGEMENT (ADMIN) ====================
 
 @login_required
-@require_http_methods(["GET"])
-def get_payment_status_ajax(request, payment_id):
-    """Get payment status via AJAX."""
-    payment = get_object_or_404(Payment, pk=payment_id)
+def payment_gateway_list(request):
+    """List all payment gateways (admin view)."""
+    if not request.user.is_staff:
+        return redirect('store:home')
     
-    if payment.user != request.user:
-        return JsonResponse({'error': 'Permission denied'}, status=403)
+    gateways = PaymentGateway.objects.all().order_by('sort_order')
+    
+    context = {
+        'gateways': gateways,
+        'page_title': _('مدیریت درگاه‌های پرداخت'),
+    }
+    return render(request, 'admin_panel/payment_method_list.html', context)
+
+
+@login_required
+def payment_gateway_create(request):
+    """Create a new payment gateway (admin view)."""
+    if not request.user.is_staff:
+        return redirect('store:home')
+    
+    if request.method == 'POST':
+        form = PaymentGatewayForm(data=request.POST, files=request.FILES)
+        if form.is_valid():
+            gateway = form.save()
+            messages.success(request, _('درگاه پرداخت با موفقیت ایجاد شد.'))
+            return redirect('payments:gateway_list')
+        else:
+            messages.error(request, _('لطفاً خطاهای زیر را اصلاح کنید.'))
+    else:
+        form = PaymentGatewayForm()
+    
+    context = {
+        'form': form,
+        'page_title': _('ایجاد درگاه پرداخت'),
+    }
+    return render(request, 'admin_panel/payment_gateway_form.html', context)
+
+
+@login_required
+def payment_gateway_edit(request, gateway_id):
+    """Edit a payment gateway (admin view)."""
+    if not request.user.is_staff:
+        return redirect('store:home')
+    
+    gateway = get_object_or_404(PaymentGateway, pk=gateway_id)
+    
+    if request.method == 'POST':
+        form = PaymentGatewayForm(data=request.POST, files=request.FILES, instance=gateway)
+        if form.is_valid():
+            form.save()
+            messages.success(request, _('درگاه پرداخت با موفقیت بروزرسانی شد.'))
+            return redirect('payments:gateway_list')
+        else:
+            messages.error(request, _('لطفاً خطاهای زیر را اصلاح کنید.'))
+    else:
+        form = PaymentGatewayForm(instance=gateway)
+    
+    context = {
+        'form': form,
+        'gateway': gateway,
+        'page_title': _('ویرایش درگاه پرداخت'),
+    }
+    return render(request, 'admin_panel/payment_gateway_form.html', context)
+
+
+@login_required
+def payment_gateway_toggle(request, gateway_id):
+    """Toggle payment gateway active status (admin view)."""
+    if not request.user.is_staff:
+        return JsonResponse({'success': False, 'message': 'Permission denied'}, status=403)
+    
+    gateway = get_object_or_404(PaymentGateway, pk=gateway_id)
+    gateway.is_active = not gateway.is_active
+    gateway.save()
     
     return JsonResponse({
-        'status': payment.status,
-        'amount': payment.amount,
-        'currency': payment.currency,
-        'created_at': payment.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-        'gateway': payment.gateway.name if payment.gateway else None,
+        'success': True,
+        'is_active': gateway.is_active
     })
 
+
+# ==================== WEBHOOK VIEWS ====================
+
+@csrf_exempt
+def payment_webhook(request, gateway_type):
+    """Handle payment gateway webhook."""
+    # In a real implementation, verify the webhook signature
+    # and process the payment status update
+    
+    data = json.loads(request.body)
+    
+    # Verify with the gateway service
+    transaction, result = PaymentService.verify_payment(gateway_type, data)
+    
+    if transaction and result['success']:
+        # Update order status
+        if transaction.order:
+            transaction.order.status = 'paid'
+            transaction.order.payment_status = 'paid'
+            transaction.order.save()
+        
+        return JsonResponse({'status': 'success'})
+    else:
+        return JsonResponse({'status': 'failed'}, status=400)
+
+
+# ==================== AJAX VIEWS ====================
 
 @login_required
 @require_http_methods(["GET"])
@@ -662,45 +574,79 @@ def get_wallet_balance_ajax(request):
     wallet, created = Wallet.objects.get_or_create(user=request.user)
     
     return JsonResponse({
-        'balance': wallet.balance,
-        'currency': 'USD',
+        'success': True,
+        'balance': float(wallet.balance),
+        'currency': 'IRR',
     })
 
 
 @login_required
-@require_http_methods(["POST"])
-def verify_payment_ajax(request):
-    """Verify payment via AJAX."""
-    payment_id = request.POST.get('payment_id')
+@require_http_methods(["GET"])
+def get_payment_status_ajax(request, transaction_id):
+    """Get payment status via AJAX."""
+    transaction = get_object_or_404(Transaction, pk=transaction_id, user=request.user)
     
-    payment = get_object_or_404(Payment, pk=payment_id)
-    
-    if payment.user != request.user:
-        return JsonResponse({'error': 'Permission denied'}, status=403)
-    
-    # In a real implementation, verify with the gateway
-    # For demo, return the current status
     return JsonResponse({
-        'status': payment.status,
-        'verified': payment.status == 'completed',
+        'success': True,
+        'status': transaction.status,
+        'amount': float(transaction.amount),
+        'currency': transaction.currency,
+        'created_at': transaction.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+        'gateway': transaction.gateway.name if transaction.gateway else None,
+        'gateway_reference': transaction.gateway_reference,
+        'error_message': transaction.error_message,
     })
 
 
 @require_http_methods(["GET"])
 def get_available_gateways_ajax(request):
     """Get available payment gateways via AJAX."""
-    gateways = PaymentGateway.objects.filter(is_active=True)
+    gateways = PaymentService.get_active_gateways()
     
     gateways_data = []
     for gateway in gateways:
         gateways_data.append({
             'id': str(gateway.id),
             'name': gateway.name,
-            'display_name': gateway.display_name,
+            'title': gateway.title,
             'logo': gateway.logo.url if gateway.logo else None,
             'description': gateway.description,
-            'fees': gateway.fees,
-            'supported_currencies': gateway.supported_currencies,
+            'gateway_type': gateway.gateway_type,
         })
     
-    return JsonResponse({'gateways': gateways_data})
+    return JsonResponse({
+        'success': True,
+        'gateways': gateways_data
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def create_transaction_ajax(request):
+    """Create transaction via AJAX."""
+    order_id = request.POST.get('order_id')
+    gateway_type = request.POST.get('gateway_type')
+    
+    if not order_id or not gateway_type:
+        return JsonResponse({'success': False, 'message': 'Order ID and gateway type are required'}, status=400)
+    
+    order = get_object_or_404(Order, pk=order_id, user=request.user)
+    
+    # Create transaction
+    transaction, result = PaymentService.create_payment(
+        order=order,
+        user=request.user,
+        gateway_type=gateway_type,
+        amount=order.total_amount,
+        currency='IRR',
+        description=f'پرداخت سفارش #{order.code}'
+    )
+    
+    if not result['success']:
+        return JsonResponse({'success': False, 'message': result.get('message')})
+    
+    return JsonResponse({
+        'success': True,
+        'transaction_id': str(transaction.id),
+        'transaction_id_display': transaction.transaction_id,
+    })

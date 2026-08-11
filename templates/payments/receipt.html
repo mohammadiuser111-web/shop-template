@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ page_title|default:"رسید پرداخت" }}{% endblock %}
+
+{% block content %}
+<!-- Print Button -->
+<div class="py-4 text-center">
+    <button onclick="window.print()" 
+            class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+        </svg>
+        {% trans "چاپ رسید" %}
+    </button>
+</div>
+
+<!-- Receipt Container -->
+<section class="py-8">
+    <div class="max-w-4xl mx-auto px-4">
+        <div class="bg-white rounded-lg shadow-md overflow-hidden" id="receipt-content">
+            <!-- Receipt Header -->
+            <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
+                <div class="text-center">
+                    <h1 class="text-2xl font-bold mb-2">{% trans "رسید پرداخت" %}</h1>
+                    <p class="text-blue-100">{% trans "فروشگاه آنلاین" %}</p>
+                    <p class="text-sm mt-2 opacity-90">{{ transaction.completed_at|date:"Y/m/d H:i"|default:"-" }}</p>
+                </div>
+            </div>
+            
+            <!-- Receipt Body -->
+            <div class="p-6">
+                <!-- Transaction Info -->
+                <div class="mb-8">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">{% trans "اطلاعات تراکنش" %}</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">{% trans "شناسه تراکنش:" %}</span>
+                                <span class="font-medium">{{ transaction.transaction_id }}</span>
+                            </div>
+                            
+                            {% if transaction.gateway_reference %}
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">{% trans "کد پیگیری:" %}</span>
+                                <span class="font-medium">{{ transaction.gateway_reference }}</span>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">{% trans "تاریخ:" %}</span>
+                                <span class="font-medium">{{ transaction.completed_at|date:"Y/m/d H:i"|default:"-" }}</span>
+                            </div>
+                            
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">{% trans "وضعیت:" %}</span>
+                                <span class="font-medium">
+                                    {% if transaction.status == 'success' %}
+                                        <span class="text-green-600">{% trans "موفق" %}</span>
+                                    {% elif transaction.status == 'pending' %}
+                                        <span class="text-yellow-600">{% trans "در انتظار" %}</span>
+                                    {% else %}
+                                        <span class="text-red-600">{% trans "ناموفق" %}</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">{% trans "درگاه پرداخت:" %}</span>
+                                <span class="font-medium">{{ transaction.gateway.title if transaction.gateway else transaction.gateway.name }}</span>
+                            </div>
+                            
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">{% trans "مبلغ:" %}</span>
+                                <span class="font-medium">{{ transaction.amount|intcomma }} {% trans "تومان" %}</span>
+                            </div>
+                            
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">{% trans "ارز:" %}</span>
+                                <span class="font-medium">{{ transaction.currency }}</span>
+                            </div>
+                            
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">{% trans "کاربر:" %}</span>
+                                <span class="font-medium">{{ transaction.user.get_full_name|default:transaction.user.username|default:"مهمان" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Order Info (if available) -->
+                {% if transaction.order %}
+                <div class="mb-8">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">{% trans "اطلاعات سفارش" %}</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">{% trans "شماره سفارش:" %}</span>
+                                <span class="font-medium">{{ transaction.order.code }}</span>
+                            </div>
+                            
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">{% trans "تاریخ سفارش:" %}</span>
+                                <span class="font-medium">{{ transaction.order.created_at|date:"Y/m/d H:i" }}</span>
+                            </div>
+                            
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">{% trans "وضعیت سفارش:" %}</span>
+                                <span class="font-medium">{{ transaction.order.get_status_display|default:"-" }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">{% trans "تعداد اقلام:" %}</span>
+                                <span class="font-medium">{{ transaction.order.items.count }}</span>
+                            </div>
+                            
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">{% trans "مبلغ کل:" %}</span>
+                                <span class="font-medium">{{ transaction.order.total_amount|intcomma }} {% trans "تومان" %}</span>
+                            </div>
+                            
+                            {% if transaction.order.discount_amount > 0 %}
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">{% trans "تخفیف:" %}</span>
+                                <span class="font-medium text-green-600">-{{ transaction.order.discount_amount|intcomma }} {% trans "تومان" %}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Items Table (if order available) -->
+                {% if transaction.order %}
+                <div class="mb-8">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">{% trans "اقلام سفارش" %}</h2>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{% trans "#" %}</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{% trans "محصول" %}</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{% trans "تعداد" %}</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{% trans "قیمت واحد" %}</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{% trans "مبلغ" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                {% for item in transaction.order.items.all %}
+                                <tr>
+                                    <td class="px-4 py-3 text-right text-gray-500">{{ forloop.counter }}</td>
+                                    <td class="px-4 py-3 text-right">
+                                        <div class="font-medium text-gray-900">{{ item.product.name }}</div>
+                                        {% if item.variant %}
+                                        <div class="text-xs text-gray-500">{{ item.variant.name }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-4 py-3 text-right text-gray-500">{{ item.quantity }}</td>
+                                    <td class="px-4 py-3 text-right text-gray-500">{{ item.unit_price|intcomma }} {% trans "تومان" %}</td>
+                                    <td class="px-4 py-3 text-right font-medium text-gray-900">{{ item.total_price|intcomma }} {% trans "تومان" %}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="bg-gray-50">
+                                <tr>
+                                    <th colspan="4" class="px-4 py-3 text-right text-sm font-medium text-gray-500">{% trans "جمع" %}</th>
+                                    <th class="px-4 py-3 text-right text-sm font-bold text-gray-900">{{ transaction.order.subtotal|intcomma }} {% trans "تومان" %}</th>
+                                </tr>
+                                <tr>
+                                    <th colspan="4" class="px-4 py-3 text-right text-sm font-medium text-gray-500">{% trans "تخفیف" %}</th>
+                                    <th class="px-4 py-3 text-right text-sm font-bold text-green-600">-{{ transaction.order.discount_amount|intcomma }} {% trans "تومان" %}</th>
+                                </tr>
+                                <tr>
+                                    <th colspan="4" class="px-4 py-3 text-right text-sm font-medium text-gray-500">{% trans "هزینه ارسال" %}</th>
+                                    <th class="px-4 py-3 text-right text-sm font-bold text-gray-900">{{ transaction.order.shipping_cost|intcomma }} {% trans "تومان" %}</th>
+                                </tr>
+                                <tr>
+                                    <th colspan="4" class="px-4 py-3 text-right text-sm font-bold text-gray-900">{% trans "مبلغ نهایی" %}</th>
+                                    <th class="px-4 py-3 text-right text-lg font-bold text-blue-600">{{ transaction.order.total_amount|intcomma }} {% trans "تومان" %}</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Footer -->
+                <div class="border-t border-gray-200 pt-6 mt-8">
+                    <div class="text-center text-sm text-gray-500">
+                        <p>{% trans "از خرید شما سپاسگزاریم" %}</p>
+                        <p class="mt-2">{% trans "برای هر گونه سوال با پشتیبانی تماس بگیرید" %}</p>
+                        <p class="mt-1">{% trans "تلفن پشتیبانی:" %} {% trans "۰۲۱-۱۲۳۴۵۶۷۸" %}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block styles %}
+<style>
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    #receipt-content, #receipt-content * {
+        visibility: visible;
+    }
+    #receipt-content {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        box-shadow: none;
+    }
+    button {
+        display: none !important;
+    }
+}
+</style>
+{% endblock %}

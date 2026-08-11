@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+{% load static i18n humanize %}
+
+{% block title %}{{ page_title|default:"کیف پول من" }}{% endblock %}
+
+{% block content %}
+<!-- Wallet Header -->
+<section class="py-8">
+    <div class="max-w-6xl mx-auto px-4">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+            <div class="mb-6 lg:mb-0">
+                <h1 class="text-2xl font-bold text-gray-800">{% trans "کیف پول من" %}</h1>
+                <p class="text-gray-600 mt-1">{% trans "مدیریت موجودی و تراکنش‌های کیف پول" %}</p>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <!-- Wallet Balance Card -->
+                <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-6 text-white min-w-[280px]">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                            </svg>
+                            <span class="mr-3 text-sm opacity-90">{% trans "موجودی فعلی" %}</span>
+                        </div>
+                    </div>
+                    <div class="text-3xl font-bold mb-1">{{ wallet.balance|intcomma }}</div>
+                    <div class="text-sm opacity-90">{% trans "تومان" %}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Wallet Actions -->
+<section class="py-4">
+    <div class="max-w-6xl mx-auto px-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Deposit Card -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">{% trans "افزایش موجودی" %}</h2>
+                
+                <form method="post" action="{% url 'payments:wallet_deposit' %}" class="space-y-4">
+                    {% csrf_token %}
+                    
+                    <div>
+                        <label for="amount" class="block text-sm font-medium text-gray-700 mb-1">{% trans "مبلغ (تومان)" %}</label>
+                        <div class="relative">
+                            <input type="number" id="amount" name="amount" 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="مبلغ را وارد کنید" min="1000" required>
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm">{% trans "تومان" %}</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="description" class="block text-sm font-medium text-gray-700 mb-1">{% trans "توضیحات (اختیاری)" %}</label>
+                        <input type="text" id="description" name="description"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="توضیحات">
+                    </div>
+                    
+                    <button type="submit" 
+                            class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                        {% trans "افزایش موجودی" %}
+                    </button>
+                </form>
+            </div>
+            
+            <!-- Withdraw Card -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">{% trans "برداشت از کیف پول" %}</h2>
+                
+                <form method="post" action="{% url 'payments:wallet_withdraw' %}" class="space-y-4">
+                    {% csrf_token %}
+                    
+                    <div>
+                        <label for="withdraw_amount" class="block text-sm font-medium text-gray-700 mb-1">{% trans "مبلغ (تومان)" %}</label>
+                        <div class="relative">
+                            <input type="number" id="withdraw_amount" name="amount"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="مبلغ را وارد کنید" min="1000" max="{{ wallet.balance }}" required>
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm">{% trans "تومان" %}</span>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">{% trans "حداکثر قابل برداشت:" %} {{ wallet.balance|intcomma }} {% trans "تومان" %}</p>
+                    </div>
+                    
+                    <div>
+                        <label for="withdraw_description" class="block text-sm font-medium text-gray-700 mb-1">{% trans "توضیحات (اختیاری)" %}</label>
+                        <input type="text" id="withdraw_description" name="description"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="توضیحات">
+                    </div>
+                    
+                    <button type="submit" 
+                            class="w-full bg-gray-600 text-white py-3 px-4 rounded-lg hover:bg-gray-700 transition-colors font-medium">
+                        {% trans "برداشت از کیف پول" %}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Recent Transactions -->
+<section class="py-8">
+    <div class="max-w-6xl mx-auto px-4">
+        <div class="bg-white rounded-lg shadow-md">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-800">{% trans "تاریخچه تراکنش‌ها" %}</h2>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase">{% trans "تاریخ" %}</th>
+                            <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase">{% trans "نوع" %}</th>
+                            <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase">{% trans "مبلغ" %}</th>
+                            <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase">{% trans "موجودی پس از تراکنش" %}</th>
+                            <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase">{% trans "توضیحات" %}</th>
+                            <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase">{% trans "وضعیت" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for transaction in transactions %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 text-right text-sm text-gray-500">
+                                {{ transaction.created_at|date:"Y/m/d H:i"|default:"-" }}
+                            </td>
+                            <td class="px-6 py-4 text-right text-sm">
+                                {% if transaction.transaction_type == 'deposit' %}
+                                    <span class="text-green-600 font-medium">{% trans "واریز" %}</span>
+                                {% elif transaction.transaction_type == 'withdrawal' %}
+                                    <span class="text-red-600 font-medium">{% trans "برداشت" %}</span>
+                                {% else %}
+                                    <span>{{ transaction.get_transaction_type_display|default:"-" }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-right text-sm">
+                                {% if transaction.amount >= 0 %}
+                                    <span class="text-green-600">+{{ transaction.amount|intcomma }}</span>
+                                {% else %}
+                                    <span class="text-red-600">{{ transaction.amount|intcomma }}</span>
+                                {% endif %}
+                                {% trans "تومان" %}
+                            </td>
+                            <td class="px-6 py-4 text-right text-sm text-gray-500">
+                                {{ transaction.balance_after|intcomma }} {% trans "تومان" %}
+                            </td>
+                            <td class="px-6 py-4 text-right text-sm text-gray-500">
+                                {{ transaction.description|truncatechars:30|default:"-" }}
+                            </td>
+                            <td class="px-6 py-4 text-right text-sm">
+                                {% if transaction.status == 'completed' %}
+                                    <span class="text-green-600 font-medium">{% trans "موفق" %}</span>
+                                {% elif transaction.status == 'pending' %}
+                                    <span class="text-yellow-600 font-medium">{% trans "در انتظار" %}</span>
+                                {% else %}
+                                    <span class="text-red-600 font-medium">{% trans "ناموفق" %}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-8 text-center text-sm text-gray-500">
+                                {% trans "تراکنشی یافت نشد" %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="p-6">
+                <a href="{% url 'payments:wallet_transactions' %}" 
+                   class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                    {% trans "مشاهده همه تراکنش‌ها" %}
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Quick Actions -->
+<section class="py-8">
+    <div class="max-w-6xl mx-auto px-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <a href="{% url 'payments:payment_history' %}" 
+               class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow group">
+                <div class="flex items-center">
+                    <div class="bg-blue-100 rounded-lg p-3 group-hover:bg-blue-200 transition-colors">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="mr-4">
+                        <h3 class="font-semibold text-gray-800">{% trans "تاریخچه پرداخت‌ها" %}</h3>
+                        <p class="text-sm text-gray-500">{% trans "مشاهده همه پرداخت‌های شما" %}</p>
+                    </div>
+                </div>
+            </a>
+            
+            <a href="{% url 'orders:order_list' %}" 
+               class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow group">
+                <div class="flex items-center">
+                    <div class="bg-green-100 rounded-lg p-3 group-hover:bg-green-200 transition-colors">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                        </svg>
+                    </div>
+                    <div class="mr-4">
+                        <h3 class="font-semibold text-gray-800">{% trans "سفارش‌های من" %}</h3>
+                        <p class="text-sm text-gray-500">{% trans "مشاهده سفارش‌های خود" %}</p>
+                    </div>
+                </div>
+            </a>
+            
+            <a href="{% url 'payments:select_gateway' %}?order_id={{ request.user.latest_order.pk }}" 
+               class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow group">
+                <div class="flex items-center">
+                    <div class="bg-purple-100 rounded-lg p-3 group-hover:bg-purple-200 transition-colors">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                        </svg>
+                    </div>
+                    <div class="mr-4">
+                        <h3 class="font-semibold text-gray-800">{% trans "پرداخت جدید" %}</h3>
+                        <p class="text-sm text-gray-500">{% trans "پرداخت سفارش جدید" %}</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Update wallet balance in real-time
+function updateWalletBalance() {
+    fetch('{% url "payments:get_wallet_balance_ajax" %}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.querySelector('.text-3xl.font-bold').textContent = 
+                    new Intl.NumberFormat('fa-IR').format(data.balance);
+            }
+        });
+}
+
+// Update balance every 30 seconds
+setInterval(updateWalletBalance, 30000);
+</script>
+{% endblock %}

@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% load static i18n humanize %}
+
+{% block title %}{{ page_title|default:"تاریخچه تراکنش‌های کیف پول" }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumbs -->
+<nav class="py-4" aria-label="breadcrumb">
+    <div class="max-w-6xl mx-auto px-4">
+        <ol class="flex items-center justify-end space-x-2 text-sm">
+            <li>
+                <a href="{% url 'store:home' %}" class="text-gray-500 hover:text-blue-600">{% trans "خانه" %}</a>
+            </li>
+            <li class="text-gray-400">/</li>
+            <li>
+                <a href="{% url 'payments:wallet' %}" class="text-gray-500 hover:text-blue-600">{% trans "کیف پول" %}</a>
+            </li>
+            <li class="text-gray-400">/</li>
+            <li class="text-gray-800">{% trans "تاریخچه" %}</li>
+        </ol>
+    </div>
+</nav>
+
+<!-- Header -->
+<section class="py-4">
+    <div class="max-w-6xl mx-auto px-4">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+            <h1 class="text-2xl font-bold text-gray-800">{% trans "تاریخچه تراکنش‌های کیف پول" %}</h1>
+            
+            <a href="{% url 'payments:wallet' %}" 
+               class="mt-4 md:mt-0 inline-flex items-center text-blue-600 hover:text-blue-800">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                {% trans "بازگشت به کیف پول" %}
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Wallet Summary -->
+<section class="py-4">
+    <div class="max-w-6xl mx-auto px-4">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Current Balance -->
+                <div class="text-center">
+                    <div class="text-sm text-gray-500 mb-1">{% trans "موجودی فعلی" %}</div>
+                    <div class="text-2xl font-bold text-blue-600">{{ wallet.balance|intcomma }} {% trans "تومان" %}</div>
+                </div>
+                
+                <!-- Total Deposits -->
+                <div class="text-center">
+                    <div class="text-sm text-gray-500 mb-1">{% trans "کل واریزها" %}</div>
+                    <div class="text-2xl font-bold text-green-600">
+                        {{ transactions|filter_by_type:"deposit"|sum_amount|intcomma }} {% trans "تومان" %}
+                    </div>
+                </div>
+                
+                <!-- Total Withdrawals -->
+                <div class="text-center">
+                    <div class="text-sm text-gray-500 mb-1">{% trans "کل برداشتها" %}</div>
+                    <div class="text-2xl font-bold text-red-600">
+                        -{{ transactions|filter_by_type:"withdrawal"|sum_amount|intcomma }} {% trans "تومان" %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Filter Section -->
+<section class="py-4">
+    <div class="max-w-6xl mx-auto px-4">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <form method="get" class="flex flex-col md:flex-row gap-4">
+                <div class="flex-1">
+                    <label for="type" class="block text-sm font-medium text-gray-700 mb-1">{% trans "نوع تراکنش" %}</label>
+                    <select id="type" name="type" 
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">{% trans "همه" %}</option>
+                        <option value="deposit" {% if current_type == 'deposit' %}selected{% endif %}>{% trans "واریز" %}</option>
+                        <option value="withdrawal" {% if current_type == 'withdrawal' %}selected{% endif %}>{% trans "برداشت" %}</option>
+                        <option value="refund" {% if current_type == 'refund' %}selected{% endif %}>{% trans "استرداد" %}</option>
+                    </select>
+                </div>
+                
+                <div class="flex items-end">
+                    <button type="submit" 
+                            class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        {% trans "فیلتر" %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- Transactions Table -->
+<section class="py-4">
+    <div class="max-w-6xl mx-auto px-4">
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase">{% trans "تاریخ" %}</th>
+                        <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase">{% trans "نوع" %}</th>
+                        <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase">{% trans "مبلغ" %}</th>
+                        <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase">{% trans "موجودی پس از" %}</th>
+                        <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase">{% trans "توضیحات" %}</th>
+                        <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase">{% trans "وضعیت" %}</th>
+                        <th class="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase">{% trans "عملیات" %}</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for transaction in transactions %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 text-right text-sm text-gray-500">
+                            {{ transaction.created_at|date:"Y/m/d"|default:"-" }}<br>
+                            <span class="text-xs">{{ transaction.created_at|time:"H:i"|default:"-" }}</span>
+                        </td>
+                        <td class="px-6 py-4 text-right text-sm">
+                            {% if transaction.transaction_type == 'deposit' %}
+                                <span class="text-green-600 font-medium">{% trans "واریز" %}</span>
+                            {% elif transaction.transaction_type == 'withdrawal' %}
+                                <span class="text-red-600 font-medium">{% trans "برداشت" %}</span>
+                            {% else %}
+                                <span>{{ transaction.get_transaction_type_display|default:"-" }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-right text-sm">
+                            {% if transaction.amount >= 0 %}
+                                <span class="text-green-600">+{{ transaction.amount|intcomma }}</span>
+                            {% else %}
+                                <span class="text-red-600">{{ transaction.amount|intcomma }}</span>
+                            {% endif %}
+                            {% trans "تومان" %}
+                        </td>
+                        <td class="px-6 py-4 text-right text-sm text-gray-500">
+                            {{ transaction.balance_after|intcomma }} {% trans "تومان" %}
+                        </td>
+                        <td class="px-6 py-4 text-right text-sm text-gray-500">
+                            {{ transaction.description|truncatechars:30|default:"-" }}
+                        </td>
+                        <td class="px-6 py-4 text-right text-sm">
+                            {% if transaction.status == 'completed' %}
+                                <span class="text-green-600 font-medium">{% trans "موفق" %}</span>
+                            {% elif transaction.status == 'pending' %}
+                                <span class="text-yellow-600 font-medium">{% trans "در انتظار" %}</span>
+                            {% else %}
+                                <span class="text-red-600 font-medium">{% trans "ناموفق" %}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-center text-sm">
+                            <a href="{% url 'payments:payment_detail' transaction_id=transaction.transaction.id %}" 
+                               class="text-blue-600 hover:text-blue-800" title="{% trans 'مشاهده جزئیات' %}">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-8 text-center text-sm text-gray-500">
+                            {% trans "تراکنشی یافت نشد" %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <!-- Pagination -->
+            {% if transactions.has_other_pages %}
+            <div class="p-6">
+                <nav class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-gray-500">
+                            {% trans "نمایش" %} {{ transactions.start_index }} {% trans "تا" %} {{ transactions.end_index }} {% trans "از" %} {{ transactions.paginator.count }} {% trans "مورد" %}
+                        </span>
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                        {% if transactions.has_previous %}
+                        <a href="?page={{ transactions.previous_page_number }}{% if current_type %}&type={{ current_type }}{% endif %}" 
+                           class="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            {% trans "قبلی" %}
+                        </a>
+                        {% endif %}
+                        
+                        <span class="px-3 py-1">{{ transactions.number }} / {{ transactions.paginator.num_pages }}</span>
+                        
+                        {% if transactions.has_next %}
+                        <a href="?page={{ transactions.next_page_number }}{% if current_type %}&type={{ current_type }}{% endif %}" 
+                           class="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            {% trans "بعدی" %}
+                        </a>
+                        {% endif %}
+                    </div>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<!-- Custom template filters for this page -->
+<script>
+// Add custom filters for this template
+// These would normally be in a custom template filter, but we'll implement them here
+// for demonstration purposes
+
+// Filter by type (for summary)
+function filterByType(transactions, type) {
+    return transactions.filter(t => t.transaction_type === type);
+}
+
+// Sum amounts
+function sumAmount(transactions) {
+    return transactions.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+}
+</script>
+{% endblock %}
