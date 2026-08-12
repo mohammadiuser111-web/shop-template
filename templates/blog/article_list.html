@@ -1,228 +1,278 @@
-{% extends "base.html" %}
-{% load i18n static %}
+{% extends 'base.html' %}
 
-{% block title %}{{ title }}{% endblock %}
+{% load static %}
 
-{% block meta_description %}{% trans "Browse our latest blog articles and stay updated with industry news and insights." %}{% endblock %}
+{% block title %}بلاگ - {% if site_settings.site_name %}{{ site_settings.site_name }}{% else %}فروشگاه{% endif %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/blog.css' %}">
+{% endblock %}
 
 {% block content %}
-<!-- Breadcrumb -->
-<div class="breadcrumb-wrapper">
+<div class="page-header">
     <div class="container">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
-                <li class="breadcrumb-item active" aria-current="page">{% trans "Blog" %}</li>
-            </ol>
-        </nav>
-    </div>
-</div>
-
-<!-- Blog Header -->
-<div class="blog-header py-5 bg-light">
-    <div class="container">
-        <div class="row align-items-center">
-            <div class="col-lg-8">
-                <h1 class="display-4 fw-bold mb-3">{% trans "Our Blog" %}</h1>
-                <p class="lead text-muted">{% trans "Stay updated with the latest news, trends, and insights from our industry experts." %}</p>
-            </div>
-            <div class="col-lg-4 text-lg-end">
-                <form method="get" action="{% url 'blog:article_list' %}" class="search-form">
-                    <div class="input-group">
-                        <input type="text" name="q" class="form-control" placeholder="{% trans 'Search articles...' %}" value="{{ query }}">
-                        <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i></button>
-                    </div>
-                </form>
-            </div>
+        <div class="breadcrumb">
+            <a href="{% url 'store:home' %}">خانه</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">بلاگ</span>
         </div>
+        <h1 class="page-title">بلاگ</h1>
+        <p class="page-subtitle">مقالات آموزشی و راهنمای خرید</p>
     </div>
 </div>
 
-<!-- Main Content -->
-<div class="container py-5">
-    <div class="row">
-        <!-- Main Content -->
-        <div class="col-lg-8">
-            <!-- Featured Articles -->
-            {% if featured_articles %}
-            <section class="mb-5">
-                <h2 class="section-title mb-4">{% trans "Featured Articles" %}</h2>
-                <div class="row">
-                    {% for article in featured_articles %}
-                    <div class="col-md-6 mb-4">
-                        <article class="card h-100 border-0 shadow-sm">
-                            {% if article.featured_image %}
-                            <img src="{{ article.featured_image.url }}" alt="{{ article.title }}" class="card-img-top">
-                            {% endif %}
-                            <div class="card-body">
-                                <div class="d-flex align-items-center mb-2">
-                                    <span class="badge bg-primary me-2">{% trans "Featured" %}</span>
-                                    <small class="text-muted">{{ article.get_author_name }} &middot; {{ article.published_at|date:"M d, Y" }}</small>
-                                </div>
-                                <h3 class="h5 card-title"><a href="{% url 'blog:article_detail' slug=article.slug %}" class="text-decoration-none">{{ article.title }}</a></h3>
-                                <p class="card-text text-muted">{{ article.excerpt|truncatewords:20 }}</p>
-                                <a href="{% url 'blog:article_detail' slug=article.slug %}" class="btn btn-sm btn-outline-primary">{% trans "Read More" %}</a>
-                            </div>
-                        </article>
-                    </div>
-                    {% endfor %}
-                </div>
-            </section>
-            {% endif %}
-
-            <!-- Articles Grid -->
-            <section>
-                <div class="d-flex align-items-center justify-content-between mb-4">
-                    <h2 class="section-title m-0">{% trans "Latest Articles" %}</h2>
-                    <div class="d-flex gap-2">
-                        <div class="dropdown">
-                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                {% trans "Sort by" %}
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item {% if sort_by == 'newest' %}active{% endif %}" href="?sort_by=newest">{% trans "Newest" %}</a></li>
-                                <li><a class="dropdown-item {% if sort_by == 'popular' %}active{% endif %}" href="?sort_by=popular">{% trans "Most Popular" %}</a></li>
-                                <li><a class="dropdown-item {% if sort_by == 'rating' %}active{% endif %}" href="?sort_by=rating">{% trans "Top Rated" %}</a></li>
-                                <li><a class="dropdown-item {% if sort_by == 'oldest' %}active{% endif %}" href="?sort_by=oldest">{% trans "Oldest" %}</a></li>
-                            </ul>
+<div class="main-container">
+    <div class="container">
+        <div class="blog-layout">
+            <!-- Blog Content -->
+            <div class="blog-content">
+                <!-- Featured Article -->
+                {% if featured_article %}
+                <article class="featured-article">
+                    <div class="featured-article-image">
+                        {% if featured_article.image %}
+                        <img src="{{ featured_article.image.url }}" alt="{{ featured_article.title }}" loading="lazy">
+                        {% else %}
+                        <div class="article-placeholder">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                            </svg>
                         </div>
+                        {% endif %}
+                        {% if featured_article.category %}
+                        <span class="article-category-badge">{{ featured_article.category.name }}</span>
+                        {% endif %}
                     </div>
-                </div>
+                    <div class="featured-article-content">
+                        <span class="article-label">مقاله ویژه</span>
+                        <h2 class="featured-article-title">{{ featured_article.title }}</h2>
+                        <p class="featured-article-excerpt">{{ featured_article.excerpt }}</p>
+                        <div class="featured-article-meta">
+                            <div class="article-author">
+                                <div class="author-avatar">{{ featured_article.author.get_full_name|slice:":1"|upper }}</div>
+                                <span>{{ featured_article.author.get_full_name }}</span>
+                            </div>
+                            <span class="article-date">{{ featured_article.published_at|date:"Y/m/d" }}</span>
+                            <span class="article-read-time">{{ featured_article.read_time }} دقیقه مطالعه</span>
+                        </div>
+                        <a href="{% url 'blog:article_detail' featured_article.slug %}" class="btn btn-primary">
+                            مطالعه مقاله
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                                <polyline points="12 5 19 12 12 19"/>
+                            </svg>
+                        </a>
+                    </div>
+                </article>
+                {% endif %}
 
-                {% if articles %}
-                <div class="row">
+                <!-- Articles Grid -->
+                <div class="articles-grid">
                     {% for article in articles %}
-                    <div class="col-md-6 mb-4">
-                        <article class="card h-100 border-0 shadow-sm">
-                            {% if article.featured_image %}
-                            <img src="{{ article.featured_image.url }}" alt="{{ article.title }}" class="card-img-top">
-                            {% endif %}
-                            <div class="card-body">
-                                <div class="d-flex align-items-center mb-2">
-                                    {% for category in article.categories.all %}
-                                    <span class="badge bg-secondary me-2">{{ category.name }}</span>
-                                    {% endfor %}
-                                    <small class="text-muted">{{ article.get_author_name }} &middot; {{ article.published_at|date:"M d, Y" }}</small>
+                    <article class="article-card">
+                        <a href="{% url 'blog:article_detail' article.slug %}" class="article-link">
+                            <div class="article-image">
+                                {% if article.image %}
+                                <img src="{{ article.image.url }}" alt="{{ article.title }}" loading="lazy">
+                                {% else %}
+                                <div class="article-placeholder">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                        <polyline points="14 2 14 8 20 8"/>
+                                        <line x1="16" y1="13" x2="8" y2="13"/>
+                                        <line x1="16" y1="17" x2="8" y2="17"/>
+                                    </svg>
                                 </div>
-                                <h3 class="h5 card-title"><a href="{% url 'blog:article_detail' slug=article.slug %}" class="text-decoration-none">{{ article.title }}</a></h3>
-                                <p class="card-text text-muted">{{ article.excerpt|truncatewords:20 }}</p>
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <a href="{% url 'blog:article_detail' slug=article.slug %}" class="btn btn-sm btn-outline-primary">{% trans "Read More" %}</a>
-                                    <small class="text-muted">{{ article.view_count }} {% trans "views" %}</small>
+                                {% endif %}
+                                {% if article.category %}
+                                <span class="article-category-badge">{{ article.category.name }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="article-content">
+                                <h3 class="article-title">{{ article.title }}</h3>
+                                <p class="article-excerpt">{{ article.excerpt|truncatechars:120 }}</p>
+                                <div class="article-meta">
+                                    <div class="article-author">
+                                        <div class="author-avatar">{{ article.author.get_full_name|slice:":1"|upper }}</div>
+                                        <span>{{ article.author.get_full_name }}</span>
+                                    </div>
+                                    <span class="article-date">{{ article.published_at|date:"Y/m/d" }}</span>
+                                    <span class="article-read-time">{{ article.read_time }} دقیقه مطالعه</span>
                                 </div>
                             </div>
-                        </article>
-                    </div>
+                        </a>
+                    </article>
                     {% endfor %}
                 </div>
-                {% else %}
-                <div class="alert alert-info">{% trans "No articles found." %}</div>
+
+                <!-- Pagination -->
+                {% if articles.has_other_pages %}
+                <nav class="pagination" aria-label="صفحه‌بندی">
+                    <ul class="pagination-list">
+                        {% if articles.has_previous %}
+                        <li class="pagination-item">
+                            <a href="?page=1" class="pagination-link" aria-label="اولین صفحه">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="19 20 9 12 19 4"/>
+                                    <line x1="12" y1="19" x2="12" y2="5"/>
+                                </svg>
+                            </a>
+                        </li>
+                        <li class="pagination-item">
+                            <a href="?page={{ articles.previous_page_number }}" class="pagination-link" aria-label="صفحه قبلی">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="15 18 9 12 15 6"/>
+                                </svg>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for num in articles.paginator.page_range %}
+                            {% if articles.number == num %}
+                            <li class="pagination-item active">
+                                <span class="pagination-link">{{ num }}</span>
+                            </li>
+                            {% elif num > articles.number|add:'-3' and num < articles.number|add:'3' %}
+                            <li class="pagination-item">
+                                <a href="?page={{ num }}" class="pagination-link">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if articles.has_next %}
+                        <li class="pagination-item">
+                            <a href="?page={{ articles.next_page_number }}" class="pagination-link" aria-label="صفحه بعدی">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="9 18 15 12 9 6"/>
+                                </svg>
+                            </a>
+                        </li>
+                        <li class="pagination-item">
+                            <a href="?page={{ articles.paginator.num_pages }}" class="pagination-link" aria-label="آخرین صفحه">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="5 4 15 12 5 20"/>
+                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                </svg>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
                 {% endif %}
-            </section>
+            </div>
 
-            <!-- Pagination -->
-            {% if articles.has_other_pages %}
-            <nav aria-label="Page navigation" class="mt-5">
-                <ul class="pagination justify-content-center">
-                    {% if articles.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page=1{% if query %}&q={{ query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_tag %}&tag={{ current_tag }}{% endif %}" aria-label="First">
-                            <i class="bi bi-chevron-double-left"></i>
-                        </a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ articles.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_tag %}&tag={{ current_tag }}{% endif %}" aria-label="Previous">
-                            <i class="bi bi-chevron-left"></i>
-                        </a>
-                    </li>
-                    {% endif %}
-
-                    {% for num in articles.paginator.page_range %}
-                    {% if articles.number == num %}
-                    <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
-                    {% elif num > articles.number|add:'-3' and num < articles.number|add:'3' %}
-                    <li class="page-item"><a class="page-link" href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_tag %}&tag={{ current_tag }}{% endif %}">{{ num }}</a></li>
-                    {% endif %}
-                    {% endfor %}
-
-                    {% if articles.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ articles.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_tag %}&tag={{ current_tag }}{% endif %}" aria-label="Next">
-                            <i class="bi bi-chevron-right"></i>
-                        </a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ articles.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_tag %}&tag={{ current_tag }}{% endif %}" aria-label="Last">
-                            <i class="bi bi-chevron-double-right"></i>
-                        </a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </nav>
-            {% endif %}
-        </div>
-
-        <!-- Sidebar -->
-        <aside class="col-lg-4">
-            <!-- Categories -->
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h3 class="h5 mb-0">{% trans "Categories" %}</h3>
+            <!-- Blog Sidebar -->
+            <aside class="blog-sidebar">
+                <!-- Search -->
+                <div class="sidebar-card">
+                    <h3 class="sidebar-card-title">جستجو در بلاگ</h3>
+                    <form action="{% url 'blog:search' %}" method="get" class="sidebar-search">
+                        <div class="sidebar-search-input">
+                            <input type="text" name="q" placeholder="جستجوی مقالات..." value="{{ request.GET.q|default:'' }}">
+                            <button type="submit">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="11" cy="11" r="8"/>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </form>
                 </div>
-                <div class="card-body">
-                    <ul class="list-unstyled mb-0">
-                        <li class="mb-2">
-                            <a href="{% url 'blog:article_list' %}" class="text-decoration-none {% if not current_category %}fw-bold{% endif %}">
-                                {% trans "All Categories" %}
-                            </a>
-                        </li>
-                        {% for category in popular_categories %}
-                        <li class="mb-2">
-                            <a href="{% url 'blog:category_detail' slug=category.slug %}" class="text-decoration-none d-flex justify-content-between align-items-center {% if current_category == category.slug %}fw-bold{% endif %}">
-                                <span>{{ category.name }}</span>
-                                <span class="badge bg-light text-dark">{{ category.articles.count }}</span>
+
+                <!-- Categories -->
+                <div class="sidebar-card">
+                    <h3 class="sidebar-card-title">دسته‌بندی‌ها</h3>
+                    <ul class="sidebar-categories">
+                        {% for category in categories %}
+                        <li class="sidebar-category">
+                            <a href="{% url 'blog:category' category.slug %}">
+                                <span class="category-name">{{ category.name }}</span>
+                                <span class="category-count">{{ category.article_count }}</span>
                             </a>
                         </li>
                         {% endfor %}
                     </ul>
                 </div>
-            </div>
 
-            <!-- Popular Tags -->
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h3 class="h5 mb-0">{% trans "Popular Tags" %}</h3>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex flex-wrap gap-2">
-                        {% for tag in popular_tags %}
-                        <a href="{% url 'blog:tag_detail' slug=tag.slug %}" class="btn btn-sm btn-outline-secondary {% if current_tag == tag.slug %}active{% endif %}">
-                            {{ tag.name }}
-                        </a>
+                <!-- Tags -->
+                {% if tags %}
+                <div class="sidebar-card">
+                    <h3 class="sidebar-card-title">تگ‌ها</h3>
+                    <div class="sidebar-tags">
+                        {% for tag in tags %}
+                        <a href="{% url 'blog:tag' tag.slug %}" class="sidebar-tag">{{ tag.name }}</a>
                         {% endfor %}
                     </div>
                 </div>
-            </div>
+                {% endif %}
 
-            <!-- Recent Articles -->
-            <div class="card">
-                <div class="card-header bg-white">
-                    <h3 class="h5 mb-0">{% trans "Recent Articles" %}</h3>
-                </div>
-                <div class="card-body">
-                    <ul class="list-unstyled mb-0">
-                        {% for article in articles|slice:":5" %}
-                        <li class="mb-3 pb-3 border-bottom">
-                            <a href="{% url 'blog:article_detail' slug=article.slug %}" class="text-decoration-none">
-                                <h6 class="mb-1">{{ article.title }}</h6>
-                                <small class="text-muted">{{ article.published_at|date:"M d, Y" }}</small>
+                <!-- Popular Articles -->
+                <div class="sidebar-card">
+                    <h3 class="sidebar-card-title">مقالات پر بازدید</h3>
+                    <ul class="sidebar-articles">
+                        {% for article in popular_articles %}
+                        <li class="sidebar-article">
+                            <a href="{% url 'blog:article_detail' article.slug %}">
+                                <h4 class="sidebar-article-title">{{ article.title }}</h4>
+                                <span class="sidebar-article-date">{{ article.published_at|date:"Y/m/d" }}</span>
                             </a>
                         </li>
                         {% endfor %}
                     </ul>
                 </div>
-            </div>
-        </aside>
+
+                <!-- Recent Articles -->
+                <div class="sidebar-card">
+                    <h3 class="sidebar-card-title">مقالات اخیر</h3>
+                    <ul class="sidebar-articles">
+                        {% for article in recent_articles %}
+                        <li class="sidebar-article">
+                            <a href="{% url 'blog:article_detail' article.slug %}">
+                                <h4 class="sidebar-article-title">{{ article.title }}</h4>
+                                <span class="sidebar-article-date">{{ article.published_at|date:"Y/m/d" }}</span>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- Newsletter -->
+                <div class="sidebar-card newsletter-card">
+                    <h3 class="sidebar-card-title">عضویت در خبرنامه</h3>
+                    <p class="newsletter-description">با عضویت در خبرنامه، از جدیدترین مقالات مطلع شوید.</p>
+                    <form action="{% url 'core:newsletter_subscribe' %}" method="post" class="newsletter-form">
+                        {% csrf_token %}
+                        <div class="newsletter-input">
+                            <input type="email" name="email" placeholder="ایمیل خود را وارد کنید" required>
+                            <button type="submit">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"/>
+                                    <polyline points="12 5 19 12 12 19"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Ads -->
+                {% if sidebar_ads %}
+                {% for ad in sidebar_ads %}
+                <div class="sidebar-ad">
+                    <a href="{{ ad.url }}" target="_blank">
+                        <img src="{{ ad.image.url }}" alt="{{ ad.title }}" loading="lazy">
+                    </a>
+                </div>
+                {% endfor %}
+                {% endif %}
+            </aside>
+        </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/blog.js' %}"></script>
 {% endblock %}

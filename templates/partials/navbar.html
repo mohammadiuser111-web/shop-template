@@ -1,0 +1,248 @@
+<nav class="mobile-nav" style="display: none;">
+    <div class="mobile-nav-header">
+        <button class="mobile-nav-close" aria-label="بستن">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        </button>
+        <span class="mobile-nav-title">منوی اصلی</span>
+    </div>
+    
+    <div class="mobile-nav-content">
+        <!-- User Section -->
+        {% if user.is_authenticated %}
+        <div class="mobile-nav-section">
+            <div class="mobile-nav-user">
+                <div class="user-avatar">
+                    <span>{{ user.get_full_name|slice:":1"|upper }}</span>
+                </div>
+                <div class="user-info">
+                    <span class="user-name">{{ user.get_full_name|default:user.phone_number }}</span>
+                    <span class="user-email">{{ user.email }}</span>
+                </div>
+            </div>
+            <div class="mobile-nav-section-links">
+                <a href="{% url 'accounts:profile' %}" class="mobile-nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    پروفایل من
+                </a>
+                <a href="{% url 'orders:order_history' %}" class="mobile-nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    سفارش‌ها
+                </a>
+                <a href="{% url 'accounts:wishlist' %}" class="mobile-nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                    لیست علاقه‌مندی‌ها
+                </a>
+                <a href="{% url 'accounts:addresses' %}" class="mobile-nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    آدرس‌ها
+                </a>
+                <a href="{% url 'accounts:logout' %}" class="mobile-nav-link logout-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                    خروج
+                </a>
+            </div>
+        </div>
+        {% else %}
+        <div class="mobile-nav-section-links">
+            <a href="{% url 'accounts:login' %}" class="mobile-nav-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                    <polyline points="10 17 15 12 10 7"/>
+                    <line x1="15" y1="12" x2="3" y2="12"/>
+                </svg>
+                ورود
+            </a>
+            <a href="{% url 'accounts:register' %}" class="mobile-nav-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                ثبت‌نام
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- Menu Section -->
+        <div class="mobile-nav-section">
+            <h4 class="mobile-nav-section-title">منوی اصلی</h4>
+            <div class="mobile-nav-section-links">
+                <a href="{% url 'store:home' %}" class="mobile-nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        <polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
+                    خانه
+                </a>
+                <a href="{% url 'store:products' %}" class="mobile-nav-link {% if request.resolver_match.app_name == 'store' and request.resolver_match.url_name != 'home' %}active{% endif %}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <line x1="3" y1="9" x2="21" y2="9"/>
+                        <line x1="9" y1="21" x2="9" y2="9"/>
+                    </svg>
+                    محصولات
+                </a>
+                <a href="{% url 'blog:article_list' %}" class="mobile-nav-link {% if request.resolver_match.app_name == 'blog' %}active{% endif %}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                    بلاگ
+                </a>
+                <a href="{% url 'support:contact' %}" class="mobile-nav-link {% if request.resolver_match.url_name == 'contact' %}active{% endif %}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    تماس با ما
+                </a>
+            </div>
+        </div>
+
+        <!-- Categories Section -->
+        <div class="mobile-nav-section">
+            <h4 class="mobile-nav-section-title">دسته‌بندی‌ها</h4>
+            <div class="mobile-nav-section-links">
+                {% for category in categories %}
+                <a href="{% url 'store:category' category.slug %}" class="mobile-nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    {{ category.name }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="mobile-nav-section">
+            <h4 class="mobile-nav-section-title">دسترسی سریع</h4>
+            <div class="mobile-nav-section-links">
+                <a href="{% url 'cart:cart_detail' %}" class="mobile-nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                        <line x1="3" y1="6" x2="21" y2="6"/>
+                        <path d="M16 10a4 4 0 0 1-8 0"/>
+                    </svg>
+                    سبد خرید
+                    {% if cart_count %}
+                    <span class="mobile-nav-badge">{{ cart_count }}</span>
+                    {% endif %}
+                </a>
+                <a href="{% url 'accounts:wishlist' %}" class="mobile-nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                    علاقه‌مندی‌ها
+                    {% if wishlist_count %}
+                    <span class="mobile-nav-badge">{{ wishlist_count }}</span>
+                    {% endif %}
+                </a>
+            </div>
+        </div>
+
+        <!-- Support Section -->
+        <div class="mobile-nav-section">
+            <h4 class="mobile-nav-section-title">پشتیبانی</h4>
+            <div class="mobile-nav-section-links">
+                <a href="{% url 'support:faq' %}" class="mobile-nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="16" x2="12" y2="12"/>
+                        <line x1="12" y1="8" x2="12.01" y2="8"/>
+                    </svg>
+                    سوالات متداول
+                </a>
+                <a href="{% url 'core:return_policy' %}" class="mobile-nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                        <line x1="12" y1="22.08" x2="12" y2="12"/>
+                    </svg>
+                    سیاست بازگشت
+                </a>
+                <a href="{% url 'core:privacy_policy' %}" class="mobile-nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    حریم خصوصی
+                </a>
+            </div>
+        </div>
+
+        <!-- Contact Section -->
+        <div class="mobile-nav-section">
+            <h4 class="mobile-nav-section-title">تماس با ما</h4>
+            <div class="mobile-nav-contacts">
+                {% if site_settings.contact_phone %}
+                <a href="tel:{{ site_settings.contact_phone }}" class="mobile-nav-contact">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                    </svg>
+                    {{ site_settings.contact_phone }}
+                </a>
+                {% endif %}
+                {% if site_settings.contact_email %}
+                <a href="mailto:{{ site_settings.contact_email }}" class="mobile-nav-contact">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                    {{ site_settings.contact_email }}
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Social Links -->
+        {% if site_settings.social_instagram or site_settings.social_telegram or site_settings.social_whatsapp %}
+        <div class="mobile-nav-section">
+            <h4 class="mobile-nav-section-title">شبکه‌های اجتماعی</h4>
+            <div class="mobile-nav-social">
+                {% if site_settings.social_instagram %}
+                <a href="{{ site_settings.social_instagram }}" class="mobile-social-link instagram" aria-label="اینستاگرام">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                    </svg>
+                </a>
+                {% endif %}
+                {% if site_settings.social_telegram %}
+                <a href="{{ site_settings.social_telegram }}" class="mobile-social-link telegram" aria-label="تلگرام">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M24 12.025c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.079 24 18.116 24 12.025z"/>
+                    </svg>
+                </a>
+                {% endif %}
+                {% if site_settings.social_whatsapp %}
+                <a href="{{ site_settings.social_whatsapp }}" class="mobile-social-link whatsapp" aria-label="واتس‌اپ">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.178-.173.212-.347.242-.644.148-.297-.098-1.255-.463-2.39-1.775-.883-1.004-1.486-2.423-1.66-3.119-.173-.696-.018-1.465.15-2.143.168-.678.627-1.135 1.216-1.342.589-.207 1.349-.364 2.03-.408.682-.044 1.465-.018 2.143.15.678.168 1.135.627 1.342 1.216.207.589.364 1.349.408 2.03.044.682.018 1.465-.15 2.143-.168.678-.627 1.135-1.216 1.342-.589.207-1.349.364-2.03.408-.682.044-1.465.018-2.143-.15-.678-.168-1.135-.627-1.342-1.216-.207-.589-.364-1.349-.408-2.03-.044-.682-.018-1.465.15-2.143.168-.678.627-1.135 1.216-1.342.589-.207 1.349-.364 2.03-.408.682-.044 1.465-.018 2.143.15.678.168 1.135.627 1.342 1.216.207.589.364 1.349.408 2.03.044.682.018 1.465-.15 2.143zM12.025 21.85c-4.023 0-7.29-3.267-7.29-7.29 0-4.022 3.267-7.29 7.29-7.29s7.29 3.268 7.29 7.29c0 4.023-3.267 7.29-7.29 7.29z"/>
+                    </svg>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</nav>

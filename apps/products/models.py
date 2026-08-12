@@ -295,10 +295,8 @@ class Product(models.Model):
     
     # Related products
     related_products = models.ManyToManyField('self', blank=True, verbose_name='Related Products')
-    upsell_products = models.ManyToManyField('self', blank=True, symmetric=False, 
-                                              related_name='upsell_related', verbose_name='Upsell Products')
-    cross_sell_products = models.ManyToManyField('self', blank=True, symmetric=False,
-                                                  related_name='cross_sell_related', verbose_name='Cross-sell Products')
+    upsell_products = models.ManyToManyField('self', blank=True, verbose_name='Upsell Products')
+    cross_sell_products = models.ManyToManyField('self', blank=True, verbose_name='Cross-sell Products')
     
     # Tags
     tags = models.ManyToManyField('Tag', blank=True, verbose_name='Tags')

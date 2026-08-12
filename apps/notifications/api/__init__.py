@@ -1,0 +1,1 @@
+# API for notifications app

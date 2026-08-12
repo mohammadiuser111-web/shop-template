@@ -1,0 +1,602 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>{% block title %}پنل مدیریت{% endblock %} - {% if site_settings.site_name %}{{ site_settings.site_name }}{% else %}فروشگاه{% endif %}</title>
+    
+    <!-- Favicon -->
+    {% if site_settings.favicon %}
+    <link rel="icon" type="image/x-icon" href="{{ site_settings.favicon.url }}">
+    {% else %}
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+    {% endif %}
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{% static 'css/admin/base.css' %}">
+    {% block extra_css %}{% endblock %}
+    
+    <!-- Theme CSS -->
+    {% if theme %}
+    <link rel="stylesheet" href="{% static 'css/themes/' %}{{ theme }}/theme.css">
+    {% endif %}
+    
+    <!-- Custom CSS -->
+    {% if site_settings.custom_css %}
+    <style>{{ site_settings.custom_css|safe }}</style>
+    {% endif %}
+    
+    <!-- Head -->
+    {% block head %}{% endblock %}
+</head>
+<body class="admin-layout">
+    <!-- Admin Sidebar -->
+    <aside class="admin-sidebar" id="adminSidebar">
+        <div class="admin-sidebar-header">
+            <a href="{% url 'admin:dashboard' %}" class="admin-logo">
+                {% if site_settings.logo %}
+                <img src="{{ site_settings.logo.url }}" alt="{% if site_settings.site_name %}{{ site_settings.site_name }}{% else %}فروشگاه{% endif %}" class="admin-logo-img">
+                {% else %}
+                <span class="admin-logo-text">{% if site_settings.site_name %}{{ site_settings.site_name }}{% else %}فروشگاه{% endif %}</span>
+                {% endif %}
+            </a>
+            <button type="button" class="admin-sidebar-toggle" id="adminSidebarToggle">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </button>
+        </div>
+
+        <nav class="admin-sidebar-nav">
+            <ul class="admin-nav-list">
+                <!-- Dashboard -->
+                <li class="admin-nav-item {% if request.resolver_match.url_name == 'admin:dashboard' %}active{% endif %}">
+                    <a href="{% url 'admin:dashboard' %}" class="admin-nav-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7"/>
+                            <rect x="14" y="3" width="7" height="7"/>
+                            <rect x="14" y="14" width="7" height="7"/>
+                            <rect x="3" y="14" width="7" height="7"/>
+                        </svg>
+                        <span>داشبورد</span>
+                    </a>
+                </li>
+
+                <!-- Products -->
+                <li class="admin-nav-item {% if request.resolver_match.app_name == 'products' %}active{% endif %}">
+                    <a href="#" class="admin-nav-link admin-nav-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                            <line x1="7" y1="7" x2="7.01" y2="7"/>
+                        </svg>
+                        <span>محصولات</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </a>
+                    <ul class="admin-nav-sublist">
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:products' %}active{% endif %}">
+                            <a href="{% url 'admin:products' %}" class="admin-nav-sublink">لیست محصولات</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:add_product' %}active{% endif %}">
+                            <a href="{% url 'admin:add_product' %}" class="admin-nav-sublink">افزودن محصول</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:categories' %}active{% endif %}">
+                            <a href="{% url 'admin:categories' %}" class="admin-nav-sublink">دسته‌بندی‌ها</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:brands' %}active{% endif %}">
+                            <a href="{% url 'admin:brands' %}" class="admin-nav-sublink">برندها</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:tags' %}active{% endif %}">
+                            <a href="{% url 'admin:tags' %}" class="admin-nav-sublink">تگ‌ها</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:attributes' %}active{% endif %}">
+                            <a href="{% url 'admin:attributes' %}" class="admin-nav-sublink">ویژگی‌ها</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:reviews' %}active{% endif %}">
+                            <a href="{% url 'admin:reviews' %}" class="admin-nav-sublink">دیدگاه‌ها</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:questions' %}active{% endif %}">
+                            <a href="{% url 'admin:questions' %}" class="admin-nav-sublink">سوالات</a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Orders -->
+                <li class="admin-nav-item {% if request.resolver_match.app_name == 'orders' %}active{% endif %}">
+                    <a href="#" class="admin-nav-link admin-nav-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        <span>سفارش‌ها</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </a>
+                    <ul class="admin-nav-sublist">
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:orders' %}active{% endif %}">
+                            <a href="{% url 'admin:orders' %}" class="admin-nav-sublink">لیست سفارش‌ها</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:order_statuses' %}active{% endif %}">
+                            <a href="{% url 'admin:order_statuses' %}" class="admin-nav-sublink">وضعیت سفارش‌ها</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:returns' %}active{% endif %}">
+                            <a href="{% url 'admin:returns' %}" class="admin-nav-sublink">مرجوعی‌ها</a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Customers -->
+                <li class="admin-nav-item {% if request.resolver_match.app_name == 'customers' %}active{% endif %}">
+                    <a href="#" class="admin-nav-link admin-nav-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        <span>مشتریان</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </a>
+                    <ul class="admin-nav-sublist">
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:customers' %}active{% endif %}">
+                            <a href="{% url 'admin:customers' %}" class="admin-nav-sublink">لیست مشتریان</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:add_customer' %}active{% endif %}">
+                            <a href="{% url 'admin:add_customer' %}" class="admin-nav-sublink">افزودن مشتری</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:customer_groups' %}active{% endif %}">
+                            <a href="{% url 'admin:customer_groups' %}" class="admin-nav-sublink">گروه‌های مشتریان</a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Content -->
+                <li class="admin-nav-item {% if request.resolver_match.app_name == 'content' %}active{% endif %}">
+                    <a href="#" class="admin-nav-link admin-nav-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                        </svg>
+                        <span>محتوا</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </a>
+                    <ul class="admin-nav-sublist">
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:articles' %}active{% endif %}">
+                            <a href="{% url 'admin:articles' %}" class="admin-nav-sublink">مقالات</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:add_article' %}active{% endif %}">
+                            <a href="{% url 'admin:add_article' %}" class="admin-nav-sublink">افزودن مقاله</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:article_categories' %}active{% endif %}">
+                            <a href="{% url 'admin:article_categories' %}" class="admin-nav-sublink">دسته‌بندی مقالات</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:article_tags' %}active{% endif %}">
+                            <a href="{% url 'admin:article_tags' %}" class="admin-nav-sublink">تگ‌های مقالات</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:pages' %}active{% endif %}">
+                            <a href="{% url 'admin:pages' %}" class="admin-nav-sublink">صفحات</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:menus' %}active{% endif %}">
+                            <a href="{% url 'admin:menus' %}" class="admin-nav-sublink">منوها</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:sliders' %}active{% endif %}">
+                            <a href="{% url 'admin:sliders' %}" class="admin-nav-sublink">اسلایدرها</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:banners' %}active{% endif %}">
+                            <a href="{% url 'admin:banners' %}" class="admin-nav-sublink">بنرها</a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Marketing -->
+                <li class="admin-nav-item {% if request.resolver_match.app_name == 'marketing' %}active{% endif %}">
+                    <a href="#" class="admin-nav-link admin-nav-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                        </svg>
+                        <span>بازاریابی</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </a>
+                    <ul class="admin-nav-sublist">
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:discounts' %}active{% endif %}">
+                            <a href="{% url 'admin:discounts' %}" class="admin-nav-sublink">تخفیف‌ها</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:coupons' %}active{% endif %}">
+                            <a href="{% url 'admin:coupons' %}" class="admin-nav-sublink">کوپن‌ها</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:campaigns' %}active{% endif %}">
+                            <a href="{% url 'admin:campaigns' %}" class="admin-nav-sublink">کمپین‌ها</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:ads' %}active{% endif %}">
+                            <a href="{% url 'admin:ads' %}" class="admin-nav-sublink">تبلیغات</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:ad_positions' %}active{% endif %}">
+                            <a href="{% url 'admin:ad_positions' %}" class="admin-nav-sublink">مکان‌های تبلیغاتی</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:newsletter' %}active{% endif %}">
+                            <a href="{% url 'admin:newsletter' %}" class="admin-nav-sublink">خبرنامه</a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Settings -->
+                <li class="admin-nav-item {% if request.resolver_match.app_name == 'settings' %}active{% endif %}">
+                    <a href="#" class="admin-nav-link admin-nav-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                        </svg>
+                        <span>تنظیمات</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </a>
+                    <ul class="admin-nav-sublist">
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:settings' %}active{% endif %}">
+                            <a href="{% url 'admin:settings' %}" class="admin-nav-sublink">تنظیمات عمومی</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:shipping_settings' %}active{% endif %}">
+                            <a href="{% url 'admin:shipping_settings' %}" class="admin-nav-sublink">تنظیمات ارسال</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:payment_settings' %}active{% endif %}">
+                            <a href="{% url 'admin:payment_settings' %}" class="admin-nav-sublink">تنظیمات پرداخت</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:theme_settings' %}active{% endif %}">
+                            <a href="{% url 'admin:theme_settings' %}" class="admin-nav-sublink">تنظیمات قالب</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:seo_settings' %}active{% endif %}">
+                            <a href="{% url 'admin:seo_settings' %}" class="admin-nav-sublink">تنظیمات سئو</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:social_settings' %}active{% endif %}">
+                            <a href="{% url 'admin:social_settings' %}" class="admin-nav-sublink">شبکه‌های اجتماعی</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:email_settings' %}active{% endif %}">
+                            <a href="{% url 'admin:email_settings' %}" class="admin-nav-sublink">تنظیمات ایمیل</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:sms_settings' %}active{% endif %}">
+                            <a href="{% url 'admin:sms_settings' %}" class="admin-nav-sublink">تنظیمات پیامک</a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Reports -->
+                <li class="admin-nav-item {% if request.resolver_match.url_name == 'admin:reports' %}active{% endif %}">
+                    <a href="{% url 'admin:reports' %}" class="admin-nav-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                        </svg>
+                        <span>گزارش‌ها</span>
+                    </a>
+                </li>
+
+                <!-- Notifications -->
+                <li class="admin-nav-item {% if request.resolver_match.url_name == 'admin:notifications' %}active{% endif %}">
+                    <a href="{% url 'admin:notifications' %}" class="admin-nav-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                        </svg>
+                        <span>اعلان‌ها</span>
+                        {% if unread_notifications %}
+                        <span class="notification-badge">{{ unread_notifications }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+
+                <!-- Support -->
+                <li class="admin-nav-item {% if request.resolver_match.app_name == 'support' %}active{% endif %}">
+                    <a href="#" class="admin-nav-link admin-nav-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                        <span>پشتیبانی</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </a>
+                    <ul class="admin-nav-sublist">
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:tickets' %}active{% endif %}">
+                            <a href="{% url 'admin:tickets' %}" class="admin-nav-sublink">تیکت‌ها</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:faq' %}active{% endif %}">
+                            <a href="{% url 'admin:faq' %}" class="admin-nav-sublink">سوالات متداول</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:contact_messages' %}active{% endif %}">
+                            <a href="{% url 'admin:contact_messages' %}" class="admin-nav-sublink">پیام‌های تماس</a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Users & Permissions -->
+                <li class="admin-nav-item {% if request.resolver_match.app_name == 'users' %}active{% endif %}">
+                    <a href="#" class="admin-nav-link admin-nav-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                        <span>کاربران و دسترسی‌ها</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </a>
+                    <ul class="admin-nav-sublist">
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:staff' %}active{% endif %}">
+                            <a href="{% url 'admin:staff' %}" class="admin-nav-sublink">کاربران سیستم</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:add_staff' %}active{% endif %}">
+                            <a href="{% url 'admin:add_staff' %}" class="admin-nav-sublink">افزودن کاربر</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:roles' %}active{% endif %}">
+                            <a href="{% url 'admin:roles' %}" class="admin-nav-sublink">نقش‌ها</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:permissions' %}active{% endif %}">
+                            <a href="{% url 'admin:permissions' %}" class="admin-nav-sublink">دسترسی‌ها</a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- System -->
+                <li class="admin-nav-item {% if request.resolver_match.app_name == 'system' %}active{% endif %}">
+                    <a href="#" class="admin-nav-link admin-nav-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                            <line x1="8" y1="21" x2="16" y2="21"/>
+                            <line x1="12" y1="17" x2="12" y2="21"/>
+                        </svg>
+                        <span>سیستم</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </a>
+                    <ul class="admin-nav-sublist">
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:activity_logs' %}active{% endif %}">
+                            <a href="{% url 'admin:activity_logs' %}" class="admin-nav-sublink">لاگ فعالیت‌ها</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:backups' %}active{% endif %}">
+                            <a href="{% url 'admin:backups' %}" class="admin-nav-sublink">پشتیبانی‌گیری</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:cache' %}active{% endif %}">
+                            <a href="{% url 'admin:cache' %}" class="admin-nav-sublink">حافظه نهان</a>
+                        </li>
+                        <li class="admin-nav-subitem {% if request.resolver_match.url_name == 'admin:import_export' %}active{% endif %}">
+                            <a href="{% url 'admin:import_export' %}" class="admin-nav-sublink">وارد/صدور اطلاعات</a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="admin-sidebar-footer">
+            <div class="admin-user-info">
+                <div class="admin-user-avatar">
+                    {% if user.avatar %}
+                    <img src="{{ user.avatar.url }}" alt="{{ user.get_full_name }}">
+                    {% else %}
+                    <span>{{ user.get_full_name|slice:":1"|upper }}</span>
+                    {% endif %}
+                </div>
+                <div class="admin-user-details">
+                    <span class="admin-user-name">{{ user.get_full_name }}</span>
+                    <span class="admin-user-role">{{ user.get_role_display }}</span>
+                </div>
+            </div>
+            <div class="admin-user-actions">
+                <a href="{% url 'admin:profile' %}" class="admin-user-action-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                </a>
+                <a href="{% url 'admin:settings' %}" class="admin-user-action-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                </a>
+                <a href="{% url 'accounts:logout' %}" class="admin-user-action-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Admin Header -->
+    <header class="admin-header">
+        <div class="admin-header-left">
+            <button type="button" class="admin-mobile-menu-toggle" id="adminMobileMenuToggle">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </button>
+            <div class="admin-header-search">
+                <form action="{% url 'admin:search' %}" method="get">
+                    <div class="admin-search-input">
+                        <input type="text" name="q" placeholder="جستجو..." value="{{ request.GET.q|default:'' }}">
+                        <button type="submit">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"/>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                            </svg>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="admin-header-right">
+            <div class="admin-header-notifications">
+                <button type="button" class="admin-notification-btn" id="adminNotificationBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                    {% if unread_notifications %}
+                    <span class="notification-badge">{{ unread_notifications }}</span>
+                    {% endif %}
+                </button>
+                <div class="admin-notification-dropdown" id="adminNotificationDropdown">
+                    <div class="admin-notification-header">
+                        <h4>اعلان‌ها</h4>
+                        <a href="{% url 'admin:notifications' %}">مشاهده همه</a>
+                    </div>
+                    <div class="admin-notification-list">
+                        {% for notification in recent_notifications %}
+                        <div class="admin-notification-item {% if not notification.is_read %}unread{% endif %}">
+                            <div class="admin-notification-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <line x1="12" y1="8" x2="12" y2="12"/>
+                                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                                </svg>
+                            </div>
+                            <div class="admin-notification-content">
+                                <p>{{ notification.message }}</p>
+                                <span>{{ notification.created_at|timesince }} پیش</span>
+                            </div>
+                            {% if not notification.is_read %}
+                            <a href="{% url 'admin:mark_notification_read' notification.id %}" class="admin-notification-mark-read">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                            </a>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if recent_notifications %}
+                    <div class="admin-notification-footer">
+                        <a href="{% url 'admin:mark_all_notifications_read' %}">علامت‌زنی همه به عنوان خوانده شده</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="admin-header-theme">
+                <button type="button" class="admin-theme-btn" id="adminThemeBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"/>
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="admin-header-user">
+                <div class="admin-header-user-avatar">
+                    {% if user.avatar %}
+                    <img src="{{ user.avatar.url }}" alt="{{ user.get_full_name }}">
+                    {% else %}
+                    <span>{{ user.get_full_name|slice:":1"|upper }}</span>
+                    {% endif %}
+                </div>
+                <div class="admin-header-user-dropdown">
+                    <span class="admin-header-user-name">{{ user.get_full_name }}</span>
+                    <span class="admin-header-user-role">{{ user.get_role_display }}</span>
+                </div>
+                <div class="admin-header-user-actions">
+                    <a href="{% url 'admin:profile' %}" class="admin-header-user-action">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        پروفایل
+                    </a>
+                    <a href="{% url 'admin:settings' %}" class="admin-header-user-action">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82V9a1.65 1.65 0 0 0 1.51 1H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                        </svg>
+                        تنظیمات
+                    </a>
+                    <a href="{% url 'accounts:logout' %}" class="admin-header-user-action">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                            <polyline points="16 17 21 12 16 7"/>
+                            <line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                        خروج
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Admin Main Content -->
+    <main class="admin-main">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Admin Footer -->
+    <footer class="admin-footer">
+        <div class="admin-footer-left">
+            <p>&copy; {{ now|date:"Y" }} {% if site_settings.site_name %}{{ site_settings.site_name }}{% else %}فروشگاه{% endif %}. تمام حقوق محفوظ است.</p>
+        </div>
+        <div class="admin-footer-right">
+            <p>نسخه {{ site_settings.version|default:"1.0.0" }}</p>
+        </div>
+    </footer>
+
+    <!-- Theme Modal -->
+    <div class="modal" id="themeModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">انتخاب قالب</h3>
+                <button type="button" class="modal-close" data-close-modal="themeModal">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="theme-options">
+                    {% for theme in available_themes %}
+                    <label class="theme-option">
+                        <input type="radio" name="theme" value="{{ theme.id }}" {% if theme.id == current_theme %}checked{% endif %}>
+                        <span class="theme-option-card">
+                            <span class="theme-option-preview" style="background: {{ theme.primary_color }};"></span>
+                            <span class="theme-option-name">{{ theme.name }}</span>
+                        </span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" data-close-modal="themeModal">انصراف</button>
+                <button type="button" class="btn btn-primary" id="saveTheme">ذخیره قالب</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JS -->
+    <script src="{% static 'js/admin/base.js' %}"></script>
+    <script src="{% static 'js/modal.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+    
+    <!-- Custom JS -->
+    {% if site_settings.custom_js %}
+    <script>{{ site_settings.custom_js|safe }}</script>
+    {% endif %}
+</body>
+</html>

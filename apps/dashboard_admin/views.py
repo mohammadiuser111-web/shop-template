@@ -27,7 +27,7 @@ from .models import (
 from apps.products.models import Product, Category, Brand
 from apps.orders.models import Order
 from apps.accounts.models import User
-from apps.payments.models import Payment
+from apps.payments.models import Transaction
 
 
 class AdminRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
@@ -100,9 +100,9 @@ class DashboardView(AdminRequiredMixin, View):
         today_users = User.objects.filter(date_joined__date=today).count()
         
         # Payment stats
-        total_payments = Payment.objects.count()
-        successful_payments = Payment.objects.filter(status='completed').count()
-        today_payments = Payment.objects.filter(created_at__date=today).count()
+        total_payments = Transaction.objects.count()
+        successful_payments = Transaction.objects.filter(status='success').count()
+        today_payments = Transaction.objects.filter(created_at__date=today).count()
         
         # Revenue
         total_revenue = Order.objects.filter(status='completed').aggregate(

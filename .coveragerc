@@ -1,0 +1,143 @@
+# ============================================
+# Coverage.py Configuration for Shop Template
+# ============================================
+
+[run]
+# ============================================
+# Source Code
+# ============================================
+
+# Source directories to measure
+source = 
+    shop_template
+    apps
+
+# Omit specific files and directories
+omit = 
+    */tests/*
+    */migrations/*
+    */__pycache__/*
+    */settings/*
+    */urls.py
+    */wsgi.py
+    */asgi.py
+    */celery.py
+    */apps.py
+    */admin.py
+    */management/*
+    */fixtures/*
+    venv/*
+    .venv/*
+    env/*
+
+# ============================================
+# Execution
+# ============================================
+
+# Parallel execution
+parallel = True
+
+# ============================================
+# Data Files
+# ============================================
+
+# Data file for coverage
+data_file = .coverage
+
+# Directory for coverage data
+data_suffix = True
+
+# ============================================
+# Reporting
+# ============================================
+
+[report]
+# Output directory
+output_dir = htmlcov
+
+# HTML report directory
+html_dir = htmlcov
+
+# HTML report title
+html_title = Shop Template Test Coverage
+
+# Show missing lines in HTML report
+show_missing = True
+
+# Show contexts in HTML report
+show_contexts = True
+
+# XML report file
+xml_output = coverage.xml
+
+# ============================================
+# Minimum Coverage
+# ============================================
+
+# Minimum coverage percentage
+fail_under = 80
+
+# ============================================
+# Exclude
+# ============================================
+
+# Exclude lines from coverage
+exclude_lines =
+    # Have to re-enable the standard pragma
+    pragma: no cover
+
+    # Don't complain about missing debug-only code
+    def __repr__
+    def __str__
+
+    # Don't complain if tests don't hit defensive assertion code
+    raise AssertionError
+    raise NotImplementedError
+
+    # Don't complain if non-runnable code isn't run
+    if __name__ == .__main__.:
+
+    # Don't complain about abstract methods
+    @abstractmethod
+
+    # Don't complain about deprecation warnings
+    @deprecated
+
+    # Don't complain about platform-specific code
+    if sys.platform
+
+    # Don't complain about environment-specific code
+    if os.environ
+
+    # Don't complain about settings-specific code
+    if settings.DEBUG
+
+    # Don't complain about test-specific code
+    if TESTING
+
+    # Don't complain about development-specific code
+    if DEVELOPMENT
+
+    # Don't complain about staging-specific code
+    if STAGING
+
+# ============================================
+# Precision
+# ============================================
+
+# Precision for coverage
+precision = 2
+
+# ============================================
+# Branch Coverage
+# ============================================
+
+# Enable branch coverage
+branch = True
+
+# ============================================
+# Partial Coverage
+# ============================================
+
+# Enable partial coverage
+partial = True

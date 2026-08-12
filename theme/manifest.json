@@ -1,0 +1,594 @@
+{
+    "name": "Shop Template",
+    "short_name": "ShopTemplate",
+    "description": "A professional, resellable Django e-commerce template with store, blog, and admin panel sections.",
+    "version": "1.0.0",
+    "author": "Arena.ai",
+    "homepage": "https://github.com/yourusername/shop-template",
+    "repository": "https://github.com/yourusername/shop-template",
+    "license": "MIT",
+    "type": "template",
+    "framework": "Django",
+    "categories": [
+        "e-commerce",
+        "django",
+        "template",
+        "shop",
+        "store",
+        "blog",
+        "admin",
+        "responsive",
+        "bootstrap",
+        "tailwind"
+    ],
+    "keywords": [
+        "django",
+        "ecommerce",
+        "template",
+        "shop",
+        "store",
+        "blog",
+        "admin",
+        "responsive",
+        "bootstrap5",
+        "tailwindcss",
+        "python",
+        "web",
+        "application",
+        "starter",
+        "boilerplate"
+    ],
+    "features": [
+        "responsive-design",
+        "mobile-first",
+        "dark-mode",
+        "rtl-support",
+        "lazy-loading",
+        "accessibility",
+        "seo-friendly",
+        "performance-optimized",
+        "cross-browser",
+        "touch-friendly",
+        "print-styles",
+        "reduced-motion",
+        "high-contrast",
+        "modular-architecture",
+        "rest-api",
+        "docker-ready",
+        "celery-tasks",
+        "redis-cache",
+        "postgresql",
+        "comprehensive-testing",
+        "theming-system",
+        "custom-admin-panel",
+        "advertising-module",
+        "multi-language",
+        "multi-currency",
+        "payment-gateways",
+        "shipping-methods",
+        "product-variants",
+        "product-attributes",
+        "inventory-management",
+        "order-management",
+        "customer-management",
+        "discount-system",
+        "coupon-system",
+        "gift-cards",
+        "wishlist",
+        "compare",
+        "reviews-ratings",
+        "newsletter",
+        "social-login",
+        "email-notifications",
+        "sms-notifications",
+        "push-notifications",
+        "analytics",
+        "sitemap",
+        "robots-txt",
+        "open-graph",
+        "twitter-cards",
+        "schema-markup",
+        "json-ld"
+    ],
+    "dependencies": {
+        "python": ">=3.8",
+        "django": ">=4.0",
+        "django-rest-framework": ">=3.13",
+        "django-filter": ">=21.1",
+        "django-crispy-forms": ">=1.14",
+        "crispy-bootstrap5": ">=2021.1",
+        "pillow": ">=8.4",
+        "python-dotenv": ">=0.19",
+        "psycopg2-binary": ">=2.9",
+        "redis": ">=4.0",
+        "celery": ">=5.2",
+        "django-celery-beat": ">=2.2",
+        "django-celery-results": ">=2.2",
+        "channels": ">=3.0",
+        "daphne": ">=3.0",
+        "django-allauth": ">=0.47",
+        "django-import-export": ">=2.8"
+    },
+    "devDependencies": {
+        "pytest": ">=7.0",
+        "pytest-django": ">=4.4",
+        "pytest-cov": ">=3.0",
+        "factory-boy": ">=3.2",
+        "faker": ">=8.14",
+        "black": ">=22.1",
+        "flake8": ">=4.0",
+        "isort": ">=5.10",
+        "pre-commit": ">=2.17",
+        "bandit": ">=1.7",
+        "safety": ">=1.10",
+        "mypy": ">=0.930",
+        "django-stubs": ">=1.9"
+    },
+    "scripts": {
+        "start": "python manage.py runserver",
+        "start:dev": "python manage.py runserver 0.0.0.0:8000",
+        "start:prod": "gunicorn --bind 0.0.0.0:8000 --workers 4 shop_template.wsgi:application",
+        "start:async": "daphne -b 0.0.0.0 -p 8000 shop_template.asgi:application",
+        "migrate": "python manage.py migrate",
+        "makemigrations": "python manage.py makemigrations",
+        "createsuperuser": "python manage.py createsuperuser",
+        "collectstatic": "python manage.py collectstatic --noinput",
+        "compress": "python manage.py compress",
+        "test": "pytest",
+        "test:cov": "pytest --cov=shop_template --cov-report=html",
+        "lint": "flake8 . && isort --check-only . && black --check .",
+        "format": "black . && isort .",
+        "typecheck": "mypy .",
+        "security": "bandit -r . && safety check",
+        "celery": "celery -A shop_template worker -l info",
+        "celery:beat": "celery -A shop_template beat -l info",
+        "shell": "python manage.py shell_plus",
+        "export": "python manage.py export",
+        "import": "python manage.py import",
+        "docker:build": "docker-compose build",
+        "docker:up": "docker-compose up -d",
+        "docker:down": "docker-compose down",
+        "docker:restart": "docker-compose restart",
+        "docker:logs": "docker-compose logs -f",
+        "docker:migrate": "docker-compose exec web python manage.py migrate",
+        "docker:createsuperuser": "docker-compose exec web python manage.py createsuperuser",
+        "docker:collectstatic": "docker-compose exec web python manage.py collectstatic --noinput"
+    },
+    "structure": {
+        "project_root": "/",
+        "apps": [
+            "core",
+            "users",
+            "products",
+            "store",
+            "blog",
+            "orders",
+            "payments",
+            "shipping",
+            "advertising",
+            "newsletter",
+            "reviews",
+            "wishlist",
+            "compare",
+            "coupons",
+            "notifications",
+            "api"
+        ],
+        "directories": {
+            "templates": "/templates",
+            "static": "/static",
+            "media": "/media",
+            "theme": "/theme",
+            "config": "/shop_template",
+            "tests": "/tests",
+            "scripts": "/scripts",
+            "docker": "/docker"
+        },
+        "files": {
+            "manage_py": "/manage.py",
+            "requirements": "/requirements",
+            "requirements_dev": "/requirements-dev.txt",
+            "env_example": "/.env.example",
+            "gitignore": "/.gitignore",
+            "dockerfile": "/Dockerfile",
+            "docker_compose": "/docker-compose.yml",
+            "nginx_conf": "/docker/nginx.conf",
+            "gunicorn_conf": "/docker/gunicorn.conf.py",
+            "celery_conf": "/shop_template/celery.py"
+        }
+    },
+    "configuration": {
+        "settings": {
+            "development": "shop_template.settings.development",
+            "staging": "shop_template.settings.staging",
+            "production": "shop_template.settings.production",
+            "testing": "shop_template.settings.testing"
+        },
+        "urls": "shop_template.urls",
+        "wsgi": "shop_template.wsgi",
+        "asgi": "shop_template.asgi",
+        "celery": "shop_template.celery"
+    },
+    "api": {
+        "version": "v1",
+        "prefix": "/api/v1",
+        "authentication": [
+            "TokenAuthentication",
+            "SessionAuthentication",
+            "JWTAuthentication"
+        ],
+        "permissions": [
+            "IsAuthenticated",
+            "IsAdminUser",
+            "DjangoModelPermissions",
+            "AllowAny"
+        ],
+        "throttling": [
+            "UserRateThrottle",
+            "AnonRateThrottle",
+            "ScopedRateThrottle"
+        ],
+        "pagination": {
+            "page_size": 12,
+            "page_size_query_param": "page_size",
+            "max_page_size": 100
+        },
+        "endpoints": {
+            "auth": [
+                "POST /api/v1/auth/login/",
+                "POST /api/v1/auth/logout/",
+                "POST /api/v1/auth/register/",
+                "POST /api/v1/auth/refresh/",
+                "POST /api/v1/auth/password/reset/",
+                "POST /api/v1/auth/password/reset/confirm/",
+                "POST /api/v1/auth/password/change/"
+            ],
+            "users": [
+                "GET /api/v1/users/",
+                "GET /api/v1/users/{id}/",
+                "POST /api/v1/users/",
+                "PUT /api/v1/users/{id}/",
+                "PATCH /api/v1/users/{id}/",
+                "DELETE /api/v1/users/{id}/",
+                "GET /api/v1/users/me/"
+            ],
+            "products": [
+                "GET /api/v1/products/",
+                "GET /api/v1/products/{id}/",
+                "POST /api/v1/products/",
+                "PUT /api/v1/products/{id}/",
+                "PATCH /api/v1/products/{id}/",
+                "DELETE /api/v1/products/{id}/",
+                "GET /api/v1/products/categories/",
+                "GET /api/v1/products/brands/",
+                "GET /api/v1/products/tags/",
+                "GET /api/v1/products/attributes/",
+                "GET /api/v1/products/reviews/",
+                "POST /api/v1/products/{id}/reviews/"
+            ],
+            "orders": [
+                "GET /api/v1/orders/",
+                "GET /api/v1/orders/{id}/",
+                "POST /api/v1/orders/",
+                "PUT /api/v1/orders/{id}/",
+                "PATCH /api/v1/orders/{id}/",
+                "DELETE /api/v1/orders/{id}/",
+                "POST /api/v1/orders/{id}/cancel/",
+                "POST /api/v1/orders/{id}/refund/"
+            ],
+            "cart": [
+                "GET /api/v1/cart/",
+                "POST /api/v1/cart/",
+                "PUT /api/v1/cart/",
+                "PATCH /api/v1/cart/",
+                "DELETE /api/v1/cart/",
+                "POST /api/v1/cart/clear/",
+                "POST /api/v1/cart/coupon/"
+            ],
+            "wishlist": [
+                "GET /api/v1/wishlist/",
+                "POST /api/v1/wishlist/",
+                "DELETE /api/v1/wishlist/{id}/",
+                "POST /api/v1/wishlist/clear/"
+            ],
+            "compare": [
+                "GET /api/v1/compare/",
+                "POST /api/v1/compare/",
+                "DELETE /api/v1/compare/{id}/",
+                "POST /api/v1/compare/clear/"
+            ],
+            "blog": [
+                "GET /api/v1/blog/posts/",
+                "GET /api/v1/blog/posts/{id}/",
+                "POST /api/v1/blog/posts/",
+                "PUT /api/v1/blog/posts/{id}/",
+                "PATCH /api/v1/blog/posts/{id}/",
+                "DELETE /api/v1/blog/posts/{id}/",
+                "GET /api/v1/blog/categories/",
+                "GET /api/v1/blog/tags/",
+                "GET /api/v1/blog/comments/",
+                "POST /api/v1/blog/posts/{id}/comments/"
+            ],
+            "pages": [
+                "GET /api/v1/pages/",
+                "GET /api/v1/pages/{slug}/",
+                "POST /api/v1/pages/",
+                "PUT /api/v1/pages/{id}/",
+                "PATCH /api/v1/pages/{id}/",
+                "DELETE /api/v1/pages/{id}/",
+                "GET /api/v1/pages/menu/"
+            ],
+            "settings": [
+                "GET /api/v1/settings/",
+                "PUT /api/v1/settings/",
+                "PATCH /api/v1/settings/"
+            ],
+            "advertising": [
+                "GET /api/v1/advertising/banners/",
+                "GET /api/v1/advertising/banners/{id}/",
+                "POST /api/v1/advertising/banners/",
+                "PUT /api/v1/advertising/banners/{id}/",
+                "PATCH /api/v1/advertising/banners/{id}/",
+                "DELETE /api/v1/advertising/banners/{id}/",
+                "GET /api/v1/advertising/impressions/",
+                "POST /api/v1/advertising/impressions/"
+            ],
+            "newsletter": [
+                "GET /api/v1/newsletter/subscriptions/",
+                "POST /api/v1/newsletter/subscriptions/",
+                "DELETE /api/v1/newsletter/subscriptions/{id}/",
+                "POST /api/v1/newsletter/campaigns/",
+                "GET /api/v1/newsletter/campaigns/"
+            ],
+            "notifications": [
+                "GET /api/v1/notifications/",
+                "GET /api/v1/notifications/{id}/",
+                "PUT /api/v1/notifications/{id}/",
+                "DELETE /api/v1/notifications/{id}/",
+                "POST /api/v1/notifications/mark-all-read/"
+            ]
+        }
+    },
+    "testing": {
+        "framework": "pytest",
+        "coverage": true,
+        "coverage_threshold": 80,
+        "test_files": [
+            "tests/**/*_test.py",
+            "tests/**/test_*.py"
+        ],
+        "factories": [
+            "tests/factories.py"
+        ],
+        "fixtures": [
+            "tests/fixtures/"
+        ],
+        "types": [
+            "unit",
+            "integration",
+            "functional",
+            "api",
+            "e2e"
+        ]
+    },
+    "deployment": {
+        "platforms": [
+            "docker",
+            "heroku",
+            "aws",
+            "gcp",
+            "azure",
+            "digitalocean",
+            "linux",
+            "windows"
+        ],
+        "web_servers": [
+            "gunicorn",
+            "uwsgi",
+            "daphne",
+            "nginx",
+            "apache"
+        ],
+        "databases": [
+            "sqlite",
+            "postgresql",
+            "mysql",
+            "oracle",
+            "mssql"
+        ],
+        "cache": [
+            "locmem",
+            "redis",
+            "memcached"
+        ],
+        "search": [
+            "django_search",
+            "elasticsearch",
+            "algolia",
+            "meilisearch",
+            "postgres_full_text"
+        ],
+        "storage": [
+            "local",
+            "aws_s3",
+            "google_cloud_storage",
+            "azure_blob_storage",
+            "digitalocean_spaces",
+            "backblaze_b2"
+        ],
+        "email": [
+            "smtp",
+            "mailgun",
+            "sendgrid",
+            "amazon_ses",
+            "sparkpost",
+            "postmark"
+        ]
+    },
+    "documentation": {
+        "readme": "README.md",
+        "installation": "docs/installation.md",
+        "configuration": "docs/configuration.md",
+        "usage": "docs/usage.md",
+        "development": "docs/development.md",
+        "deployment": "docs/deployment.md",
+        "api": "docs/api.md",
+        "testing": "docs/testing.md",
+        "contributing": "CONTRIBUTING.md",
+        "changelog": "CHANGELOG.md",
+        "license": "LICENSE"
+    },
+    "support": {
+        "issues": "https://github.com/yourusername/shop-template/issues",
+        "discussions": "https://github.com/yourusername/shop-template/discussions",
+        "email": "support@shoptemplate.com",
+        "documentation": "https://docs.shoptemplate.com",
+        "community": "https://community.shoptemplate.com",
+        "sponsors": "https://github.com/sponsors/yourusername"
+    },
+    "contributing": {
+        "bug_reports": true,
+        "feature_requests": true,
+        "pull_requests": true,
+        "code_of_conduct": "CODE_OF_CONDUCT.md",
+        "contributing_guidelines": "CONTRIBUTING.md",
+        "template": "PULL_REQUEST_TEMPLATE.md"
+    },
+    "license": {
+        "type": "MIT",
+        "file": "LICENSE",
+        "year": "2024",
+        "copyright": "Arena.ai"
+    },
+    "changelog": {
+        "file": "CHANGELOG.md",
+        "format": "keep-a-changelog",
+        "versions": []
+    },
+    "badges": [
+        {
+            "name": "Build Status",
+            "image": "https://img.shields.io/github/actions/workflow/status/yourusername/shop-template/ci.yml?branch=main",
+            "url": "https://github.com/yourusername/shop-template/actions"
+        },
+        {
+            "name": "Coverage",
+            "image": "https://img.shields.io/codecov/c/github/yourusername/shop-template",
+            "url": "https://codecov.io/gh/yourusername/shop-template"
+        },
+        {
+            "name": "License",
+            "image": "https://img.shields.io/github/license/yourusername/shop-template",
+            "url": "https://github.com/yourusername/shop-template/blob/main/LICENSE"
+        },
+        {
+            "name": "Python Version",
+            "image": "https://img.shields.io/python/required-version/yourusername/shop-template",
+            "url": "https://pypi.org/project/shop-template/"
+        },
+        {
+            "name": "Django Version",
+            "image": "https://img.shields.io/badge/django-4.0%2B-green",
+            "url": "https://www.djangoproject.com/"
+        },
+        {
+            "name": "Code Style",
+            "image": "https://img.shields.io/badge/code%20style-black-000000.svg",
+            "url": "https://github.com/psf/black"
+        }
+    ],
+    "screenshots": [
+        {
+            "name": "Home Page",
+            "path": "screenshots/home.png",
+            "description": "Shop Template Home Page"
+        },
+        {
+            "name": "Product List",
+            "path": "screenshots/products.png",
+            "description": "Product Listing Page"
+        },
+        {
+            "name": "Product Detail",
+            "path": "screenshots/product-detail.png",
+            "description": "Product Detail Page"
+        },
+        {
+            "name": "Blog",
+            "path": "screenshots/blog.png",
+            "description": "Blog Listing Page"
+        },
+        {
+            "name": "Blog Post",
+            "path": "screenshots/blog-post.png",
+            "description": "Blog Post Detail Page"
+        },
+        {
+            "name": "Admin Dashboard",
+            "path": "screenshots/admin-dashboard.png",
+            "description": "Custom Admin Dashboard"
+        },
+        {
+            "name": "Checkout",
+            "path": "screenshots/checkout.png",
+            "description": "Checkout Process"
+        },
+        {
+            "name": "Mobile View",
+            "path": "screenshots/mobile.png",
+            "description": "Mobile Responsive View"
+        }
+    ],
+    "related": {
+        "similar_projects": [
+            {
+                "name": "Saleor",
+                "description": "A modular, high performance e-commerce storefront built with Python, GraphQL, Django, and ReactJS.",
+                "url": "https://github.com/saleor/saleor",
+                "license": "BSD-3-Clause"
+            },
+            {
+                "name": "Oscar",
+                "description": "Domain-driven e-commerce for Django.",
+                "url": "https://github.com/django-oscar/django-oscar",
+                "license": "BSD-3-Clause"
+            },
+            {
+                "name": "Shuup",
+                "description": "E-Commerce Platform.",
+                "url": "https://github.com/shuup/shuup",
+                "license": "BSD-3-Clause"
+            },
+            {
+                "name": "django-shop",
+                "description": "A Django based shop system.",
+                "url": "https://github.com/awesto/django-shop",
+                "license": "BSD-3-Clause"
+            }
+        ],
+        "inspired_by": [
+            {
+                "name": "Laravel E-commerce",
+                "description": "Laravel E-commerce Projects",
+                "url": "https://github.com/topics/laravel-ecommerce"
+            },
+            {
+                "name": "React E-commerce",
+                "description": "React E-commerce Projects",
+                "url": "https://github.com/topics/react-ecommerce"
+            }
+        ]
+    },
+    "acknowledgements": {
+        "contributors": [],
+        "sponsors": [],
+        "backers": [],
+        "thanks": [
+            "Django Software Foundation",
+            "Python Software Foundation",
+            "Bootstrap Team",
+            "Tailwind CSS Team",
+            "All open source contributors"
+        ]
+    }
+}

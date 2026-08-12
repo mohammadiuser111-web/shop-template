@@ -1,0 +1,122 @@
+{% extends "admin_panel/base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ page_title|default:_("ایجاد/ویرایش Slot تبلیغاتی") }}{% endblock %}
+
+{% block page_header %}
+<div class="page-header d-print-none">
+    <div class="container-xl">
+        <div class="row g-2 align-items-center">
+            <div class="col">
+                <h2 class="page-title">
+                    {{ page_title|default:_("ایجاد/ویرایش Slot تبلیغاتی") }}
+                </h2>
+            </div>
+            <div class="col-auto ms-auto d-print-none">
+                <div class="btn-list">
+                    <a href="{% url 'ads:ad_slot_list' %}" class="btn btn-secondary">
+                        <i class="fa fa-arrow-left"></i> {{ _("بازگشت") }}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-body">
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            
+                            <div class="row g-3">
+                                <!-- Name -->
+                                <div class="col-md-6">
+                                    <label class="form-label required">{{ _("نام") }}</label>
+                                    {{ form.name }}
+                                    {% if form.name.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.name.errors|first }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Code -->
+                                <div class="col-md-6">
+                                    <label class="form-label required">{{ _("کد") }}</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><code>&lt;% ads </code></span>
+                                        {{ form.code }}
+                                        <span class="input-group-text"><code> %&gt;</code></span>
+                                    </div>
+                                    <small class="form-hint">{{ _("کد منحصر به فرد برای استفاده در قالب‌ها") }}</small>
+                                    {% if form.code.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.code.errors|first }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Dimensions -->
+                                <div class="col-md-3">
+                                    <label class="form-label">{{ _("عرض (پیکسل)") }}</label>
+                                    {{ form.width }}
+                                    {% if form.width.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.width.errors|first }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-3">
+                                    <label class="form-label">{{ _("ارتفاع (پیکسل)") }}</label>
+                                    {{ form.height }}
+                                    {% if form.height.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.height.errors|first }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ _("واکنشگرا") }}</label>
+                                    <div class="form-selectgroup">
+                                        {{ form.is_responsive }}
+                                        <label class="form-selectgroup-label">{{ form.is_responsive.label }}</label>
+                                    </div>
+                                    <small class="form-hint">{{ _("اگر فعال باشد، ابعاد نادیده گرفته می‌شوند") }}</small>
+                                </div>
+                                
+                                <!-- Description -->
+                                <div class="col-md-12">
+                                    <label class="form-label">{{ _("توضیحات") }}</label>
+                                    {{ form.description }}
+                                    <small class="form-hint">{{ _("توضیحات در مورد این Slot و مکان استفاده آن") }}</small>
+                                    {% if form.description.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.description.errors|first }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Active -->
+                                <div class="col-md-12">
+                                    <label class="form-label">{{ _("وضعیت") }}</label>
+                                    <div class="form-selectgroup">
+                                        {{ form.is_active }}
+                                        <label class="form-selectgroup-label">{{ form.is_active.label }}</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa fa-save"></i> {{ _("ذخیره") }}
+                                </button>
+                                <a href="{% url 'ads:ad_slot_list' %}" class="btn btn-secondary">
+                                    <i class="fa fa-times"></i> {{ _("انصراف") }}
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

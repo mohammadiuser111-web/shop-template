@@ -1,489 +1,296 @@
-{% extends "admin_panel/admin_base.html" %}
-{% load i18n static %}
+{% extends "admin_panel/base.html" %}
+{% load static i18n %}
 
-{% block page_title %}{% trans "Advertising" %}{% endblock %}
-{% block page_description %}{% trans "Manage advertisements, banners, and promotional content." %}{% endblock %}
+{% block title %}{{ page_title|default:_("مدیریت تبلیغات") }}{% endblock %}
 
-{% block page_actions %}
-<a href="{% url 'ads:ad_create' %}" class="btn btn-primary">
-    <i class="bi bi-plus me-1"></i> {% trans "Create Ad" %}
-</a>
+{% block page_header %}
+<div class="page-header d-print-none">
+    <div class="container-xl">
+        <div class="row g-2 align-items-center">
+            <div class="col">
+                <h2 class="page-title">
+                    {{ page_title|default:_("مدیریت تبلیغات") }}
+                </h2>
+            </div>
+            <div class="col-auto ms-auto d-print-none">
+                <div class="btn-list">
+                    <a href="{% url 'ads:ad_create' %}" class="btn btn-primary">
+                        <i class="fa fa-plus"></i> {{ _("تبلیغ جدید") }}
+                    </a>
+                    <a href="{% url 'ads:ad_slot_create' %}" class="btn btn-secondary">
+                        <i class="fa fa-plus"></i> {{ _("Slot جدید") }}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
-{% block main_content %}
-<!-- Stats -->
-<div class="row mb-4">
-    <div class="col-md-3 mb-4">
-        <div class="card">
+{% block content %}
+<div class="page-body">
+    <div class="container-xl">
+        <!-- Search and Filter -->
+        <div class="card mb-3">
             <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                            <i class="bi bi-megaphone"></i>
-                        </div>
+                <form method="get" action="" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">{{ _("جستجو") }}</label>
+                        <input type="text" name="q" class="form-control" 
+                               placeholder="{{ _('نام، عنوان، یا توضیحات') }}" 
+                               value="{{ request.GET.q }}">
                     </div>
-                    <div class="flex-grow-1 ms-3">
-                        <h6 class="text-muted mb-1">{% trans "Total Ads" %}</h6>
-                        <h3 class="mb-0">{{ stats.total_ads }}</h3>
+                    <div class="col-md-2">
+                        <label class="form-label">{{ _("Slot") }}</label>
+                        <select name="slot" class="form-select">
+                            <option value="">{{ _("همه") }}</option>
+                            {% for slot in slots %}
+                            <option value="{{ slot.id }}" {% if request.GET.slot == slot.id|stringformat:"s" %}selected{% endif %}>
+                                {{ slot.name }} ({{ slot.code }})
+                            </option>
+                            {% endfor %}
+                        </select>
                     </div>
-                </div>
+                    <div class="col-md-2">
+                        <label class="form-label">{{ _("نوع") }}</label>
+                        <select name="ad_type" class="form-select">
+                            <option value="">{{ _("همه") }}</option>
+                            <option value="image" {% if request.GET.ad_type == 'image' %}selected{% endif %}>{{ _("تصویر") }}</option>
+                            <option value="html" {% if request.GET.ad_type == 'html' %}selected{% endif %}>{{ _("HTML") }}</option>
+                            <option value="script" {% if request.GET.ad_type == 'script' %}selected{% endif %}>{{ _("JavaScript") }}</option>
+                            <option value="video" {% if request.GET.ad_type == 'video' %}selected{% endif %}>{{ _("ویدئو") }}</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">{{ _("وضعیت") }}</label>
+                        <select name="is_active" class="form-select">
+                            <option value="">{{ _("همه") }}</option>
+                            <option value="1" {% if request.GET.is_active == '1' %}selected{% endif %}>{{ _("فعال") }}</option>
+                            <option value="0" {% if request.GET.is_active == '0' %}selected{% endif %}>{{ _("غیرفعال") }}</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fa fa-search"></i> {{ _("جستجو") }}
+                        </button>
+                    </div>
+                    <div class="col-md-1 d-flex align-items-end">
+                        <a href="?" class="btn btn-secondary w-100">
+                            <i class="fa fa-redo"></i>
+                        </a>
+                    </div>
+                </form>
             </div>
         </div>
-    </div>
-    
-    <div class="col-md-3 mb-4">
-        <div class="card">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                        <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                            <i class="bi bi-check-circle"></i>
-                        </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                        <h6 class="text-muted mb-1">{% trans "Active" %}</h6>
-                        <h3 class="mb-0">{{ stats.active_ads }}</h3>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-3 mb-4">
-        <div class="card">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                        <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                            <i class="bi bi-graph-up"></i>
-                        </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                        <h6 class="text-muted mb-1">{% trans "Impressions" %}</h6>
-                        <h3 class="mb-0">{{ stats.total_impressions }}</h3>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-3 mb-4">
-        <div class="card">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                        <div class="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                            <i class="bi bi-hand-index"></i>
-                        </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                        <h6 class="text-muted mb-1">{% trans "Clicks" %}</h6>
-                        <h3 class="mb-0">{{ stats.total_clicks }}</h3>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Filters -->
-<div class="card mb-4">
-    <div class="card-body">
-        <form method="get" class="row g-3">
-            <div class="col-md-3">
-                <label class="form-label">{% trans "Search" %}</label>
-                <input type="text" name="q" class="form-control" placeholder="{% trans 'Ad name' %}" value="{{ request.GET.q }}">
+        <!-- Ads List -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">{{ _("لیست تبلیغات") }}</h3>
             </div>
-            <div class="col-md-3">
-                <label class="form-label">{% trans "Type" %}</label>
-                <select name="type" class="form-select">
-                    <option value="">{% trans "All Types" %}</option>
-                    <option value="banner" {% if request.GET.type == 'banner' %}selected{% endif %}>{% trans "Banner" %}</option>
-                    <option value="sidebar" {% if request.GET.type == 'sidebar' %}selected{% endif %}>{% trans "Sidebar" %}</option>
-                    <option value="popup" {% if request.GET.type == 'popup' %}selected{% endif %}>{% trans "Popup" %}</option>
-                    <option value="slider" {% if request.GET.type == 'slider' %}selected{% endif %}>{% trans "Slider" %}</option>
-                    <option value="custom" {% if request.GET.type == 'custom' %}selected{% endif %}>{% trans "Custom" %}</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">{% trans "Status" %}</label>
-                <select name="status" class="form-select">
-                    <option value="">{% trans "All Statuses" %}</option>
-                    <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>{% trans "Active" %}</option>
-                    <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>{% trans "Inactive" %}</option>
-                    <option value="scheduled" {% if request.GET.status == 'scheduled' %}selected{% endif %}>{% trans "Scheduled" %}</option>
-                    <option value="expired" {% if request.GET.status == 'expired' %}selected{% endif %}>{% trans "Expired" %}</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">{% trans "Position" %}</label>
-                <select name="position" class="form-select">
-                    <option value="">{% trans "All Positions" %}</option>
-                    <option value="home_banner" {% if request.GET.position == 'home_banner' %}selected{% endif %}>{% trans "Home Banner" %}</option>
-                    <option value="category_banner" {% if request.GET.position == 'category_banner' %}selected{% endif %}>{% trans "Category Banner" %}</option>
-                    <option value="product_page" {% if request.GET.position == 'product_page' %}selected{% endif %}>{% trans "Product Page" %}</option>
-                    <option value="sidebar" {% if request.GET.position == 'sidebar' %}selected{% endif %}>{% trans "Sidebar" %}</option>
-                    <option value="popup" {% if request.GET.position == 'popup' %}selected{% endif %}>{% trans "Popup" %}</option>
-                </select>
-            </div>
-            <div class="col-12">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-search me-1"></i> {% trans "Search" %}
-                </button>
-                <a href="{% url 'ads:ad_list' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-x-circle me-1"></i> {% trans "Reset" %}
-                </a>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Ads Table -->
-<div class="card">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>
-                            <input type="checkbox" id="selectAllAds">
-                        </th>
-                        <th>{% trans "Name" %}</th>
-                        <th>{% trans "Type" %}</th>
-                        <th>{% trans "Position" %}</th>
-                        <th>{% trans "Impressions" %}</th>
-                        <th>{% trans "Clicks" %}</th>
-                        <th>{% trans "CTR" %}</th>
-                        <th>{% trans "Validity" %}</th>
-                        <th>{% trans "Status" %}</th>
-                        <th>{% trans "Actions" %}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for ad in ads %}
-                    <tr>
-                        <td>
-                            <input type="checkbox" name="selected[]" value="{{ ad.id }}">
-                        </td>
-                        <td>
-                            <h6 class="mb-0">{{ ad.name }}</h6>
-                            <small class="text-muted">{{ ad.description|truncatewords:5 }}</small>
-                        </td>
-                        <td>
-                            <span class="badge bg-{{ ad.get_type_display|lower }}">
-                                {{ ad.get_type_display }}
-                            </span>
-                        </td>
-                        <td>
-                            <span class="badge bg-secondary">{{ ad.get_position_display }}</span>
-                        </td>
-                        <td>{{ ad.impressions }}</td>
-                        <td>{{ ad.clicks }}</td>
-                        <td>{{ ad.ctr|floatformat:2 }}%</td>
-                        <td>
-                            <small>
-                                {{ ad.start_date|date:"M d" }} - {{ ad.end_date|date:"M d" }}<br>
-                                {{ ad.start_time|time:"H:i" }} - {{ ad.end_time|time:"H:i" }}
-                            </small>
-                        </td>
-                        <td>
-                            <span class="badge {% if ad.is_active %}bg-success{% else %}bg-secondary{% endif %}">
-                                {% if ad.is_active %}{% trans "Active" %}{% else %}{% trans "Inactive" %}{% endif %}
-                            </span>
-                            {% if ad.is_scheduled %}
-                            <br><span class="badge bg-info mt-1">{% trans "Scheduled" %}</span>
-                            {% endif %}
-                            {% if ad.is_expired %}
-                            <br><span class="badge bg-danger mt-1">{% trans "Expired" %}</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <div class="dropdown">
-                                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
-                                    <i class="bi bi-three-dots"></i>
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li>
-                                        <a class="dropdown-item" href="{% url 'ads:ad_detail' pk=ad.id %}">
-                                            <i class="bi bi-eye me-1"></i> {% trans "View" %}
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="{% url 'ads:ad_update' pk=ad.id %}">
-                                            <i class="bi bi-pencil me-1"></i> {% trans "Edit" %}
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="{% url 'ads:ad_statistics' pk=ad.id %}">
-                                            <i class="bi bi-graph-up me-1"></i> {% trans "Statistics" %}
-                                        </a>
-                                    </li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li>
-                                        <a class="dropdown-item {% if ad.is_active %}text-warning{% else %}text-success{% endif %} toggle-ad-status" 
-                                           data-ad-id="{{ ad.id }}" href="#">
-                                            <i class="bi {% if ad.is_active %}bi-eye-slash{% else %}bi-eye{% endif %} me-1"></i>
-                                            {% if ad.is_active %}{% trans "Deactivate" %}{% else %}{% trans "Activate" %}{% endif %}
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item text-danger delete-ad" data-ad-id="{{ ad.id }}" href="#">
-                                            <i class="bi bi-trash me-1"></i> {% trans "Delete" %}
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    
-    <div class="card-footer bg-white">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <p class="mb-0 text-muted small">
-                    {% trans "Showing" %} {{ ads.start_index }} - {{ ads.end_index }} {% trans "of" %} {{ ads.paginator.count }} {% trans "ads" %}
-                </p>
-            </div>
-            <div>
-                <div class="btn-group">
-                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-                        {% trans "Bulk Actions" %}
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item bulk-ad-action" data-action="activate">{% trans "Activate" %}</a></li>
-                        <li><a class="dropdown-item bulk-ad-action" data-action="deactivate">{% trans "Deactivate" %}</a></li>
-                        <li><a class="dropdown-item bulk-ad-action" data-action="delete">{% trans "Delete" %}</a></li>
-                    </ul>
-                </div>
-                
-                {% if ads.paginator.num_pages > 1 %}
-                <nav aria-label="Page navigation" class="d-inline-block ms-2">
-                    <ul class="pagination pagination-sm mb-0">
-                        {% if ads.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ ads.previous_page_number }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">
-                                <i class="bi bi-chevron-left"></i>
-                            </a>
-                        </li>
-                        {% endif %}
-                        {% for num in ads.paginator.page_range %}
-                            {% if ads.number == num %}
-                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                            {% elif num > ads.number|add:'-3' and num < ads.number|add:'3' %}
-                            <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">{{ num }}</a></li>
-                            {% endif %}
+            <div class="table-responsive">
+                <table class="table table-hover table-vcenter">
+                    <thead>
+                        <tr>
+                            <th>{{ _("ID") }}</th>
+                            <th>{{ _("نام") }}</th>
+                            <th>{{ _("Slot") }}</th>
+                            <th>{{ _("نوع") }}</th>
+                            <th>{{ _("اولویت") }}</th>
+                            <th>{{ _("نمایش") }}</th>
+                            <th>{{ _("کلیک") }}</th>
+                            <th>{{ _("CTR") }}</th>
+                            <th>{{ _("وضعیت") }}</th>
+                            <th>{{ _("تاریخ ایجاد") }}</th>
+                            <th class="w-1">{{ _("عملیات") }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ad in ads %}
+                        <tr>
+                            <td>{{ ad.id }}</td>
+                            <td>
+                                <a href="{% url 'ads:ad_edit' ad.id %}">{{ ad.name }}</a>
+                                {% if ad.title %}<br><small class="text-muted">{{ ad.title }}</small>{% endif %}
+                            </td>
+                            <td>
+                                {% if ad.slot %}
+                                <span class="badge bg-info">{{ ad.slot.name }}</span>
+                                <small class="d-block text-muted">{{ ad.slot.code }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ ad.get_ad_type_badge_color }}">
+                                    {{ ad.get_ad_type_display }}
+                                </span>
+                            </td>
+                            <td>{{ ad.priority }}</td>
+                            <td>{{ ad.impression_count }}</td>
+                            <td>{{ ad.click_count }}</td>
+                            <td>{{ ad.get_ctr|floatformat:2 }}%</td>
+                            <td>
+                                <span class="status status-{{ ad|yesno:'success,warning' }}">
+                                    {{ ad|yesno:_("فعال,غیرفعال") }}
+                                </span>
+                            </td>
+                            <td>{{ ad.created_at|jdate:"Y/m/d H:i" }}</td>
+                            <td>
+                                <div class="btn-list flex-nowrap">
+                                    <a href="{% url 'ads:ad_stats' ad.id %}" 
+                                       class="btn btn-sm btn-info" 
+                                       title="{{ _('آمار') }}">
+                                        <i class="fa fa-chart-bar"></i>
+                                    </a>
+                                    <a href="{% url 'ads:ad_edit' ad.id %}" 
+                                       class="btn btn-sm btn-primary" 
+                                       title="{{ _('ویرایش') }}">
+                                        <i class="fa fa-edit"></i>
+                                    </a>
+                                    <button class="btn btn-sm btn-{{ ad.is_active|yesno:'danger,success' }} toggle-active" 
+                                            data-id="{{ ad.id }}" 
+                                            title="{{ _('تغییر وضعیت') }}">
+                                        <i class="fa {% if ad.is_active %}fa-eye-slash{% else %}fa-eye{% endif %}"></i>
+                                    </button>
+                                    <form method="post" action="{% url 'ads:ad_delete' ad.id %}" 
+                                          class="d-inline delete-form">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-danger" 
+                                                title="{{ _('حذف') }}" 
+                                                onclick="return confirm('{{ _('آیا مطمئن هستید؟') }}')">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="11" class="text-center text-muted">
+                                {{ _("هیچ تبلیغی یافت نشد.") }}
+                            </td>
+                        </tr>
                         {% endfor %}
-                        {% if ads.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ ads.next_page_number }}{% for key, value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">
-                                <i class="bi bi-chevron-right"></i>
-                            </a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer">
+                {% include "admin_panel/includes/pagination.html" with page=ads %}
             </div>
         </div>
-    </div>
-</div>
 
-<!-- Ad Groups Section -->
-<div class="card mt-4">
-    <div class="card-header">
-        <h5 class="mb-0">{% trans "Ad Groups" %}</h5>
-    </div>
-    <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <p class="text-muted small mb-0">{% trans "Organize ads into groups for better management." %}</p>
-            <a href="{% url 'ads:ad_group_create' %}" class="btn btn-sm btn-primary">
-                <i class="bi bi-plus me-1"></i> {% trans "Add Group" %}
-            </a>
-        </div>
-        
-        <div class="row">
-            {% for group in ad_groups %}
-            <div class="col-md-4 mb-4">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div>
-                                <h5 class="mb-1">{{ group.name }}</h5>
-                                <p class="text-muted small mb-0">{{ group.description|truncatechars:50 }}</p>
-                            </div>
-                            <span class="badge bg-{{ group.get_status_display|lower }}">{{ group.get_status_display }}</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-3">
-                            <div>
-                                <p class="text-muted small mb-1">{% trans "Ads" %}:</p>
-                                <p class="mb-0">{{ group.ads.count }}</p>
-                            </div>
-                            <div>
-                                <p class="text-muted small mb-1">{% trans "Impressions" %}:</p>
-                                <p class="mb-0">{{ group.total_impressions }}</p>
-                            </div>
-                            <div>
-                                <p class="text-muted small mb-1">{% trans "Clicks" %}:</p>
-                                <p class="mb-0">{{ group.total_clicks }}</p>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <p class="text-muted small mb-1">{% trans "Targeting" %}:</p>
-                            <p class="mb-0">{{ group.get_targeting_display }}</p>
-                        </div>
-                    </div>
-                    <div class="card-footer bg-white">
-                        <a href="{% url 'ads:ad_group_detail' pk=group.id %}" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-eye me-1"></i> {% trans "View" %}
-                        </a>
-                        <a href="{% url 'ads:ad_group_update' pk=group.id %}" class="btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-pencil me-1"></i> {% trans "Edit" %}
-                        </a>
-                    </div>
-                </div>
+        <!-- Ad Slots List -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h3 class="card-title">{{ _("لیست Slot‌های تبلیغاتی") }}</h3>
             </div>
-            {% endfor %}
-        </div>
-    </div>
-</div>
-
-<!-- Ad Positions Section -->
-<div class="card mt-4">
-    <div class="card-header">
-        <h5 class="mb-0">{% trans "Ad Positions" %}</h5>
-    </div>
-    <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <p class="text-muted small mb-0">{% trans "Manage available ad positions on your site." %}</p>
-            <a href="{% url 'ads:ad_position_create' %}" class="btn btn-sm btn-primary">
-                <i class="bi bi-plus me-1"></i> {% trans "Add Position" %}
-            </a>
-        </div>
-        
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead class="table-light">
-                    <tr>
-                        <th>{% trans "Name" %}</th>
-                        <th>{% trans "Code" %}</th>
-                        <th>{% trans "Description" %}</th>
-                        <th>{% trans "Dimensions" %}</th>
-                        <th>{% trans "Status" %}</th>
-                        <th>{% trans "Actions" %}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for position in ad_positions %}
-                    <tr>
-                        <td>{{ position.name }}</td>
-                        <td><code>{{ position.code }}</code></td>
-                        <td>{{ position.description|truncatechars:50 }}</td>
-                        <td>{{ position.width }}x{{ position.height }} px</td>
-                        <td>
-                            <span class="badge {% if position.is_active %}bg-success{% else %}bg-secondary{% endif %}">
-                                {% if position.is_active %}{% trans "Active" %}{% else %}{% trans "Inactive" %}{% endif %}
-                            </span>
-                        </td>
-                        <td>
-                            <a href="{% url 'ads:ad_position_detail' pk=position.id %}" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-eye me-1"></i> {% trans "View" %}
-                            </a>
-                            <a href="{% url 'ads:ad_position_update' pk=position.id %}" class="btn btn-sm btn-outline-secondary">
-                                <i class="bi bi-pencil me-1"></i> {% trans "Edit" %}
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="table-responsive">
+                <table class="table table-hover table-vcenter">
+                    <thead>
+                        <tr>
+                            <th>{{ _("ID") }}</th>
+                            <th>{{ _("نام") }}</th>
+                            <th>{{ _("کد") }}</th>
+                            <th>{{ _("ابعاد") }}</th>
+                            <th>{{ _("واکنشگرا") }}</th>
+                            <th>{{ _("تبلیغات") }}</th>
+                            <th>{{ _("وضعیت") }}</th>
+                            <th>{{ _("تاریخ ایجاد") }}</th>
+                            <th class="w-1">{{ _("عملیات") }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for slot in slots %}
+                        <tr>
+                            <td>{{ slot.id }}</td>
+                            <td>{{ slot.name }}</td>
+                            <td><code>{{ slot.code }}</code></td>
+                            <td>
+                                {% if slot.width and slot.height %}
+                                {{ slot.width }}x{{ slot.height }}
+                                {% else %}
+                                <span class="text-muted">{{ _("متغیر") }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ slot.is_responsive|yesno:'success,secondary' }}">
+                                    {{ slot.is_responsive|yesno:_("بله,خیر") }}
+                                </span>
+                            </td>
+                            <td>
+                                {{ slot.advertisement_set.count }}
+                            </td>
+                            <td>
+                                <span class="status status-{{ slot.is_active|yesno:'success,warning' }}">
+                                    {{ slot.is_active|yesno:_("فعال,غیرفعال") }}
+                                </span>
+                            </td>
+                            <td>{{ slot.created_at|jdate:"Y/m/d H:i" }}</td>
+                            <td>
+                                <div class="btn-list flex-nowrap">
+                                    <a href="{% url 'ads:ad_slot_edit' slot.id %}" 
+                                       class="btn btn-sm btn-primary" 
+                                       title="{{ _('ویرایش') }}">
+                                        <i class="fa fa-edit"></i>
+                                    </a>
+                                    <form method="post" action="{% url 'ads:ad_slot_delete' slot.id %}" 
+                                          class="d-inline delete-form">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-danger" 
+                                                title="{{ _('حذف') }}" 
+                                                onclick="return confirm('{{ _("آیا مطمئن هستید؟") }}')">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted">
+                                {{ _("هیچ Slot تبلیغاتی یافت نشد.") }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 {% endblock %}
 
-{% block scripts %}
-{{ block.super }}
+{% block extra_css %}
+<style>
+.toggle-active:hover {
+    cursor: pointer;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
 <script>
-// Select all
-$('#selectAllAds').on('change', function() {
-    $('input[name="selected[]"]').prop('checked', $(this).prop('checked'));
-});
-
-// Toggle ad status
-$('.toggle-ad-status').on('click', function(e) {
-    e.preventDefault();
-    const adId = $(this).data('ad-id');
-    
-    $.post('{% url "ads:toggle_ad_status" %}', {
-        ad_id: adId,
-        csrfmiddlewaretoken: '{{ csrf_token }}'
-    }, function(data) {
-        if (data.success) {
-            location.reload();
-        } else {
-            toastr.error(data.error || '{% trans "Failed to update ad status." %}');
-        }
-    });
-});
-
-// Delete ad
-$('.delete-ad').on('click', function(e) {
-    e.preventDefault();
-    const adId = $(this).data('ad-id');
-    
-    if (confirm('{% trans "Are you sure you want to delete this ad?" %}')) {
-        $.post('{% url "ads:delete_ad" %}', {
-            ad_id: adId,
+// Toggle active status via AJAX
+$(document).ready(function() {
+    $('.toggle-active').click(function(e) {
+        e.preventDefault();
+        var adId = $(this).data('id');
+        var btn = $(this);
+        
+        $.post('{% url "ads:ad_toggle_active" pk=0 %}'.replace('/0/', '/' + adId + '/'), {
             csrfmiddlewaretoken: '{{ csrf_token }}'
         }, function(data) {
             if (data.success) {
-                location.reload();
-            } else {
-                toastr.error(data.error || '{% trans "Failed to delete ad." %}');
+                var isActive = data.is_active;
+                btn.removeClass('btn-danger btn-success');
+                btn.addClass('btn-' + (isActive ? 'success' : 'danger'));
+                btn.find('i').removeClass('fa-eye-slash fa-eye');
+                btn.find('i').addClass(isActive ? 'fa-eye-slash' : 'fa-eye');
+                btn.closest('tr').find('.status').removeClass('status-success status-warning');
+                btn.closest('tr').find('.status').addClass('status-' + (isActive ? 'success' : 'warning'));
+                btn.closest('tr').find('.status').text(isActive ? 'فعال' : 'غیرفعال');
             }
         });
-    }
-});
-
-// Bulk actions
-$('.bulk-ad-action').on('click', function(e) {
-    e.preventDefault();
-    const action = $(this).data('action');
-    const selected = [];
-    
-    $('input[name="selected[]"]:checked').each(function() {
-        selected.push($(this).val());
     });
-    
-    if (selected.length === 0) {
-        toastr.error('{% trans "Please select at least one ad." %}');
-        return;
-    }
-    
-    let message = '';
-    switch(action) {
-        case 'activate': message = '{% trans "Activate selected ads?" %}'; break;
-        case 'deactivate': message = '{% trans "Deactivate selected ads?" %}'; break;
-        case 'delete': message = '{% trans "Delete selected ads? This cannot be undone." %}'; break;
-    }
-    
-    if (confirm(message)) {
-        $.post('{% url "ads:bulk_ad_action" %}', {
-            action: action,
-            selected: selected,
-            csrfmiddlewaretoken: '{{ csrf_token }}'
-        }, function(data) {
-            if (data.success) {
-                location.reload();
-            } else {
-                toastr.error(data.error || '{% trans "Failed to perform action." %}');
-            }
-        });
-    }
 });
 </script>
 {% endblock %}

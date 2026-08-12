@@ -1,0 +1,468 @@
+{% extends 'admin/base.html' %}
+
+{% load static %}
+
+{% block title %}داشبورد - پنل مدیریت{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/admin/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="admin-page-header">
+    <div class="admin-breadcrumb">
+        <h1 class="admin-page-title">داشبورد</h1>
+        <p class="admin-page-subtitle">به پنل مدیریت خوش آمدید</p>
+    </div>
+    <div class="admin-page-actions">
+        <button type="button" class="btn btn-outline" id="refreshDashboard">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 4v6h-6"/>
+                <path d="M1 20v-6h6"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+            </svg>
+            به‌روزرسانی
+        </button>
+    </div>
+</div>
+
+<div class="admin-dashboard">
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-card-icon sales">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                </svg>
+            </div>
+            <div class="stat-card-info">
+                <span class="stat-card-value">{{ total_sales|intcomma }}</span>
+                <span class="stat-card-label">فروش کل (تومان)</span>
+                <span class="stat-card-change {% if sales_change >= 0 %}positive{% else %}negative{% endif %}">
+                    {% if sales_change >= 0 %}+{% endif %}{{ sales_change }}%
+                </span>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-card-icon orders">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+            </div>
+            <div class="stat-card-info">
+                <span class="stat-card-value">{{ total_orders|intcomma }}</span>
+                <span class="stat-card-label">کل سفارش‌ها</span>
+                <span class="stat-card-change {% if orders_change >= 0 %}positive{% else %}negative{% endif %}">
+                    {% if orders_change >= 0 %}+{% endif %}{{ orders_change }}%
+                </span>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-card-icon customers">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+            </div>
+            <div class="stat-card-info">
+                <span class="stat-card-value">{{ total_customers|intcomma }}</span>
+                <span class="stat-card-label">مشتریان</span>
+                <span class="stat-card-change {% if customers_change >= 0 %}positive{% else %}negative{% endif %}">
+                    {% if customers_change >= 0 %}+{% endif %}{{ customers_change }}%
+                </span>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-card-icon products">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                    <line x1="7" y1="7" x2="7.01" y2="7"/>
+                </svg>
+            </div>
+            <div class="stat-card-info">
+                <span class="stat-card-value">{{ total_products|intcomma }}</span>
+                <span class="stat-card-label">محصولات</span>
+                <span class="stat-card-change {% if products_change >= 0 %}positive{% else %}negative{% endif %}">
+                    {% if products_change >= 0 %}+{% endif %}{{ products_change }}%
+                </span>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-card-icon visitors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+            </div>
+            <div class="stat-card-info">
+                <span class="stat-card-value">{{ total_visitors|intcomma }}</span>
+                <span class="stat-card-label">بازدیدکنندگان</span>
+                <span class="stat-card-change {% if visitors_change >= 0 %}positive{% else %}negative{% endif %}">
+                    {% if visitors_change >= 0 %}+{% endif %}{{ visitors_change }}%
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="charts-grid">
+        <!-- Sales Chart -->
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h3 class="chart-card-title">آمار فروش</h3>
+                <div class="chart-card-actions">
+                    <button type="button" class="chart-period-btn active" data-period="week">هفته</button>
+                    <button type="button" class="chart-period-btn" data-period="month">ماه</button>
+                    <button type="button" class="chart-period-btn" data-period="year">سال</button>
+                </div>
+            </div>
+            <div class="chart-card-body">
+                <canvas id="salesChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Orders Chart -->
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h3 class="chart-card-title">آمار سفارش‌ها</h3>
+                <div class="chart-card-actions">
+                    <button type="button" class="chart-period-btn active" data-period="week">هفته</button>
+                    <button type="button" class="chart-period-btn" data-period="month">ماه</button>
+                    <button type="button" class="chart-period-btn" data-period="year">سال</button>
+                </div>
+            </div>
+            <div class="chart-card-body">
+                <canvas id="ordersChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- More Stats Row -->
+    <div class="more-stats-grid">
+        <!-- Order Status Distribution -->
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <h4 class="stat-card-title">وضعیت سفارش‌ها</h4>
+            </div>
+            <div class="stat-card-body">
+                <canvas id="orderStatusChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Category Distribution -->
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <h4 class="stat-card-title">دسته‌بندی محصولات</h4>
+            </div>
+            <div class="stat-card-body">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Payment Methods -->
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <h4 class="stat-card-title">روش‌های پرداخت</h4>
+            </div>
+            <div class="stat-card-body">
+                <div class="payment-methods-list">
+                    {% for method, count in payment_methods.items %}
+                    <div class="payment-method-item">
+                        <span class="payment-method-name">{{ method }}</span>
+                        <div class="payment-method-bar">
+                            <div class="payment-method-progress" style="width: {{ count.percent }}%"></div>
+                        </div>
+                        <span class="payment-method-percent">{{ count.percent }}%</span>
+                        <span class="payment-method-count">{{ count.value }} سفارش</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Products -->
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <h4 class="stat-card-title">پرفروش‌ترین محصولات</h4>
+                <a href="{% url 'admin:products' %}" class="stat-card-link">مشاهده همه</a>
+            </div>
+            <div class="stat-card-body">
+                <div class="top-products-list">
+                    {% for product in top_products %}
+                    <div class="top-product-item">
+                        <div class="top-product-image">
+                            {% if product.get_thumbnail %}
+                            <img src="{{ product.get_thumbnail.url }}" alt="{{ product.name }}" loading="lazy">
+                            {% else %}
+                            <div class="product-placeholder">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                                    <line x1="7" y1="7" x2="7.01" y2="7"/>
+                                </svg>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="top-product-info">
+                            <span class="top-product-name">{{ product.name }}</span>
+                            <span class="top-product-sales">{{ product.sales_count }} فروش</span>
+                        </div>
+                        <span class="top-product-revenue">{{ product.revenue|intcomma }} تومان</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="recent-activity">
+        <div class="recent-activity-header">
+            <h3 class="recent-activity-title">فعالیت‌های اخیر</h3>
+            <a href="{% url 'admin:activity_logs' %}" class="recent-activity-link">مشاهده همه</a>
+        </div>
+        <div class="recent-activity-list">
+            {% for activity in recent_activities %}
+            <div class="recent-activity-item">
+                <div class="recent-activity-icon {% if activity.type == 'order' %}order{% elif activity.type == 'product' %}product{% elif activity.type == 'user' %}user{% else %}default{% endif %}">
+                    {% if activity.type == 'order' %}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    {% elif activity.type == 'product' %}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                        <line x1="7" y1="7" x2="7.01" y2="7"/>
+                    </svg>
+                    {% elif activity.type == 'user' %}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    {% else %}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    {% endif %}
+                </div>
+                <div class="recent-activity-content">
+                    <span class="recent-activity-type">{{ activity.get_type_display }}</span>
+                    <p class="recent-activity-message">{{ activity.message }}</p>
+                    <span class="recent-activity-time">{{ activity.created_at|timesince }} پیش</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <h3 class="quick-actions-title">دسترسی سریع</h3>
+        <div class="quick-actions-grid">
+            <a href="{% url 'admin:add_product' %}" class="quick-action-card">
+                <div class="quick-action-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                </div>
+                <span class="quick-action-label">محصول جدید</span>
+            </a>
+            <a href="{% url 'admin:products' %}" class="quick-action-card">
+                <div class="quick-action-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                        <line x1="7" y1="7" x2="7.01" y2="7"/>
+                    </svg>
+                </div>
+                <span class="quick-action-label">لیست محصولات</span>
+            </a>
+            <a href="{% url 'admin:orders' %}" class="quick-action-card">
+                <div class="quick-action-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                </div>
+                <span class="quick-action-label">سفارش‌ها</span>
+            </a>
+            <a href="{% url 'admin:customers' %}" class="quick-action-card">
+                <div class="quick-action-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                </div>
+                <span class="quick-action-label">مشتریان</span>
+            </a>
+            <a href="{% url 'admin:categories' %}" class="quick-action-card">
+                <div class="quick-action-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                    </svg>
+                </div>
+                <span class="quick-action-label">دسته‌بندی‌ها</span>
+            </a>
+            <a href="{% url 'admin:settings' %}" class="quick-action-card">
+                <div class="quick-action-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                </div>
+                <span class="quick-action-label">تنظیمات</span>
+            </a>
+            <a href="{% url 'admin:reports' %}" class="quick-action-card">
+                <div class="quick-action-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                    </svg>
+                </div>
+                <span class="quick-action-label">گزارش‌ها</span>
+            </a>
+            <a href="{% url 'admin:notifications' %}" class="quick-action-card">
+                <div class="quick-action-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                </div>
+                <span class="quick-action-label">اعلان‌ها</span>
+                {% if unread_notifications %}
+                <span class="notification-badge">{{ unread_notifications }}</span>
+                {% endif %}
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{% static 'js/admin/dashboard.js' %}"></script>
+<script>
+// Initialize charts
+const salesCtx = document.getElementById('salesChart');
+const ordersCtx = document.getElementById('ordersChart');
+const orderStatusCtx = document.getElementById('orderStatusChart');
+const categoryCtx = document.getElementById('categoryChart');
+
+// Sales Chart
+if (salesCtx) {
+    new Chart(salesCtx, {
+        type: 'line',
+        data: {
+            labels: {{ sales_labels|safe }},
+            datasets: [{
+                label: 'فروش (تومان)',
+                data: {{ sales_data|safe }},
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+// Orders Chart
+if (ordersCtx) {
+    new Chart(ordersCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ orders_labels|safe }},
+            datasets: [{
+                label: 'تعداد سفارش‌ها',
+                data: {{ orders_data|safe }},
+                backgroundColor: '#10b981',
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+// Order Status Chart
+if (orderStatusCtx) {
+    new Chart(orderStatusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ order_status_labels|safe }},
+            datasets: [{
+                data: {{ order_status_data|safe }},
+                backgroundColor: ['#f59e0b', '#3b82f6', '#10b981', '#ef4444', '#6b7280']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+// Category Chart
+if (categoryCtx) {
+    new Chart(categoryCtx, {
+        type: 'polarArea',
+        data: {
+            labels: {{ category_labels|safe }},
+            datasets: [{
+                data: {{ category_data|safe }},
+                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+</script>
+{% endblock %}

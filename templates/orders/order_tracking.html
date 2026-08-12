@@ -1,0 +1,544 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}پیگیری سفارش #{{ order.code }} - {% if site_settings.site_name %}{{ site_settings.site_name }}{% else %}فروشگاه{% endif %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/orders.css' %}">
+<style>
+    .tracking-map {
+        background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+        border-radius: 12px;
+        overflow: hidden;
+        position: relative;
+        min-height: 400px;
+    }
+    .tracking-path {
+        position: absolute;
+        top: 50%;
+        left: 5%;
+        right: 5%;
+        height: 2px;
+        background: linear-gradient(90deg, #cbd5e1 0%, #94a3b8 100%);
+        transform: translateY(-50%);
+        z-index: 1;
+    }
+    .tracking-location {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        z-index: 2;
+    }
+    .tracking-location:first-child {
+        left: 2%;
+    }
+    .tracking-location:last-child {
+        right: 2%;
+    }
+    .tracking-location:nth-child(2) {
+        left: 25%;
+    }
+    .tracking-location:nth-child(3) {
+        left: 50%;
+    }
+    .tracking-location:nth-child(4) {
+        left: 75%;
+    }
+    .tracking-location-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: white;
+        border: 3px solid #cbd5e1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+    .tracking-location.active .tracking-location-icon {
+        border-color: var(--primary-color);
+        background: var(--primary-color);
+        color: white;
+    }
+    .tracking-location.completed .tracking-location-icon {
+        border-color: #22c55e;
+        background: #22c55e;
+        color: white;
+    }
+    .tracking-location-label {
+        margin-top: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        color: #64748b;
+        text-align: center;
+        max-width: 120px;
+    }
+    .tracking-location.active .tracking-location-label {
+        color: var(--primary-color);
+    }
+    .tracking-location.completed .tracking-location-label {
+        color: #22c55e;
+    }
+    .tracking-info {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+    .delivery-person {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+        background: #f8fafc;
+        border-radius: 10px;
+        margin-top: 20px;
+    }
+    .delivery-person-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        color: #64748b;
+    }
+    .delivery-person-info h4 {
+        font-size: 15px;
+        margin-bottom: 4px;
+    }
+    .delivery-person-info p {
+        font-size: 13px;
+        color: #64748b;
+    }
+    .delivery-contact {
+        display: flex;
+        gap: 12px;
+        margin-top: 12px;
+    }
+    .delivery-contact a {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        background: var(--primary-color);
+        color: white;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: background 0.2s ease;
+    }
+    .delivery-contact a:hover {
+        background: var(--primary-color-dark);
+    }
+    .estimated-delivery {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+        background: #fef3c7;
+        border-radius: 10px;
+        margin-top: 20px;
+    }
+    .estimated-delivery-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: #fde68a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .estimated-delivery-content h4 {
+        font-size: 15px;
+        margin-bottom: 4px;
+    }
+    .estimated-delivery-content p {
+        font-size: 13px;
+        color: #92400e;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="{% url 'store:home' %}">خانه</a>
+            <span class="breadcrumb-separator">/</span>
+            <a href="{% url 'accounts:profile' %}">حساب کاربری</a>
+            <span class="breadcrumb-separator">/</span>
+            <a href="{% url 'orders:order_history' %}">تاریخچه سفارش‌ها</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">پیگیری سفارش #{{ order.code }}</span>
+        </div>
+        <h1 class="page-title">پیگیری سفارش #{{ order.code }}</h1>
+        <p class="page-subtitle">محل دقیق سفارش خود را مشاهده کنید</p>
+    </div>
+</div>
+
+<div class="main-container">
+    <div class="container">
+        <div class="tracking-layout">
+            <!-- Tracking Status -->
+            <div class="order-tracking-status">
+                <div class="tracking-status-card">
+                    <div class="tracking-status-header">
+                        <span class="tracking-status-code">کد پیگیری: {{ order.tracking_code|default:"در حال تهیه" }}</span>
+                        <span class="tracking-status-carrier">
+                            {% if order.shipping_company %}
+                            شرکت ارسال: {{ order.shipping_company }}
+                            {% else %}
+                            شرکت ارسال: در حال تعیین
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="tracking-status-body">
+                        <h3 class="tracking-status-title">وضعیت فعلی سفارش</h3>
+                        <div class="current-status">
+                            <div class="current-status-icon {% if order.status == 'shipped' %}shipped{% elif order.status == 'delivered' %}delivered{% else %}processing{% endif %}">
+                                {% if order.status == 'shipped' %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="1" y="3" width="15" height="13"/>
+                                    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+                                    <circle cx="5.5" cy="18.5" r="2.5"/>
+                                    <circle cx="18.5" cy="18.5" r="2.5"/>
+                                </svg>
+                                {% elif order.status == 'delivered' %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                    <polyline points="22 4 12 14.01 9 11.01"/>
+                                </svg>
+                                {% else %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                    <polyline points="22 4 12 14.01 9 11.01"/>
+                                </svg>
+                                {% endif %}
+                            </div>
+                            <div class="current-status-info">
+                                <h4 class="current-status-title">
+                                    {% if order.status == 'shipped' %}ارسال شده{% elif order.status == 'delivered' %}تحویل شده{% else %}در حال پردازش{% endif %}
+                                </h4>
+                                <p class="current-status-description">
+                                    {% if order.status == 'shipped' %}
+                                    سفارش شما در تاریخ {{ order.shipped_at|date:"Y/m/d" }} ارسال شده است.
+                                    {% elif order.status == 'delivered' %}
+                                    سفارش شما در تاریخ {{ order.delivered_at|date:"Y/m/d" }} تحویل شده است.
+                                    {% else %}
+                                    سفارش شما در حال پردازش است و به زودی ارسال خواهد شد.
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="tracking-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill {% if order.status == 'delivered' %}complete{% elif order.status == 'shipped' %}shipped{% elif order.status == 'processing' %}processing{% else %}pending{% endif %}" 
+                             style="width: {% if order.status == 'delivered' %}100{% elif order.status == 'shipped' %}75{% elif order.status == 'processing' %}50{% else %}25{% endif %}%">
+                        </div>
+                    </div>
+                    <div class="progress-labels">
+                        <span class="progress-label {% if order.status in 'pending,processing,shipped,delivered' %}active{% endif %}">ثبت سفارش</span>
+                        <span class="progress-label {% if order.status in 'processing,shipped,delivered' %}active{% endif %}">پردازش</span>
+                        <span class="progress-label {% if order.status in 'shipped,delivered' %}active{% endif %}">ارسال</span>
+                        <span class="progress-label {% if order.status == 'delivered' %}active{% endif %}">تحویل</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tracking Map -->
+            <div class="tracking-map-section">
+                <h3 class="tracking-map-title">مسیر تحویل سفارش</h3>
+                <div class="tracking-map">
+                    <div class="tracking-path"></div>
+                    
+                    <div class="tracking-location {% if order.status in 'pending,processing' %}active{% elif order.status in 'shipped,delivered' %}completed{% else %}active{% endif %}">
+                        <div class="tracking-location-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                                <circle cx="12" cy="10" r="3"/>
+                            </svg>
+                        </div>
+                        <span class="tracking-location-label">انبار</span>
+                    </div>
+
+                    <div class="tracking-location {% if order.status in 'processing' %}active{% elif order.status in 'shipped,delivered' %}completed{% else %}pending{% endif %}">
+                        <div class="tracking-location-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                                <line x1="1" y1="10" x2="23" y2="10"/>
+                            </svg>
+                        </div>
+                        <span class="tracking-location-label">مرکز توزیع</span>
+                    </div>
+
+                    <div class="tracking-location {% if order.status == 'shipped' %}active{% elif order.status == 'delivered' %}completed{% else %}pending{% endif %}">
+                        <div class="tracking-location-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                            </svg>
+                        </div>
+                        <span class="tracking-location-label">در حال تحویل</span>
+                    </div>
+
+                    <div class="tracking-location {% if order.status == 'delivered' %}completed{% else %}pending{% endif %}">
+                        <div class="tracking-location-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </div>
+                        <span class="tracking-location-label">محل تحویل</span>
+                    </div>
+                </div>
+
+                <!-- Tracking Timeline -->
+                <div class="tracking-timeline">
+                    <h3 class="tracking-timeline-title">تاریخچه پیگیری</h3>
+                    <div class="timeline">
+                        {% for tracking in tracking_history %}
+                        <div class="timeline-item">
+                            <div class="timeline-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 14 14"/>
+                                </svg>
+                            </div>
+                            <div class="timeline-content">
+                                <span class="timeline-title">{{ tracking.status_display }}</span>
+                                <span class="timeline-date">{{ tracking.created_at|date:"Y/m/d" }} - {{ tracking.created_at|time:"H:i" }}</span>
+                                {% if tracking.location %}
+                                <span class="timeline-location">{{ tracking.location }}</span>
+                                {% endif %}
+                                {% if tracking.description %}
+                                <p class="timeline-description">{{ tracking.description }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="timeline-item">
+                            <div class="timeline-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                    <polyline points="22 4 12 14.01 9 11.01"/>
+                                </svg>
+                            </div>
+                            <div class="timeline-content">
+                                <span class="timeline-title">سفارش ثبت شد</span>
+                                <span class="timeline-date">{{ order.created_at|date:"Y/m/d" }} - {{ order.created_at|time:"H:i" }}</span>
+                                <p class="timeline-description">سفارش شما با موفقیت ثبت شد و در حال پردازش است.</p>
+                            </div>
+                        </div>
+                        {% if order.status in 'processing,shipped,delivered' %}
+                        <div class="timeline-item">
+                            <div class="timeline-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                    <polyline points="22 4 12 14.01 9 11.01"/>
+                                </svg>
+                            </div>
+                            <div class="timeline-content">
+                                <span class="timeline-title">در حال پردازش</span>
+                                {% if order.processing_at %}
+                                <span class="timeline-date">{{ order.processing_at|date:"Y/m/d" }} - {{ order.processing_at|time:"H:i" }}</span>
+                                {% else %}
+                                <span class="timeline-date">در انتظار</span>
+                                {% endif %}
+                                <p class="timeline-description">سفارش شما در حال آماده‌سازی برای ارسال است.</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if order.status in 'shipped,delivered' %}
+                        <div class="timeline-item">
+                            <div class="timeline-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="1" y="3" width="15" height="13"/>
+                                    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+                                    <circle cx="5.5" cy="18.5" r="2.5"/>
+                                    <circle cx="18.5" cy="18.5" r="2.5"/>
+                                </svg>
+                            </div>
+                            <div class="timeline-content">
+                                <span class="timeline-title">ارسال شد</span>
+                                {% if order.shipped_at %}
+                                <span class="timeline-date">{{ order.shipped_at|date:"Y/m/d" }} - {{ order.shipped_at|time:"H:i" }}</span>
+                                {% else %}
+                                <span class="timeline-date">در انتظار</span>
+                                {% endif %}
+                                <p class="timeline-description">سفارش شما به شرکت حمل و نقل تحویل داده شد.</p>
+                                {% if order.tracking_code %}
+                                <span class="tracking-code">کد پیگیری: {{ order.tracking_code }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if order.status == 'delivered' %}
+                        <div class="timeline-item">
+                            <div class="timeline-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                    <polyline points="22 4 12 14.01 9 11.01"/>
+                                </svg>
+                            </div>
+                            <div class="timeline-content">
+                                <span class="timeline-title">تحویل شد</span>
+                                {% if order.delivered_at %}
+                                <span class="timeline-date">{{ order.delivered_at|date:"Y/m/d" }} - {{ order.delivered_at|time:"H:i" }}</span>
+                                {% else %}
+                                <span class="timeline-date">در انتظار</span>
+                                {% endif %}
+                                <p class="timeline-description">سفارش شما با موفقیت تحویل داده شد.</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Delivery Person Info -->
+                {% if order.status in 'shipped,delivered' and order.delivery_person %}
+                <div class="delivery-person">
+                    <div class="delivery-person-avatar">
+                        {% if order.delivery_person.avatar %}
+                        <img src="{{ order.delivery_person.avatar.url }}" alt="{{ order.delivery_person.get_full_name }}">
+                        {% else %}
+                        {{ order.delivery_person.get_full_name|slice:":1"|upper }}
+                        {% endif %}
+                    </div>
+                    <div class="delivery-person-info">
+                        <h4>{{ order.delivery_person.get_full_name }}</h4>
+                        <p>پیک تحویل سفارش شما</p>
+                        <div class="delivery-contact">
+                            {% if order.delivery_person.phone %}
+                            <a href="tel:{{ order.delivery_person.phone }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                                </svg>
+                                تماس
+                            </a>
+                            {% endif %}
+                            {% if order.delivery_person.phone %}
+                            <a href="https://wa.me/{{ order.delivery_person.phone }}" target="_blank">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-9-9 9 9 0 0 1 9-9c2.5 0 4.8.9 6.7 2.4"/>
+                                    <path d="M16 8h-2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2v-4h-1"/>
+                                </svg>
+                                واتساپ
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Estimated Delivery Time -->
+                {% if order.status == 'shipped' and not order.delivered_at %}
+                <div class="estimated-delivery">
+                    <div class="estimated-delivery-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 14 14"/>
+                        </svg>
+                    </div>
+                    <div class="estimated-delivery-content">
+                        <h4>زمان تخمینی تحویل</h4>
+                        {% if order.estimated_delivery_date %}
+                        <p>تا {{ order.estimated_delivery_date|date:"Y/m/d" }} تحویل خواهد شد</p>
+                        {% else %}
+                        <p>به زودی تحویل خواهد شد</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Order Info -->
+                <div class="tracking-info">
+                    <div class="order-tracking-summary">
+                        <div class="order-tracking-summary-item">
+                            <span class="order-tracking-summary-label">شماره سفارش:</span>
+                            <span class="order-tracking-summary-value">#{{ order.code }}</span>
+                        </div>
+                        <div class="order-tracking-summary-item">
+                            <span class="order-tracking-summary-label">تاریخ سفارش:</span>
+                            <span class="order-tracking-summary-value">{{ order.created_at|date:"Y/m/d" }}</span>
+                        </div>
+                        <div class="order-tracking-summary-item">
+                            <span class="order-tracking-summary-label">کد پیگیری:</span>
+                            <span class="order-tracking-summary-value">{{ order.tracking_code|default:"در حال تهیه" }}</span>
+                        </div>
+                        <div class="order-tracking-summary-item">
+                            <span class="order-tracking-summary-label">شرکت ارسال:</span>
+                            <span class="order-tracking-summary-value">{{ order.shipping_company|default:"در حال تعیین" }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="tracking-actions">
+                    <a href="{% url 'orders:order_detail' order.code %}" class="btn btn-outline">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                            <polyline points="12 5 19 12 12 19"/>
+                        </svg>
+                        جزئیات سفارش
+                    </a>
+                    {% if order.status == 'delivered' and order.can_review %}
+                    <a href="{% url 'orders:order_review' order.code %}" class="btn btn-primary">
+                        ثبت امتیاز
+                    </a>
+                    {% endif %}
+                    {% if order.status == 'delivered' and order.can_return %}
+                    <a href="{% url 'orders:return_request' order.code %}" class="btn btn-outline">
+                        درخواست مرجوعی
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Update tracking map based on order status
+document.addEventListener('DOMContentLoaded', function() {
+    const orderStatus = '{{ order.status }}';
+    const trackingLocations = document.querySelectorAll('.tracking-location');
+    
+    // Add appropriate classes to tracking locations based on status
+    trackingLocations.forEach((location, index) => {
+        if (orderStatus === 'delivered') {
+            location.classList.add('completed');
+        } else if (orderStatus === 'shipped') {
+            if (index < 3) {
+                location.classList.add('completed');
+            } else if (index === 3) {
+                location.classList.add('active');
+            } else {
+                location.classList.remove('active', 'completed');
+            }
+        } else if (orderStatus === 'processing') {
+            if (index < 2) {
+                location.classList.add('completed');
+            } else if (index === 2) {
+                location.classList.add('active');
+            } else {
+                location.classList.remove('active', 'completed');
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

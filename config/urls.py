@@ -33,6 +33,9 @@ urlpatterns = [
     # Support
     path('support/', include('apps.support.urls', namespace='support')),
     
+    # Ads
+    path('ads/', include('apps.ads.urls', namespace='ads')),
+    
     # API
     path('api/', include([
         path('v1/', include('config.api_urls', namespace='api_v1')),

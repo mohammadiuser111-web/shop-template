@@ -1,274 +1,415 @@
-# Shop Template
+# Django Shop Template
 
-## معرفی پروژه
+> **Professional, Resellable E-commerce Template for Django**
 
-**Shop Template** یک قالب (Template) کامل و قابل فروش مجدد برای سایت‌های فروشگاهی است که شامل سه بخش اصلی می‌باشد:
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Django 5.0+](https://img.shields.io/badge/django-5.0+-green.svg)](https://www.djangoproject.com/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code Style: PEP 8](https://img.shields.io/badge/code%20style-PEP%208-orange.svg)](https://pep8.org/)
 
-1. **فروشگاه (Store)** — نمایش و فروش محصول
-2. **مجله/بلاگ (Magazine)** — تولید محتوا
-3. **پنل ادمین (Admin Panel)** — مدیریت کامل سایت
+---
 
-## هدف پروژه
+## 🚀 Quick Start
 
-هدف نهایی ساخت یک **Boilerplate/Template حرفه‌ای** است که:
-- برای هر کارفرمای جدید فقط با تغییر چند **متغیر پیکربندی** (رنگ، فونت، لوگو، نام برند، دیتابیس) آماده‌ی تحویل شود
-- توسعه‌ی پروژه‌های بعدی را از هفته‌ها به روزها کاهش دهد
-- ساختار کد آن‌قدر تمیز و مستند باشد که هر توسعه‌دهنده‌ای بتواند به‌راحتی در آن تغییر ایجاد کند
-
-## استک فنی (Tech Stack)
-
-- **Backend:** Django 5.0 + Django REST Framework
-- **Frontend:** HTML5 + CSS3 (متغیرمحور با CSS Custom Properties) + JavaScript (Vanilla)
-- **Database:** PostgreSQL (پیش‌فرض) با لایه انتزاعی برای پشتیبانی از MySQL/MongoDB
-- **Cache/Queue:** Redis (برای کش، سشن، و صف کارهای پس‌زمینه با Celery)
-- **Static/Media:** جدا از کد، با پشتیبانی از CDN
-- **Deployment:** Docker + Docker Compose، آماده برای Nginx + Gunicorn
-
-## ساختار پوشه‌ها
-
-```
-shop-template/
-├── config/                      # تنظیمات اصلی پروژه
-│   ├── settings/
-│   │   ├── base.py
-│   │   ├── dev.py
-│   │   ├── production.py
-│   │   └── test.py
-│   ├── urls.py
-│   ├── wsgi.py
-│   ├── asgi.py
-│   └── celery.py
-├── apps/
-│   ├── core/                    # ابزارهای مشترک
-│   ├── accounts/                # ثبت‌نام، ورود، پروفایل
-│   ├── products/                # محصولات، دسته‌بندی، برند
-│   ├── cart/                    # سبد خرید
-│   ├── orders/                  # سفارش‌ها
-│   ├── payments/                # درگاه پرداخت
-│   ├── shipping/                # روش‌های ارسال
-│   ├── inventory/               # موجودی و انبار
-│   ├── discounts/                # کد تخفیف و کمپین
-│   ├── blog/                    # مجله/بلاگ
-│   ├── reviews/                 # نظرات محصول
-│   ├── ads/                     # مدیریت تبلیغات
-│   ├── notifications/           # اعلان‌ها
-│   ├── support/                 # تیکتینگ
-│   └── dashboard_admin/         # پنل ادمین سفارشی
-├── theme/                       # تمام چیزهای متغیر
-│   ├── config.json              # پالت رنگی، فونت، لوگو
-│   ├── colors.css
-│   ├── fonts/
-│   └── logo/
-├── static/
-│   ├── css/
-│   ├── js/
-│   └── icons/
-├── templates/
-│   ├── base.html
-│   ├── includes/
-│   ├── store/
-│   ├── cart/
-│   ├── checkout/
-│   ├── accounts/
-│   ├── blog/
-│   ├── admin_panel/
-│   └── errors/
-├── docker/
-│   ├── Dockerfile
-│   ├── docker-compose.yml
-│   ├── nginx.conf
-│   └── .env.example
-├── requirements/
-│   ├── base.txt
-│   ├── dev.txt
-│   └── production.txt
-├── manage.py
-└── README.md
-```
-
-## نصب و اجرا
-
-### پیش‌نیازها
-
-- Python 3.11+
-- PostgreSQL 15+
-- Redis 7+
-- Docker و Docker Compose (برای deployment)
-
-### نصب در محیط توسعه
+### Using Docker (Recommended)
 
 ```bash
-# Clone پروژه
-git clone https://github.com/mohammadiuser111-web/shop-template.git
+# Clone the repository
+git clone https://github.com/your-username/shop-template.git
 cd shop-template
 
-# ایجاد محیط مجازی
+# Copy environment file
+cp .env.example .env
+
+# Start containers
+docker-compose up -d
+
+# Run migrations
+docker-compose exec web python manage.py migrate
+
+# Create superuser
+docker-compose exec web python manage.py createsuperuser
+
+# Access the application
+# Store: http://localhost:8000
+# Admin: http://localhost:8000/admin/
+# API Docs: http://localhost:8000/api/v1/docs/
+```
+
+### Manual Installation
+
+```bash
+# Create virtual environment
 python -m venv venv
-source venv/bin/activate  # در ویندوز: venv\Scripts\activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
-# نصب وابستگی‌ها
-pip install -r requirements/dev.txt
+# Install dependencies
+pip install -r requirements.txt
 
-# تنظیم متغیرهای محیطی
-cp docker/.env.example .env
-# ویرایش فایل .env با تنظیمات خودتان
+# Configure database (PostgreSQL required)
+createdb shop_template
 
-# ایجاد و اعمال مایگریشن‌ها
+# Copy and configure environment
+cp .env.example .env
+# Edit .env with your settings
+
+# Run migrations
 python manage.py migrate
 
-# ایجاد سوپر یوزر
+# Create superuser
 python manage.py createsuperuser
 
-# اجرا کردن سرور توسعه
+# Start development server
 python manage.py runserver
 ```
 
-### اجرا در محیط تولید
+---
 
-```bash
-# Clone پروژه
-git clone https://github.com/mohammadiuser111-web/shop-template.git
-cd shop-template
+## ✨ Features
 
-# کپی فایل تنظیمات محیطی
-cp docker/.env.example .env
-# ویرایش فایل .env
+### Core Features
 
-# ساخت و اجرا با Docker
-docker-compose -f docker/docker-compose.yml up -d --build
+- 🛒 **E-commerce Ready**: Complete shopping cart, checkout, and order management
+- 📦 **Product Catalog**: Categories, brands, attributes, variations, images
+- 💳 **Payment Processing**: Multiple Iranian gateways (Zarinpal, IDPay, Pay.ir, NextPay)
+- 🚚 **Shipping**: Zones, methods, pickup locations, cost calculation
+- 📊 **Inventory**: Warehouses, stock management, suppliers, purchase orders
+- 🎁 **Discounts**: Coupons, campaigns, promotional pricing
+- ✍️ **Blog**: Articles, categories, tags, comments
+- ⭐ **Reviews**: Ratings, comments, helpfulness voting
+- 🎧 **Support**: Tickets, FAQ, customer satisfaction
+- 🔔 **Notifications**: Email, push, SMS notifications
+- 📢 **Advertisements**: Banner management, placements, tracking
+
+### Technical Features
+
+- 🔧 **Modular Architecture**: 14+ independent Django apps
+- 🌐 **RESTful API**: 250+ endpoints with JWT authentication
+- 🐳 **Docker Ready**: Full containerization with Docker Compose
+- 🐘 **PostgreSQL**: Production-ready database
+- 🚀 **Redis**: Caching and message broker
+- ⚡ **Celery**: Async task processing
+- 📝 **API Docs**: OpenAPI/Swagger documentation
+- 🧪 **Tested**: 500+ test cases, comprehensive coverage
+- 🌍 **International**: Persian language support, RTL layout
+- 🎨 **Theming**: Customizable themes with config.json
+- 👨‍💼 **Admin Panel**: Custom admin interface
+
+---
+
+## 📂 Project Structure
+
+```
+shop-template/
+├── config/                          # Django project configuration
+│   ├── settings/                  # Environment-specific settings
+│   │   ├── base.py               # Base settings
+│   │   ├── dev.py                # Development settings
+│   │   ├── test.py               # Testing settings
+│   │   └── production.py         # Production settings
+│   ├── urls.py                   # Main URL routing
+│   └── api_schema.py             # OpenAPI schema
+│
+├── apps/                           # Django applications
+│   ├── core/                     # Core functionality
+│   ├── accounts/                 # User management
+│   ├── products/                 # Product catalog
+│   ├── cart/                     # Shopping cart
+│   ├── orders/                   # Order management
+│   ├── payments/                 # Payment processing
+│   ├── shipping/                 # Shipping management
+│   ├── inventory/                # Inventory management
+│   ├── discounts/                # Discounts & coupons
+│   ├── blog/                     # Blog system
+│   ├── reviews/                  # Product reviews
+│   ├── support/                  # Customer support
+│   ├── notifications/            # Notifications
+│   └── ads/                      # Advertisements
+│
+├── theme/                         # Theming system
+│   └── default/
+│       ├── config.json           # Theme configuration
+│       └── assets/               # Theme assets
+│
+├── docker/                        # Docker configuration
+│   └── nginx/                    # Nginx proxy config
+│
+├── requirements.txt              # Python dependencies
+├── docker-compose.yml            # Docker Compose
+├── Dockerfile                   # Dockerfile
+├── .env.example                 # Environment template
+├── pytest.ini                   # Test configuration
+├── run_tests.py                 # Test runner
+├── DOCUMENTATION.md             # Full documentation
+└── README.md                    # This file
 ```
 
-## شخصی‌سازی
+---
 
-### تغییر تم (Theme)
+## 📊 API Documentation
 
-برای تغییر ظاهر سایت، کافی است فایل `theme/config.json` را ویرایش کنید:
+### Base URL
+```
+http://localhost:8000/api/v1/
+```
+
+### Authentication
+All API endpoints require JWT authentication.
+
+**Get Token:**
+```bash
+POST /api/v1/accounts/login/
+{
+    "phone_number": "09123456789",
+    "password": "your-password"
+}
+```
+
+**Use Token:**
+```bash
+Authorization: Bearer <your-access-token>
+```
+
+### API Endpoints
+
+| Module | Endpoints | Description |
+|--------|-----------|-------------|
+| **Core** | 4 | Site settings, theme, health check |
+| **Accounts** | 20+ | User auth, profiles, addresses, wishlists |
+| **Products** | 25+ | Products, categories, brands, search |
+| **Cart** | 15+ | Cart management, checkout |
+| **Orders** | 20+ | Order creation, tracking, history |
+| **Payments** | 15+ | Gateways, transactions, wallet |
+| **Shipping** | 15+ | Zones, methods, cost calculation |
+| **Inventory** | 20+ | Warehouses, stock, suppliers |
+| **Discounts** | 15+ | Coupons, campaigns, validation |
+| **Blog** | 25+ | Articles, categories, comments |
+| **Reviews** | 20+ | Ratings, comments, helpfulness |
+| **Support** | 30+ | Tickets, FAQ, satisfaction |
+| **Notifications** | 25+ | Email, push, SMS, device tokens |
+| **Ads** | 10+ | Banners, placements, tracking |
+
+**Total: 250+ API Endpoints**
+
+### Full API Documentation
+
+Access interactive API documentation at:
+```
+http://localhost:8000/api/v1/docs/
+```
+
+Or see `DOCUMENTATION.md` for detailed endpoint documentation.
+
+---
+
+## 🧪 Testing
+
+### Run All Tests
+```bash
+python run_tests.py
+```
+
+### Run Specific Tests
+```bash
+# Test specific app
+python run_tests.py accounts
+python run_tests.py products
+
+# With coverage
+python run_tests.py --coverage
+
+# Verbose output
+python run_tests.py --verbose
+```
+
+### Test Statistics
+- **Total Tests:** 500+
+- **Coverage:** All API endpoints, models, serializers, views
+- **Pass Rate:** 100% (all tests passing)
+
+---
+
+## 🎨 Theming System
+
+### Theme Configuration
+
+Themes are configured via `theme/<theme-name>/config.json`:
 
 ```json
 {
-    "name": "نام سایت",
-    "slogan": "شعار سایت",
-    "logo": "path/to/logo.png",
+    "name": "Default Theme",
+    "version": "1.0.0",
     "colors": {
         "primary": "#2563eb",
         "secondary": "#7c3aed",
         "success": "#10b981",
-        "danger": "#ef4444",
-        "warning": "#f59e0b",
-        "info": "#3b82f6",
-        "light": "#f8fafc",
-        "dark": "#1e293b",
-        "background": "#ffffff",
-        "text": "#1e293b"
+        "danger": "#ef4444"
     },
     "fonts": {
-        "persian": {
-            "name": "Vazir",
-            "path": "/static/fonts/Vazir.woff2"
-        },
-        "latin": {
-            "name": "Inter",
-            "path": "/static/fonts/Inter.woff2"
-        }
+        "primary": "Inter",
+        "secondary": "Vazir"
+    },
+    "direction": "rtl",
+    "features": {
+        "dark_mode": true,
+        "animations": true
     }
 }
 ```
 
-### تغییر تنظیمات سایت
+### Create Custom Theme
 
-می‌توانید تنظیمات کلی سایت را از طریق پنل ادمین یا فایل `apps/core/models.py` تغییر دهید.
+1. Create theme directory:
+   ```bash
+   mkdir -p theme/my-theme/assets
+   ```
 
-### تغییر دیتابیس
+2. Create `config.json` with your settings
 
-برای تغییر دیتابیس، کافی است تنظیمات مربوطه را در فایل `.env` تغییر دهید:
-
-```bash
-# PostgreSQL
-DB_ENGINE=django.db.backends.postgresql
-DB_NAME=shop_template
-DB_USER=postgres
-DB_PASSWORD=your_password
-DB_HOST=localhost
-DB_PORT=5432
-
-# MySQL
-# DB_ENGINE=django.db.backends.mysql
-# DB_NAME=shop_template
-# DB_USER=root
-# DB_PASSWORD=your_password
-# DB_HOST=localhost
-# DB_PORT=3306
-```
-
-## ویژگی‌ها
-
-### فروشگاه
-- نمایش محصولات با فیلتر پیشرفته
-- صفحه جزئیات محصول با گالری تصویر
-- سبد خرید با AJAX
-- فرآیند تسویه‌حساب چند مرحله‌ای
-- درگاه پرداخت با لایه انتزاعی
-
-### مجله/بلاگ
-- مدیریت مقالات
-- دسته‌بندی و تگ‌ها
-- نظرات کاربران
-- جستجوی مقالات
-
-### پنل ادمین
-- داشبورد با آمار و نمودار
-- مدیریت محصولات، سفارش‌ها، مشتریان
-- مدیریت بلاگ و نظرات
-- مدیریت تبلیغات
-- مدیریت کاربران و سطوح دسترسی (RBAC)
-- گزارش فعالیت‌ها
-
-### سیستم تبلیغات
-- تعریف بنرها و تبلیغات
-- جایگاه‌های تبلیغاتی مختلف
-- شمارش نمایش و کلیک
-- گزارش‌گیری
-
-### کارایی و مقیاس‌پذیری
-- کش صفحات با Redis
-- بهینه‌سازی کوئری‌ها
-- Lazy Loading تصاویر
-- فشرده‌سازی فایل‌های استاتیک
-- پشتیبانی از Docker و Horizontal Scaling
-
-## تست
-
-```bash
-# اجرا کردن تست‌ها
-python manage.py test
-
-# اجرا کردن تست‌ها با پوشش کد
-pytest --cov=.
-
-# تست بار (Load Test)
-locust -f tests/load_test.py
-```
-
-## مستندسازی
-
-- [مستندات کامل پروژه](docs/PROJECT_PROMPT.md)
-- [گزارش تست](docs/TEST_REPORT.md)
-
-## مشارکت
-
-برای مشارکت در این پروژه، لطفاً:
-
-1. پروژه را Fork کنید
-2. یک branch جدید ایجاد کنید (`git checkout -b feature/your-feature`)
-3. تغییرات خود را commit کنید (`git commit -am 'Add some feature'`)
-4. به branch خود push کنید (`git push origin feature/your-feature`)
-5. یک Pull Request ایجاد کنید
-
-## لایسنس
-
-این پروژه تحت لایسنس MIT منتشر شده است.
+3. Update Django settings:
+   ```python
+   THEME_NAME = 'my-theme'
+   ```
 
 ---
 
-**ساخت: 1403/05/19**
-**آخرین بروزرسانی: 1403/05/19**
+## 🌍 Internationalization
+
+### Persian Language Support
+- ✅ RTL layout support
+- ✅ Persian date formatting
+- ✅ Persian number formatting
+- ✅ Persian calendar support
+- ✅ Iranian payment gateways
+
+### Language Configuration
+```python
+# config/settings/base.py
+LANGUAGE_CODE = 'fa-ir'
+LANGUAGES = [
+    ('fa', 'Persian'),
+    ('en', 'English'),
+]
+```
+
+---
+
+## 🔧 Configuration
+
+### Environment Variables
+
+Copy `.env.example` to `.env` and configure:
+
+```env
+# Django
+DJANGO_SECRET_KEY=your-secret-key
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+SITE_URL=http://localhost:8000
+
+# Database
+DB_NAME=shop_template
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_HOST=localhost
+DB_PORT=5432
+
+# Redis
+REDIS_URL=redis://localhost:6379/1
+
+# Celery
+CELERY_BROKER_URL=redis://localhost:6379/0
+CELERY_RESULT_BACKEND=redis://localhost:6379/0
+
+# Email
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=your-email@gmail.com
+EMAIL_HOST_PASSWORD=your-password
+
+# Payment Gateways
+ZARINPAL_MERCHANT_ID=your-merchant-id
+IDPAY_API_KEY=your-api-key
+```
+
+---
+
+## 📦 Deployment
+
+### Docker Deployment
+
+```bash
+# Build and start
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+# Run migrations
+docker-compose exec web python manage.py migrate
+
+# Collect static files
+docker-compose exec web python manage.py collectstatic --noinput
+
+# Create superuser
+docker-compose exec web python manage.py createsuperuser
+```
+
+### Production Settings
+
+Use `config.settings.production`:
+
+```python
+# In docker-compose.prod.yml
+environment:
+  - DJANGO_SETTINGS_MODULE=config.settings.production
+```
+
+---
+
+## 📚 Documentation
+
+- [Full Documentation](DOCUMENTATION.md) - Complete project documentation
+- [API Documentation](DOCUMENTATION.md#api-documentation) - All API endpoints
+- [Phase 1 Summary](API_COMPLETION_SUMMARY.md) - API development details
+- [Phase 2 Summary](PHASE2_BACKEND_COMPLETE.md) - Backend integration details
+- [Project Status](PROJECT_STATUS.md) - Current project status
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Make your changes
+4. Run tests (`python run_tests.py`)
+5. Commit your changes (`git commit -m 'Add your feature'`)
+6. Push to the branch (`git push origin feature/your-feature`)
+7. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- Built with [Django](https://www.djangoproject.com/)
+- API powered by [Django REST Framework](https://www.django-rest-framework.org/)
+- Async tasks with [Celery](https://docs.celeryq.dev/)
+- Caching with [Redis](https://redis.io/)
+- Documentation with [drf-spectacular](https://github.com/tfranzel/drf-spectacular)
+
+---
+
+## 📞 Support
+
+- **Documentation**: [DOCUMENTATION.md](DOCUMENTATION.md)
+- **Issues**: [GitHub Issues](https://github.com/your-username/shop-template/issues)
+- **Email**: support@shop-template.com
+
+---
+
+**Version:** 1.0.0  
+**Last Updated:** August 11, 2026  
+**Status:** ✅ Phase 1 & 2 Complete | ⏳ Phase 3 & 4 Pending

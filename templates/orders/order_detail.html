@@ -1,0 +1,465 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}جزئیات سفارش #{{ order.code }} - {% if site_settings.site_name %}{{ site_settings.site_name }}{% else %}فروشگاه{% endif %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/orders.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="{% url 'store:home' %}">خانه</a>
+            <span class="breadcrumb-separator">/</span>
+            <a href="{% url 'accounts:profile' %}">حساب کاربری</a>
+            <span class="breadcrumb-separator">/</span>
+            <a href="{% url 'orders:order_history' %}">تاریخچه سفارش‌ها</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">سفارش #{{ order.code }}</span>
+        </div>
+        <h1 class="page-title">جزئیات سفارش #{{ order.code }}</h1>
+    </div>
+</div>
+
+<div class="main-container">
+    <div class="container">
+        <div class="order-detail-layout">
+            <!-- Order Status -->
+            <div class="order-status-timeline">
+                <h3 class="order-status-title">وضعیت سفارش</h3>
+                <div class="timeline">
+                    <div class="timeline-item {% if order.status in 'cancelled' %}disabled{% elif order.status == 'pending' %}active{% else %}completed{% endif %}">
+                        <div class="timeline-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                <polyline points="22 4 12 14.01 9 11.01"/>
+                            </svg>
+                        </div>
+                        <div class="timeline-content">
+                            <span class="timeline-title">سفارش ثبت شد</span>
+                            <span class="timeline-date">{{ order.created_at|date:"Y/m/d" }} - {{ order.created_at|time:"H:i" }}</span>
+                        </div>
+                    </div>
+                    <div class="timeline-connector {% if order.status in 'cancelled' %}disabled{% elif order.status == 'pending' %}active{% else %}completed{% endif %}"></div>
+
+                    <div class="timeline-item {% if order.status in 'cancelled,pending' %}disabled{% elif order.status == 'processing' %}active{% else %}completed{% endif %}">
+                        <div class="timeline-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                <polyline points="22 4 12 14.01 9 11.01"/>
+                            </svg>
+                        </div>
+                        <div class="timeline-content">
+                            <span class="timeline-title">در حال پردازش</span>
+                            {% if order.processing_at %}
+                            <span class="timeline-date">{{ order.processing_at|date:"Y/m/d" }} - {{ order.processing_at|time:"H:i" }}</span>
+                            {% else %}
+                            <span class="timeline-date">در انتظار</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="timeline-connector {% if order.status in 'cancelled,pending,processing' %}disabled{% elif order.status == 'shipped' %}active{% else %}completed{% endif %}"></div>
+
+                    <div class="timeline-item {% if order.status in 'cancelled,pending,processing' %}disabled{% elif order.status == 'shipped' %}active{% else %}completed{% endif %}">
+                        <div class="timeline-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="1" y="3" width="15" height="13"/>
+                                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+                                <circle cx="5.5" cy="18.5" r="2.5"/>
+                                <circle cx="18.5" cy="18.5" r="2.5"/>
+                            </svg>
+                        </div>
+                        <div class="timeline-content">
+                            <span class="timeline-title">ارسال شد</span>
+                            {% if order.shipped_at %}
+                            <span class="timeline-date">{{ order.shipped_at|date:"Y/m/d" }} - {{ order.shipped_at|time:"H:i" }}</span>
+                            {% if order.tracking_code %}
+                            <span class="tracking-code">کد پیگیری: {{ order.tracking_code }}</span>
+                            {% endif %}
+                            {% else %}
+                            <span class="timeline-date">در انتظار</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="timeline-connector {% if order.status in 'cancelled,pending,processing,shipped' %}disabled{% else %}completed{% endif %}"></div>
+
+                    <div class="timeline-item {% if order.status == 'delivered' %}completed{% elif order.status == 'cancelled' %}disabled{% else %}active{% endif %}">
+                        <div class="timeline-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                <polyline points="22 4 12 14.01 9 11.01"/>
+                            </svg>
+                        </div>
+                        <div class="timeline-content">
+                            <span class="timeline-title">تحویل شد</span>
+                            {% if order.delivered_at %}
+                            <span class="timeline-date">{{ order.delivered_at|date:"Y/m/d" }} - {{ order.delivered_at|time:"H:i" }}</span>
+                            {% else %}
+                            <span class="timeline-date">در انتظار</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if order.status == 'cancelled' %}
+                    <div class="timeline-connector"></div>
+                    <div class="timeline-item cancelled">
+                        <div class="timeline-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="15" y1="9" x2="9" y2="15"/>
+                                <line x1="9" y1="9" x2="15" y2="15"/>
+                            </svg>
+                        </div>
+                        <div class="timeline-content">
+                            <span class="timeline-title">لغو شد</span>
+                            {% if order.cancelled_at %}
+                            <span class="timeline-date">{{ order.cancelled_at|date:"Y/m/d" }} - {{ order.cancelled_at|time:"H:i" }}</span>
+                            {% endif %}
+                            {% if order.cancel_reason %}
+                            <span class="cancel-reason">دلیل: {{ order.get_cancel_reason_display }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="order-detail-content">
+                <div class="order-detail-section">
+                    <h3 class="order-detail-section-title">اطلاعات سفارش</h3>
+                    <div class="order-detail-grid">
+                        <div class="order-detail-item">
+                            <span class="order-detail-label">شماره سفارش:</span>
+                            <span class="order-detail-value">#{{ order.code }}</span>
+                        </div>
+                        <div class="order-detail-item">
+                            <span class="order-detail-label">تاریخ سفارش:</span>
+                            <span class="order-detail-value">{{ order.created_at|date:"Y/m/d" }} - {{ order.created_at|time:"H:i" }}</span>
+                        </div>
+                        <div class="order-detail-item">
+                            <span class="order-detail-label">وضعیت سفارش:</span>
+                            <span class="status-badge {% if order.status == 'pending' %}pending{% elif order.status == 'processing' %}processing{% elif order.status == 'shipped' %}shipped{% elif order.status == 'delivered' %}delivered{% else %}cancelled{% endif %}">
+                                {% if order.status == 'pending' %}در انتظار پردازش{% elif order.status == 'processing' %}در حال پردازش{% elif order.status == 'shipped' %}ارسال شده{% elif order.status == 'delivered' %}تحویل شده{% else %}لغو شده{% endif %}
+                            </span>
+                        </div>
+                        <div class="order-detail-item">
+                            <span class="order-detail-label">روش پرداخت:</span>
+                            <span class="order-detail-value">{{ order.get_payment_method_display }}</span>
+                        </div>
+                        <div class="order-detail-item">
+                            <span class="order-detail-label">روش ارسال:</span>
+                            <span class="order-detail-value">{{ order.get_shipping_method_display }}</span>
+                        </div>
+                        <div class="order-detail-item">
+                            <span class="order-detail-label">هزینه ارسال:</span>
+                            <span class="order-detail-value">{{ order.shipping_cost|intcomma }} تومان</span>
+                        </div>
+                        {% if order.discount %}
+                        <div class="order-detail-item">
+                            <span class="order-detail-label">تخفیف:</span>
+                            <span class="order-detail-value">-{{ order.discount|intcomma }} تومان</span>
+                        </div>
+                        {% endif %}
+                        {% if order.tax %}
+                        <div class="order-detail-item">
+                            <span class="order-detail-label">مالیات:</span>
+                            <span class="order-detail-value">{{ order.tax|intcomma }} تومان</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Shipping Address -->
+                <div class="order-detail-section">
+                    <h3 class="order-detail-section-title">آدرس تحویل</h3>
+                    <div class="address-card">
+                        <div class="address-header">
+                            <span class="address-name">{{ order.shipping_address.full_name }}</span>
+                            <span class="address-phone">{{ order.shipping_address.phone }}</span>
+                        </div>
+                        <div class="address-body">
+                            <p>{{ order.shipping_address.address_line_1 }}</p>
+                            {% if order.shipping_address.address_line_2 %}
+                            <p>{{ order.shipping_address.address_line_2 }}</p>
+                            {% endif %}
+                            <p>{{ order.shipping_address.city }}, {{ order.shipping_address.state }}, {{ order.shipping_address.postal_code }}</p>
+                            {% if order.shipping_address.country %}
+                            <p>{{ order.shipping_address.country }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Billing Address -->
+                {% if order.billing_address %}
+                <div class="order-detail-section">
+                    <h3 class="order-detail-section-title">آدرس صورت حساب</h3>
+                    <div class="address-card">
+                        <div class="address-header">
+                            <span class="address-name">{{ order.billing_address.full_name }}</span>
+                            <span class="address-phone">{{ order.billing_address.phone }}</span>
+                        </div>
+                        <div class="address-body">
+                            <p>{{ order.billing_address.address_line_1 }}</p>
+                            {% if order.billing_address.address_line_2 %}
+                            <p>{{ order.billing_address.address_line_2 }}</p>
+                            {% endif %}
+                            <p>{{ order.billing_address.city }}, {{ order.billing_address.state }}, {{ order.billing_address.postal_code }}</p>
+                            {% if order.billing_address.country %}
+                            <p>{{ order.billing_address.country }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Payment Info -->
+                {% if order.payment %}
+                <div class="order-detail-section">
+                    <h3 class="order-detail-section-title">اطلاعات پرداخت</h3>
+                    <div class="payment-info">
+                        <div class="payment-info-item">
+                            <span class="payment-info-label">شماره تراکنش:</span>
+                            <span class="payment-info-value">{{ order.payment.transaction_id }}</span>
+                        </div>
+                        <div class="payment-info-item">
+                            <span class="payment-info-label">مبلغ پرداخت شده:</span>
+                            <span class="payment-info-value">{{ order.payment.amount|intcomma }} تومان</span>
+                        </div>
+                        <div class="payment-info-item">
+                            <span class="payment-info-label">وضعیت پرداخت:</span>
+                            <span class="status-badge {% if order.payment.status == 'paid' %}delivered{% elif order.payment.status == 'pending' %}pending{% else %}cancelled{% endif %}">
+                                {% if order.payment.status == 'paid' %}پرداخت شده{% elif order.payment.status == 'pending' %}در انتظار{% else %}ناموفق{% endif %}
+                            </span>
+                        </div>
+                        <div class="payment-info-item">
+                            <span class="payment-info-label">تاریخ پرداخت:</span>
+                            <span class="payment-info-value">{{ order.payment.created_at|date:"Y/m/d" }} - {{ order.payment.created_at|time:"H:i" }}</span>
+                        </div>
+                        {% if order.payment.gateway %}
+                        <div class="payment-info-item">
+                            <span class="payment-info-label">درگاه پرداخت:</span>
+                            <span class="payment-info-value">{{ order.payment.get_gateway_display }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Order Items -->
+                <div class="order-detail-section">
+                    <h3 class="order-detail-section-title">اقلام سفارش ({{ order.items.count }})</h3>
+                    <div class="order-items-table">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>محصول</th>
+                                    <th>قیمت واحد</th>
+                                    <th>تعداد</th>
+                                    <th>تخفیف</th>
+                                    <th>مبلغ کل</th>
+                                    <th>وضعیت</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order.items.all %}
+                                <tr class="order-item-row">
+                                    <td class="order-item-product">
+                                        <div class="order-item-product-content">
+                                            <div class="order-item-image">
+                                                {% if item.product.get_thumbnail %}
+                                                <img src="{{ item.product.get_thumbnail.url }}" alt="{{ item.product.name }}" loading="lazy">
+                                                {% else %}
+                                                <div class="product-placeholder">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                                                        <line x1="7" y1="7" x2="7.01" y2="7"/>
+                                                    </svg>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="order-item-info">
+                                                <h4 class="order-item-name">{{ item.product.name }}</h4>
+                                                {% if item.variation %}
+                                                <p class="order-item-variation">{{ item.variation }}</p>
+                                                {% endif %}
+                                                {% if item.product.sku %}
+                                                <p class="order-item-sku">کد: {{ item.product.sku }}</p>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="order-item-price">{{ item.unit_price|intcomma }} تومان</td>
+                                    <td class="order-item-quantity">{{ item.quantity }}</td>
+                                    <td class="order-item-discount">
+                                        {% if item.discount > 0 %}
+                                        -{{ item.discount|intcomma }} تومان
+                                        {% else %}
+                                        - 
+                                        {% endif %}
+                                    </td>
+                                    <td class="order-item-total">{{ item.total_price|intcomma }} تومان</td>
+                                    <td class="order-item-status">
+                                        {% if item.status == 'returned' %}
+                                        <span class="status-badge returned">مرجوع شده</span>
+                                        {% elif item.status == 'cancelled' %}
+                                        <span class="status-badge cancelled">لغو شده</span>
+                                        {% else %}
+                                        <span class="status-badge delivered">عادی</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Order Totals -->
+                <div class="order-detail-section">
+                    <h3 class="order-detail-section-title">جمع سفارش</h3>
+                    <div class="order-totals">
+                        <div class="order-total-row">
+                            <span class="order-total-label">مبلغ اقلام:</span>
+                            <span class="order-total-value">{{ order.subtotal|intcomma }} تومان</span>
+                        </div>
+                        {% if order.discount %}
+                        <div class="order-total-row discount">
+                            <span class="order-total-label">تخفیف:</span>
+                            <span class="order-total-value">-{{ order.discount|intcomma }} تومان</span>
+                        </div>
+                        {% endif %}
+                        <div class="order-total-row">
+                            <span class="order-total-label">هزینه ارسال:</span>
+                            <span class="order-total-value">{{ order.shipping_cost|intcomma }} تومان</span>
+                        </div>
+                        {% if order.tax %}
+                        <div class="order-total-row">
+                            <span class="order-total-label">مالیات:</span>
+                            <span class="order-total-value">{{ order.tax|intcomma }} تومان</span>
+                        </div>
+                        {% endif %}
+                        <div class="order-total-row total">
+                            <span class="order-total-label">مبلغ نهایی:</span>
+                            <span class="order-total-value">{{ order.total_price|intcomma }} تومان</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Actions -->
+                <div class="order-detail-section">
+                    <h3 class="order-detail-section-title">عملیات</h3>
+                    <div class="order-detail-actions">
+                        <a href="{% url 'orders:order_history' %}" class="btn btn-outline">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                                <polyline points="12 5 19 12 12 19"/>
+                            </svg>
+                            بازگشت به سفارش‌ها
+                        </a>
+                        {% if order.status == 'delivered' and order.can_review %}
+                        <a href="{% url 'orders:order_review' order.code %}" class="btn btn-primary">
+                            ثبت امتیاز محصولات
+                        </a>
+                        {% endif %}
+                        {% if order.can_cancel %}
+                        <button type="button" class="btn btn-danger" data-toggle-modal="cancelOrderModal" data-order-id="{{ order.id }}">
+                            لغو سفارش
+                        </button>
+                        {% endif %}
+                        {% if order.status == 'delivered' and order.can_return %}
+                        <a href="{% url 'orders:return_request' order.code %}" class="btn btn-outline">
+                            درخواست مرجوعی
+                        </a>
+                        {% endif %}
+                        {% if order.status == 'shipped' %}
+                        <a href="{% url 'orders:order_tracking' order.code %}" class="btn btn-primary">
+                            پیگیری سفارش
+                        </a>
+                        {% endif %}
+                        {% if order.invoice %}
+                        <a href="{{ order.invoice.url }}" class="btn btn-outline" download>
+                            دانلود فاکتور
+                        </a>
+                        {% endif %}
+                        <button type="button" class="btn btn-outline" onclick="window.print()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 6 2 18 2 18 9"/>
+                                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                                <rect x="6" y="14" width="12" height="8"/>
+                            </svg>
+                            چاپ سفارش
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Order Notes -->
+                {% if order.notes %}
+                <div class="order-detail-section">
+                    <h3 class="order-detail-section-title">یادداشت سفارش</h3>
+                    <div class="order-notes">
+                        <p>{{ order.notes }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Order Modal -->
+<div class="modal" id="cancelOrderModal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">لغو سفارش</h3>
+            <button type="button" class="modal-close" data-close-modal="cancelOrderModal">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-icon warning">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+            </div>
+            <p>آیا مطمئن هستید که می‌خواهید سفارش #{{ order.code }} را لغو کنید؟</p>
+            <p class="modal-text-secondary">دلیل لغو سفارش خود را انتخاب کنید:</p>
+            <form id="cancelOrderForm" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="order_id" value="{{ order.id }}">
+                <div class="form-group">
+                    <select name="cancel_reason" class="form-input" required>
+                        <option value="" selected disabled>دلیل لغو را انتخاب کنید</option>
+                        <option value="change_mind">تغییر نظر دادم</option>
+                        <option value="wrong_product">محصول اشتباهی سفارش دادم</option>
+                        <option value="high_price">قیمت بالا بود</option>
+                        <option value="delivery_time">زمان تحویل طولانی است</option>
+                        <option value="found_cheaper">محصول ارزان‌تر پیدا کردم</option>
+                        <option value="other">سایر دلایل</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <textarea name="cancel_note" class="form-textarea" placeholder="توضیحات اضافی (اختیاری)" rows="3"></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline" data-close-modal="cancelOrderModal">انصراف</button>
+            <button type="submit" class="btn btn-danger" form="cancelOrderForm">تایید لغو سفارش</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/orders.js' %}"></script>
+{% endblock %}

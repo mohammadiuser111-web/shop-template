@@ -1,0 +1,283 @@
+{% extends "admin_panel/base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ page_title|default:_("ایجاد/ویرایش تبلیغ") }}{% endblock %}
+
+{% block page_header %}
+<div class="page-header d-print-none">
+    <div class="container-xl">
+        <div class="row g-2 align-items-center">
+            <div class="col">
+                <h2 class="page-title">
+                    {{ page_title|default:_("ایجاد/ویرایش تبلیغ") }}
+                </h2>
+            </div>
+            <div class="col-auto ms-auto d-print-none">
+                <div class="btn-list">
+                    <a href="{% url 'ads:ad_list' %}" class="btn btn-secondary">
+                        <i class="fa fa-arrow-left"></i> {{ _("بازگشت") }}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="card">
+                    <div class="card-body">
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            
+                            <div class="row g-3">
+                                <!-- Basic Information -->
+                                <div class="col-md-12">
+                                    <h3 class="mb-3">{{ _("اطلاعات پایه") }}</h3>
+                                </div>
+                                
+                                <!-- Name -->
+                                <div class="col-md-6">
+                                    <label class="form-label required">{{ _("نام") }}</label>
+                                    {{ form.name }}
+                                    <small class="form-hint">{{ _("نام داخلی برای مدیریت") }}</small>
+                                    {% if form.name.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.name.errors|first }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Slot -->
+                                <div class="col-md-6">
+                                    <label class="form-label required">{{ _("Slot تبلیغاتی") }}</label>
+                                    {{ form.slot }}
+                                    {% if form.slot.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.slot.errors|first }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Ad Type -->
+                                <div class="col-md-6">
+                                    <label class="form-label required">{{ _("نوع تبلیغ") }}</label>
+                                    {{ form.ad_type }}
+                                    {% if form.ad_type.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.ad_type.errors|first }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Priority -->
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ _("اولویت") }}</label>
+                                    {{ form.priority }}
+                                    <small class="form-hint">{{ _("تبلیغات با اولویت بالاتر، بیشتر نمایش داده می‌شوند") }}</small>
+                                    {% if form.priority.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.priority.errors|first }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Title -->
+                                <div class="col-md-12">
+                                    <label class="form-label">{{ _("عنوان") }}</label>
+                                    {{ form.title }}
+                                    <small class="form-hint">{{ _("عنوان نمایشی تبلیغ") }}</small>
+                                    {% if form.title.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.title.errors|first }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Description -->
+                                <div class="col-md-12">
+                                    <label class="form-label">{{ _("توضیحات") }}</label>
+                                    {{ form.description }}
+                                    <small class="form-hint">{{ _("توضیحات کوتاه در مورد تبلیغ") }}</small>
+                                    {% if form.description.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.description.errors|first }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Content Section -->
+                                <div class="col-md-12 mt-4">
+                                    <h3 class="mb-3">{{ _("محتوا") }}</h3>
+                                </div>
+                                
+                                <!-- Image -->
+                                <div class="col-md-6 image-field">
+                                    <label class="form-label">{{ _("تصویر") }}</label>
+                                    {{ form.image }}
+                                    <small class="form-hint">{{ _("برای تبلیغات تصویری") }}</small>
+                                    {% if form.image.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.image.errors|first }}</div>
+                                    {% endif %}
+                                    {% if form.instance.image %}
+                                    <div class="mt-2">
+                                        <img src="{{ form.instance.image.url }}" alt="" 
+                                             class="img-thumbnail" style="max-height: 100px;">
+                                        <br>
+                                        <label class="form-check mt-2">
+                                            {{ form.image_clear }}
+                                            {{ _("حذف تصویر فعلی") }}
+                                        </label>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Image Alt -->
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ _("متن جایگزین تصویر") }}</label>
+                                    {{ form.image_alt }}
+                                    <small class="form-hint">{{ _("برای دسترسی بهتر") }}</small>
+                                    {% if form.image_alt.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.image_alt.errors|first }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- HTML Content -->
+                                <div class="col-md-12 html-field d-none">
+                                    <label class="form-label">{{ _("محتوا HTML") }}</label>
+                                    {{ form.html_content }}
+                                    <small class="form-hint">{{ _("کد HTML برای تبلیغ") }}</small>
+                                    {% if form.html_content.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.html_content.errors|first }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Script Content -->
+                                <div class="col-md-12 script-field d-none">
+                                    <label class="form-label">{{ _("کد JavaScript") }}</label>
+                                    {{ form.script_content }}
+                                    <small class="form-hint">{{ _("کد JavaScript برای تبلیغ") }}</small>
+                                    {% if form.script_content.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.script_content.errors|first }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Video URL -->
+                                <div class="col-md-6 video-field d-none">
+                                    <label class="form-label">{{ _("آدرس ویدئو") }}</label>
+                                    {{ form.video_url }}
+                                    <small class="form-hint">{{ _("آدرس مستقیم فایل ویدئو") }}</small>
+                                    {% if form.video_url.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.video_url.errors|first }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Video Embed Code -->
+                                <div class="col-md-6 video-field d-none">
+                                    <label class="form-label">{{ _("کد embed ویدئو") }}</label>
+                                    {{ form.video_embed_code }}
+                                    <small class="form-hint">{{ _("کد embed از YouTube، Vimeo و...") }}</small>
+                                    {% if form.video_embed_code.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.video_embed_code.errors|first }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Link Section -->
+                                <div class="col-md-12 mt-4">
+                                    <h3 class="mb-3">{{ _("لینک") }}</h3>
+                                </div>
+                                
+                                <!-- URL -->
+                                <div class="col-md-8">
+                                    <label class="form-label">{{ _("آدرس لینک") }}</label>
+                                    {{ form.url }}
+                                    <small class="form-hint">{{ _("آدرسی که کاربر بعد از کلیک هدایت می‌شود") }}</small>
+                                    {% if form.url.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.url.errors|first }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Target -->
+                                <div class="col-md-4">
+                                    <label class="form-label">{{ _("مقال لینک") }}</label>
+                                    {{ form.target }}
+                                    {% if form.target.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.target.errors|first }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Date Section -->
+                                <div class="col-md-12 mt-4">
+                                    <h3 class="mb-3">{{ _("تاریخ") }}</h3>
+                                </div>
+                                
+                                <!-- Start Date -->
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ _("تاریخ شروع") }}</label>
+                                    {{ form.start_date }}
+                                    <small class="form-hint">{{ _("اگر خالی باشد، فوراً فعال می‌شود") }}</small>
+                                    {% if form.start_date.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.start_date.errors|first }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- End Date -->
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ _("تاریخ پایان") }}</label>
+                                    {{ form.end_date }}
+                                    <small class="form-hint">{{ _("اگر خالی باشد، هرگز منقضی نمی‌شود") }}</small>
+                                    {% if form.end_date.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.end_date.errors|first }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Active -->
+                                <div class="col-md-12 mt-4">
+                                    <div class="form-selectgroup">
+                                        {{ form.is_active }}
+                                        <label class="form-selectgroup-label">{{ form.is_active.label }}</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa fa-save"></i> {{ _("ذخیره") }}
+                                </button>
+                                <a href="{% url 'ads:ad_list' %}" class="btn btn-secondary">
+                                    <i class="fa fa-times"></i> {{ _("انصراف") }}
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Show/hide fields based on ad type
+    var adTypeSelect = $('#id_ad_type');
+    
+    function updateFieldVisibility() {
+        var adType = adTypeSelect.val();
+        
+        // Hide all type-specific fields
+        $('.image-field, .html-field, .script-field, .video-field').addClass('d-none');
+        
+        // Show fields for selected type
+        if (adType === 'image') {
+            $('.image-field').removeClass('d-none');
+        } else if (adType === 'html') {
+            $('.html-field').removeClass('d-none');
+        } else if (adType === 'script') {
+            $('.script-field').removeClass('d-none');
+        } else if (adType === 'video') {
+            $('.video-field').removeClass('d-none');
+        }
+    }
+    
+    // Initial visibility
+    updateFieldVisibility();
+    
+    // Update on change
+    adTypeSelect.change(updateFieldVisibility);
+});
+</script>
+{% endblock %}

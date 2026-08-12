@@ -1,0 +1,51 @@
+{# Video ad template #}
+<div style="max-width: 100%; margin: 0 auto; text-align: center;">
+    {% if ad.url %}
+    <a href="{{ ad.url }}" target="{{ ad.target|default:'_blank' }}" 
+       onclick="trackAdClick('{{ ad.id }}')" 
+       style="display: inline-block; text-decoration: none;">
+    {% endif %}
+        
+        {% if ad.video_embed_code %}
+        <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%;">
+            {{ ad.video_embed_code|safe }}
+        </div>
+        {% elif ad.video_url %}
+        <video controls style="max-width: 100%; height: auto;" 
+               {% if ad.image %}poster="{{ ad.image.url }}"{% endif %}>
+            <source src="{{ ad.video_url }}" type="video/mp4">
+            {{ _('مرورگر شما از تگ video پشتیبانی نمی‌کند.') }}
+        </video>
+        {% endif %}
+        
+        {% if ad.title %}
+        <div style="margin-top: 12px; font-size: 16px; font-weight: bold; color: #333;">
+            {{ ad.title }}
+        </div>
+        {% endif %}
+        
+        {% if ad.description %}
+        <div style="margin-top: 8px; font-size: 14px; color: #666;">
+            {{ ad.description }}
+        </div>
+        {% endif %}
+    
+    {% if ad.url %}
+    </a>
+    {% endif %}
+</div>
+
+<script>
+function trackAdClick(adId) {
+    fetch('/ads/track/click/' + adId + '/', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        credentials: 'same-origin'
+    }).catch(function(error) {
+        console.log('Ad click tracking failed:', error);
+    });
+}
+</script>

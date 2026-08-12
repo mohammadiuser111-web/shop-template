@@ -1,0 +1,284 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}{% if site_settings.site_name %}{{ site_settings.site_name }}{% else %}فروشگاه اینترنتی{% endif %} - صفحه اصلی{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/home.css' %}">
+{% endblock %}
+
+{% block content %}
+<!-- Hero Banner -->
+{% if hero_banners %}
+<div class="hero-section">
+    <div class="hero-slider">
+        {% for banner in hero_banners %}
+        <div class="hero-slide {% if forloop.first %}active{% endif %}" style="background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('{{ banner.image.url }}') center/cover no-repeat;">
+            <div class="container">
+                <div class="hero-content">
+                    {% if banner.title %}<h1 class="hero-title">{{ banner.title }}</h1>{% endif %}
+                    {% if banner.subtitle %}<p class="hero-subtitle">{{ banner.subtitle }}</p>{% endif %}
+                    {% if banner.description %}<p class="hero-description">{{ banner.description }}</p>{% endif %}
+                    {% if banner.button_text %}
+                    <a href="{{ banner.button_url }}" class="hero-button btn btn-primary">
+                        {{ banner.button_text }}
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Slider Navigation -->
+    {% if hero_banners|length > 1 %}
+    <div class="hero-nav">
+        {% for banner in hero_banners %}
+        <button class="hero-nav-item {% if forloop.first %}active{% endif %}" data-slide="{{ forloop.counter0 }}" aria-label="اسلاید {{ forloop.counter }}"></button>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Main Content -->
+<div class="main-container">
+    <div class="container">
+        <!-- Categories Section -->
+        {% if categories %}
+        <section class="categories-section">
+            <div class="section-header">
+                <h2 class="section-title">دسته‌بندی‌های اصلی</h2>
+                <a href="{% url 'store:categories' %}" class="section-link">مشاهده همه <span class="section-link-icon">&rarr;</span></a>
+            </div>
+            <div class="categories-grid">
+                {% for category in categories %}
+                <a href="{% url 'store:category' category.slug %}" class="category-card">
+                    <div class="category-image">
+                        {% if category.image %}
+                        <img src="{{ category.image.url }}" alt="{{ category.name }}" loading="lazy">
+                        {% else %}
+                        <div class="category-placeholder">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="3" y1="9" x2="21" y2="9"/>
+                                <line x1="9" y1="21" x2="9" y2="9"/>
+                            </svg>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="category-info">
+                        <h3 class="category-name">{{ category.name }}</h3>
+                        <span class="category-count">{{ category.product_count }} محصول</span>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- Featured Products Section -->
+        {% if featured_products %}
+        <section class="products-section">
+            <div class="section-header">
+                <h2 class="section-title">محصولات ویژه</h2>
+                <a href="{% url 'store:featured_products' %}" class="section-link">مشاهده همه <span class="section-link-icon">&rarr;</span></a>
+            </div>
+            <div class="products-grid">
+                {% for product in featured_products %}
+                {% include 'store/partials/product_card.html' with product=product %}
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- Special Offers Section -->
+        {% if special_offers %}
+        <section class="special-offers-section">
+            <div class="section-header">
+                <h2 class="section-title">پیشنهادات ویژه</h2>
+                <div class="offer-timer">
+                    <span class="timer-label">پایان در:</span>
+                    <div class="timer">
+                        <span class="timer-item"><span id="offer-hours">23</span>:<span class="timer-unit">ساعت</span></span>
+                        <span class="timer-item"><span id="offer-minutes">59</span>:<span class="timer-unit">دقیقه</span></span>
+                        <span class="timer-item"><span id="offer-seconds">59</span>:<span class="timer-unit">ثانیه</span></span>
+                    </div>
+                </div>
+            </div>
+            <div class="offers-grid">
+                {% for offer in special_offers %}
+                <div class="offer-card">
+                    <div class="offer-badge">
+                        {% if offer.discount_percent %}
+                        <span>{{ offer.discount_percent }}%</span>
+                        <span class="offer-badge-text">تخفیف</span>
+                        {% endif %}
+                    </div>
+                    <a href="{% url 'store:product_detail' offer.product.slug %}" class="offer-image">
+                        {% if offer.product.main_image %}
+                        <img src="{{ offer.product.main_image.url }}" alt="{{ offer.product.name }}" loading="lazy">
+                        {% else %}
+                        <div class="product-placeholder">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="3" y1="9" x2="21" y2="9"/>
+                                <line x1="9" y1="21" x2="9" y2="9"/>
+                            </svg>
+                        </div>
+                        {% endif %}
+                    </a>
+                    <div class="offer-content">
+                        <h3 class="offer-title">{{ offer.product.name }}</h3>
+                        <div class="offer-prices">
+                            {% if offer.product.sale_price %}
+                            <span class="offer-price">{{ offer.product.sale_price|intcomma }} تومان</span>
+                            <span class="offer-original-price">{{ offer.product.price|intcomma }} تومان</span>
+                            {% else %}
+                            <span class="offer-price">{{ offer.product.price|intcomma }} تومان</span>
+                            {% endif %}
+                        </div>
+                        <div class="offer-rating">
+                            <div class="rating-stars">
+                                {% for i in "12345" %}
+                                {% if offer.product.rating >= forloop.counter %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                                </svg>
+                                {% else %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                                </svg>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                            <span class="rating-count">({{ offer.product.review_count }} نظر)</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- New Products Section -->
+        {% if new_products %}
+        <section class="products-section">
+            <div class="section-header">
+                <h2 class="section-title">تازه‌ترین محصولات</h2>
+                <a href="{% url 'store:new_products' %}" class="section-link">مشاهده همه <span class="section-link-icon">&rarr;</span></a>
+            </div>
+            <div class="products-grid">
+                {% for product in new_products %}
+                {% include 'store/partials/product_card.html' with product=product %}
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- Best Sellers Section -->
+        {% if best_sellers %}
+        <section class="products-section">
+            <div class="section-header">
+                <h2 class="section-title">پرفروش‌ترین محصولات</h2>
+                <a href="{% url 'store:best_sellers' %}" class="section-link">مشاهده همه <span class="section-link-icon">&rarr;</span></a>
+            </div>
+            <div class="products-grid">
+                {% for product in best_sellers %}
+                {% include 'store/partials/product_card.html' with product=product %}
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- Brands Section -->
+        {% if brands %}
+        <section class="brands-section">
+            <div class="section-header">
+                <h2 class="section-title">برندهای معروف</h2>
+            </div>
+            <div class="brands-grid">
+                {% for brand in brands %}
+                <a href="{% url 'store:brand' brand.slug %}" class="brand-card">
+                    {% if brand.logo %}
+                    <img src="{{ brand.logo.url }}" alt="{{ brand.name }}" loading="lazy">
+                    {% else %}
+                    <span class="brand-name">{{ brand.name }}</span>
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- Blog Section -->
+        {% if latest_articles %}
+        <section class="blog-section">
+            <div class="section-header">
+                <h2 class="section-title">مقالات جدید بلاگ</h2>
+                <a href="{% url 'blog:article_list' %}" class="section-link">مشاهده همه <span class="section-link-icon">&rarr;</span></a>
+            </div>
+            <div class="blog-grid">
+                {% for article in latest_articles %}
+                <a href="{% url 'blog:article_detail' article.slug %}" class="blog-card">
+                    <div class="blog-image">
+                        {% if article.image %}
+                        <img src="{{ article.image.url }}" alt="{{ article.title }}" loading="lazy">
+                        {% else %}
+                        <div class="blog-placeholder">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                            </svg>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="blog-content">
+                        {% if article.category %}
+                        <span class="blog-category">{{ article.category.name }}</span>
+                        {% endif %}
+                        <h3 class="blog-title">{{ article.title }}</h3>
+                        <p class="blog-excerpt">{{ article.excerpt|truncatechars:100 }}</p>
+                        <div class="blog-meta">
+                            <span class="blog-date">{{ article.published_at|date:"Y/m/d" }}</span>
+                            <span class="blog-author">نویسنده: {{ article.author.get_full_name }}</span>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- Newsletter Section -->
+        <section class="home-newsletter-section">
+            <div class="newsletter-card">
+                <div class="newsletter-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                </div>
+                <div class="newsletter-content">
+                    <h3 class="newsletter-card-title">برای دریافت اخبار و تخفیف‌ها ثبت‌نام کنید</h3>
+                    <p class="newsletter-card-description">با ثبت‌نام در خبرنامه، از جدیدترین محصولات و تخفیف‌های ویژه مطلع شوید.</p>
+                    <form action="{% url 'core:newsletter_subscribe' %}" method="post" class="newsletter-card-form">
+                        {% csrf_token %}
+                        <div class="newsletter-card-input-group">
+                            <input type="email" name="email" placeholder="ایمیل خود را وارد کنید" class="newsletter-card-input" required>
+                            <button type="submit" class="newsletter-card-button">ثبت‌نام</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/home.js' %}"></script>
+{% endblock %}

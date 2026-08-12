@@ -1,0 +1,347 @@
+/* Ads Module Styles */
+
+/* Ad Container Styles */
+.ad-container {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.ad-container img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+.ad-container a {
+    text-decoration: none;
+    display: inline-block;
+}
+
+/* Responsive Ad Styles */
+.ad-responsive {
+    width: 100%;
+    height: auto;
+}
+
+.ad-responsive img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+}
+
+/* Ad Slot Styles */
+.ad-slot {
+    margin: 15px 0;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.ad-slot-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.ad-slot-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+}
+
+.ad-slot-code {
+    font-family: monospace;
+    background: #e9ecef;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+/* Ad Admin Styles */
+.ad-admin-card {
+    margin-bottom: 20px;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.ad-admin-card .card-header {
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.ad-admin-card .card-title {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* Ad Type Badges */
+.badge-image {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.badge-html {
+    background-color: #cce5ff;
+    color: #004085;
+}
+
+.badge-script {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.badge-video {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Ad Form Styles */
+.ad-form-section {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #e9ecef;
+}
+
+.ad-form-section h3 {
+    font-size: 16px;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.ad-form-hint {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+/* Ad Statistics Styles */
+.ad-stats-card {
+    text-align: center;
+}
+
+.ad-stats-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: #333;
+}
+
+.ad-stats-label {
+    font-size: 14px;
+    color: #6c757d;
+}
+
+.ad-stats-change {
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+.ad-stats-change.positive {
+    color: #28a745;
+}
+
+.ad-stats-change.negative {
+    color: #dc3545;
+}
+
+/* Ad Chart Styles */
+.ad-chart-container {
+    position: relative;
+    height: 300px;
+}
+
+.ad-chart {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Ad Table Styles */
+.ad-table {
+    width: 100%;
+}
+
+.ad-table th,
+.ad-table td {
+    padding: 12px 15px;
+    text-align: right;
+}
+
+.ad-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+}
+
+.ad-table tr:hover {
+    background: #f8f9fa;
+}
+
+/* Ad Action Buttons */
+.ad-action-btn {
+    padding: 5px 10px;
+    margin: 0 2px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.ad-action-btn.edit {
+    background: #007bff;
+    color: white;
+}
+
+.ad-action-btn.delete {
+    background: #dc3545;
+    color: white;
+}
+
+.ad-action-btn.stats {
+    background: #17a2b8;
+    color: white;
+}
+
+.ad-action-btn.toggle {
+    background: #6c757d;
+    color: white;
+}
+
+/* Responsive Ad Display */
+@media (max-width: 768px) {
+    .ad-container {
+        width: 100%;
+    }
+    
+    .ad-container img {
+        width: 100%;
+    }
+    
+    .ad-slot-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .ad-action-btn {
+        padding: 3px 6px;
+        font-size: 12px;
+    }
+}
+
+/* Ad Preview Styles */
+.ad-preview {
+    border: 2px dashed #ccc;
+    padding: 20px;
+    margin: 20px 0;
+    text-align: center;
+    background: white;
+}
+
+.ad-preview-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.ad-preview-content {
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+/* Ad Status Indicators */
+.ad-status {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.ad-status.active {
+    background: #d4edda;
+    color: #155724;
+}
+
+.ad-status.inactive {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.ad-status.pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.ad-status.expired {
+    background: #e2e3e5;
+    color: #383d41;
+}
+
+/* Ad Filter Styles */
+.ad-filter {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.ad-filter-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.ad-filter-form .form-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+.ad-filter-form .form-control,
+.ad-filter-form .form-select {
+    width: 100%;
+}
+
+/* Ad Loading Animation */
+@keyframes adPulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.ad-loading {
+    animation: adPulse 1.5s ease-in-out infinite;
+    text-align: center;
+    padding: 20px;
+}
+
+/* Ad Error Styles */
+.ad-error {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    margin: 20px 0;
+}
+
+/* Ad Click Tracking */
+.ad-tracking-pixel {
+    display: none;
+}
+
+/* Ad Impression Tracking */
+.ad-impression-tracked {
+    position: relative;
+}
+
+.ad-impression-tracked::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+}

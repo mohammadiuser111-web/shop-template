@@ -4,96 +4,55 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    
-    {% block meta %}
-    <meta name="description" content="{{ site_settings.site_description|default:'قالب حرفه‌ای فروشگاهی' }}">
-    <meta name="keywords" content="">
-    <meta name="author" content="{{ site_settings.site_name|default:'Shop Template' }}">
-    
-    <!-- Open Graph / Social Media Meta Tags -->
-    <meta property="og:title" content="{{ site_settings.site_name|default:'Shop Template' }}">
-    <meta property="og:description" content="{{ site_settings.site_description|default:'قالب حرفه‌ای فروشگاهی' }}">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="{{ request.get_host }}">
-    <meta property="og:site_name" content="{{ site_settings.site_name|default:'Shop Template' }}">
-    {% endblock %}
-    
-    <title>{% block title %}{{ site_settings.site_name|default:'Shop Template' }}{% endblock %}</title>
+    <title>{% block title %}{% if site_settings.site_name %}{{ site_settings.site_name }}{% else %}فروشگاه اینترنتی{% endif %}{% endblock %}</title>
     
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="{{ theme.favicon|default:theme_logo }}">
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
     
-    <!-- CSS -->
-    {% block css %}
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/base/reset.css">
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/base/typography.css">
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/base/grid.css">
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/base/base.css">
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="{% static 'css/rtl.css' %}">
+    {% block extra_css %}{% endblock %}
     
-    <!-- Theme CSS Variables -->
+    <!-- Theme CSS (loaded after main CSS to override) -->
+    {% if theme_config %}
     <style>
         :root {
-            {% for key, value in theme.colors.items %}
-            --color-{{ key }}: {{ value }};
-            {% endfor %}
-            
-            {% for lang, font in theme.fonts.items %}
-            {% if font.name %}
-            --font-{{ lang }}: "{{ font.name }}", sans-serif;
-            {% endif %}
-            {% endfor %}
-            
-            --site-name: "{{ theme.name|default:'Shop Template' }}";
+            --primary-color: {{ theme_config.primary_color|default:'#2563eb' }};
+            --secondary-color: {{ theme_config.secondary_color|default:'#7c3aed' }};
+            --success-color: {{ theme_config.success_color|default:'#10b981' }};
+            --danger-color: {{ theme_config.danger_color|default:'#ef4444' }};
+            --warning-color: {{ theme_config.warning_color|default:'#f59e0b' }};
+            --info-color: {{ theme_config.info_color|default:'#06b6d4' }};
+            --light-color: {{ theme_config.light_color|default:'#f8fafc' }};
+            --dark-color: {{ theme_config.dark_color|default:'#1e293b' }};
+            --primary-font: {{ theme_config.font_family|default:"'Vazir', 'Inter', sans-serif" }};
         }
     </style>
+    {% endif %}
     
-    <!-- Components CSS -->
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/components/buttons.css">
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/components/cards.css">
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/components/forms.css">
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/components/modals.css">
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/components/navbar.css">
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/components/footer.css">
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/components/breadcrumbs.css">
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/components/pagination.css">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Vazir:wght@100;300;400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;400;500;700;900&display=swap" rel="stylesheet">
     
-    <!-- Pages CSS -->
-    {% block page_css %}{% endblock %}
+    <!-- Meta Tags -->
+    <meta name="description" content="{% if site_settings.site_description %}{{ site_settings.site_description }}{% else %}فروشگاه اینترنتی حرفه‌ای با کیفیتی بی‌نظیر{% endif %}">
+    <meta name="keywords" content="فروشگاه, خرید آنلاین, محصولات, تخفیف">
+    <meta name="author" content="{% if site_settings.site_name %}{{ site_settings.site_name }}{% else %}Shop Template{% endif %}">
     
-    <!-- Responsive CSS -->
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/base/responsive.css">
-    {% endblock %}
-    
-    <!-- JS -->
-    {% block js %}
-    <!-- Load jQuery if needed -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    
-    <!-- Core JS -->
-    <script src="{{ STATIC_URL }}js/core/utils.js"></script>
-    <script src="{{ STATIC_URL }}js/core/api.js"></script>
-    
-    <!-- Components JS -->
-    <script src="{{ STATIC_URL }}js/components/cart.js"></script>
-    <script src="{{ STATIC_URL }}js/components/modals.js"></script>
-    
-    <!-- Pages JS -->
-    {% block page_js %}{% endblock %}
-    {% endblock %}
-    
-    <!-- CSRF Token -->
-    <meta name="csrf-token" content="{{ csrf_token }}">
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Vazir:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Open Graph -->
+    <meta property="og:title" content="{% if site_settings.site_name %}{{ site_settings.site_name }}{% else %}فروشگاه اینترنتی{% endif %}">
+    <meta property="og:description" content="{% if site_settings.site_description %}{{ site_settings.site_description }}{% else %}فروشگاه اینترنتی حرفه‌ای{% endif %}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}">
+    {% if site_settings.site_logo %}<meta property="og:image" content="{{ site_settings.site_logo.url }}">{% endif %}
 </head>
-
 <body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-XXXXXX" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    
     <!-- Header -->
-    {% block header %}
-    {% include 'includes/header.html' %}
-    {% endblock %}
+    {% include 'partials/header.html' %}
     
     <!-- Main Content -->
     <main class="main-content">
@@ -101,66 +60,34 @@
     </main>
     
     <!-- Footer -->
-    {% block footer %}
-    {% include 'includes/footer.html' %}
-    {% endblock %}
+    {% include 'partials/footer.html' %}
     
     <!-- Back to Top Button -->
-    <button id="back-to-top" class="back-to-top">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <button id="backToTop" class="back-to-top" aria-label="بازگشت به بالا">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M18 15l-6-6-6 6"/>
         </svg>
     </button>
     
-    <!-- Notifications -->
-    {% include 'includes/notifications.html' %}
+    <!-- JavaScript Files -->
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+    
+    <!-- Toast Notifications -->
+    {% if messages %}
+    <div class="toast-container">
+        {% for message in messages %}
+        <div class="toast toast-{{ message.tags }}" role="alert">
+            <span>{{ message }}</span>
+            <button type="button" class="toast-close" aria-label="بستن">&times;</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
     
     <!-- Loading Overlay -->
-    <div id="loading-overlay" class="loading-overlay" style="display: none;">
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
         <div class="loading-spinner"></div>
     </div>
-    
-    <!-- JavaScript -->
-    <script>
-        // Initialize theme
-        window.theme = {
-            colors: {{ theme.colors|json_script|safe }},
-            fonts: {{ theme.fonts|json_script|safe }},
-            name: {{ theme.name|json_script|safe }},
-            slogan: {{ theme.slogan|json_script|safe }},
-            logo: {{ theme.logo|json_script|safe }},
-        };
-        
-        // Initialize CSRF token for AJAX requests
-        window.csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-        
-        // Back to top functionality
-        document.getElementById('back-to-top').addEventListener('click', function() {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-        
-        // Show/hide back to top button
-        window.addEventListener('scroll', function() {
-            const backToTop = document.getElementById('back-to-top');
-            if (window.pageYOffset > 300) {
-                backToTop.style.display = 'block';
-            } else {
-                backToTop.style.display = 'none';
-            }
-        });
-        
-        // Initialize components
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize cart
-            if (typeof Cart !== 'undefined') {
-                window.cart = new Cart();
-            }
-            
-            // Initialize modals
-            if (typeof Modal !== 'undefined') {
-                window.modal = new Modal();
-            }
-        });
-    </script>
 </body>
 </html>

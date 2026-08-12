@@ -1,0 +1,753 @@
+{
+    "name": "Shop Template",
+    "version": "1.0.0",
+    "description": "A professional, resellable Django e-commerce template with store, blog, and admin panel sections.",
+    "author": "Arena.ai",
+    "license": "MIT",
+    "homepage": "https://github.com/yourusername/shop-template",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/yourusername/shop-template.git"
+    },
+    "bugs": {
+        "url": "https://github.com/yourusername/shop-template/issues"
+    },
+    "keywords": [
+        "django",
+        "e-commerce",
+        "template",
+        "shop",
+        "store",
+        "blog",
+        "admin",
+        "responsive",
+        "bootstrap",
+        "tailwind"
+    ],
+    "settings": {
+        "site_name": "Shop Template",
+        "site_description": "A complete e-commerce solution built with Django",
+        "site_keywords": "e-commerce, django, shop, store, online shopping",
+        "site_author": "Shop Template Team",
+        "site_email": "info@shoptemplate.com",
+        "site_phone": "+1 234 567 890",
+        "site_address": "123 Main Street, City, Country",
+        "default_currency": "USD",
+        "default_language": "en",
+        "timezone": "UTC",
+        "date_format": "F j, Y",
+        "time_format": "g:i a",
+        "datetime_format": "F j, Y g:i a",
+        "decimal_separator": ".",
+        "thousand_separator": ",",
+        "currency_symbol": "$",
+        "currency_position": "left",
+        "tax_rate": 0.1,
+        "shipping_cost": 5.0,
+        "free_shipping_threshold": 50.0,
+        "min_order_amount": 10.0,
+        "max_order_amount": 10000.0,
+        "items_per_page": 12,
+        "blog_posts_per_page": 10,
+        "product_reviews_enabled": true,
+        "product_reviews_approval": true,
+        "product_ratings_enabled": true,
+        "wishlist_enabled": true,
+        "compare_enabled": true,
+        "newsletter_enabled": true,
+        "social_login_enabled": true,
+        "two_factor_auth_enabled": false,
+        "recaptcha_enabled": false,
+        "analytics_enabled": false,
+        "maintenance_mode": false
+    },
+    "theme": {
+        "name": "default",
+        "display_name": "Default",
+        "version": "1.0.0",
+        "author": "Arena.ai",
+        "description": "The default theme for Shop Template",
+        "colors": {
+            "primary": {
+                "name": "Primary",
+                "value": "#3b82f6",
+                "description": "Primary brand color"
+            },
+            "secondary": {
+                "name": "Secondary",
+                "value": "#10b981",
+                "description": "Secondary brand color"
+            },
+            "success": {
+                "name": "Success",
+                "value": "#22c55e",
+                "description": "Success state color"
+            },
+            "warning": {
+                "name": "Warning",
+                "value": "#f59e0b",
+                "description": "Warning state color"
+            },
+            "danger": {
+                "name": "Danger",
+                "value": "#ef4444",
+                "description": "Danger/Error state color"
+            },
+            "info": {
+                "name": "Info",
+                "value": "#06b6d4",
+                "description": "Info state color"
+            },
+            "light": {
+                "name": "Light",
+                "value": "#f8fafc",
+                "description": "Light background color"
+            },
+            "dark": {
+                "name": "Dark",
+                "value": "#0f172a",
+                "description": "Dark text/background color"
+            },
+            "white": {
+                "name": "White",
+                "value": "#ffffff",
+                "description": "White color"
+            },
+            "black": {
+                "name": "Black",
+                "value": "#000000",
+                "description": "Black color"
+            },
+            "gray": {
+                "name": "Gray",
+                "value": "#64748b",
+                "description": "Gray color"
+            },
+            "border": {
+                "name": "Border",
+                "value": "#e2e8f0",
+                "description": "Border color"
+            }
+        },
+        "fonts": {
+            "primary": {
+                "name": "Primary Font",
+                "family": "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                "weights": [300, 400, 500, 600, 700],
+                "styles": ["normal", "italic"],
+                "subsets": ["latin", "latin-ext"]
+            },
+            "secondary": {
+                "name": "Secondary Font",
+                "family": "'Roboto Slab', Georgia, 'Times New Roman', serif",
+                "weights": [400, 700],
+                "styles": ["normal", "italic"],
+                "subsets": ["latin", "latin-ext"]
+            },
+            "monospace": {
+                "name": "Monospace Font",
+                "family": "'Fira Code', 'Courier New', monospace",
+                "weights": [400, 700],
+                "styles": ["normal"]
+            }
+        },
+        "spacing": {
+            "base": "1rem",
+            "xs": "0.25rem",
+            "sm": "0.5rem",
+            "md": "1rem",
+            "lg": "1.5rem",
+            "xl": "2rem",
+            "2xl": "3rem",
+            "3xl": "4rem",
+            "4xl": "6rem"
+        },
+        "border_radius": {
+            "none": "0",
+            "sm": "0.125rem",
+            "base": "0.25rem",
+            "md": "0.375rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "2xl": "1rem",
+            "3xl": "1.5rem",
+            "full": "9999px"
+        },
+        "shadows": {
+            "none": "0 0 0 0 rgba(0, 0, 0, 0)",
+            "sm": "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+            "base": "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)",
+            "md": "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)",
+            "lg": "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)",
+            "xl": "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
+            "2xl": "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+            "inner": "inset 0 2px 4px 0 rgba(0, 0, 0, 0.05)"
+        },
+        "transitions": {
+            "none": "0ms",
+            "fast": "150ms",
+            "base": "200ms",
+            "slow": "300ms",
+            "slower": "500ms",
+            "slowest": "700ms"
+        },
+        "z_index": {
+            "auto": "auto",
+            "0": "0",
+            "10": "10",
+            "20": "20",
+            "30": "30",
+            "40": "40",
+            "50": "50",
+            "dropdown": "1000",
+            "sticky": "1020",
+            "fixed": "1030",
+            "modal": "1040",
+            "popover": "1050",
+            "tooltip": "1060",
+            "toast": "1070",
+            "sidebar": "1080"
+        }
+    },
+    "features": {
+        "responsive": true,
+        "mobile_first": true,
+        "dark_mode": true,
+        "rtl_support": true,
+        "lazy_loading": true,
+        "accessibility": true,
+        "seo_friendly": true,
+        "performance_optimized": true,
+        "cross_browser": true,
+        "touch_friendly": true,
+        "print_styles": true,
+        "reduced_motion": true,
+        "high_contrast": true
+    },
+    "components": {
+        "header": {
+            "enabled": true,
+            "sticky": true,
+            "top_bar": true,
+            "main_nav": true,
+            "mobile_menu": true,
+            "search": true,
+            "cart": true,
+            "wishlist": true,
+            "compare": true,
+            "account": true
+        },
+        "footer": {
+            "enabled": true,
+            "newsletter": true,
+            "widgets": true,
+            "social_links": true,
+            "payment_icons": true,
+            "copyright": true
+        },
+        "sidebar": {
+            "enabled": true,
+            "filters": true,
+            "categories": true,
+            "brands": true,
+            "tags": true,
+            "recent_posts": true,
+            "newsletter": true
+        },
+        "blog": {
+            "enabled": true,
+            "categories": true,
+            "tags": true,
+            "archive": true,
+            "search": true,
+            "comments": true,
+            "related_posts": true,
+            "author_info": true,
+            "social_sharing": true
+        },
+        "store": {
+            "enabled": true,
+            "product_cards": true,
+            "product_detail": true,
+            "quick_view": true,
+            "wishlist": true,
+            "compare": true,
+            "ratings": true,
+            "reviews": true,
+            "pagination": true,
+            "sorting": true,
+            "filtering": true
+        },
+        "checkout": {
+            "enabled": true,
+            "cart": true,
+            "shipping": true,
+            "payment": true,
+            "order_review": true,
+            "order_confirmation": true,
+            "guest_checkout": true,
+            "coupon_codes": true,
+            "gift_cards": true
+        },
+        "admin": {
+            "enabled": true,
+            "dashboard": true,
+            "custom_panels": true,
+            "charts": true,
+            "reports": true,
+            "settings": true,
+            "notifications": true
+        },
+        "auth": {
+            "enabled": true,
+            "login": true,
+            "register": true,
+            "forgot_password": true,
+            "reset_password": true,
+            "social_login": true,
+            "two_factor": false,
+            "email_verification": true
+        },
+        "user": {
+            "enabled": true,
+            "profile": true,
+            "dashboard": true,
+            "orders": true,
+            "addresses": true,
+            "wishlist": true,
+            "compare": true,
+            "wallet": true,
+            "notifications": true,
+            "tickets": true,
+            "reviews": true
+        }
+    },
+    "integrations": {
+        "payment_gateways": [
+            "stripe",
+            "paypal",
+            "razorpay",
+            "mollie",
+            "authorizenet",
+            "2checkout"
+        ],
+        "shipping_methods": [
+            "flat_rate",
+            "free_shipping",
+            "local_pickup",
+            "ups",
+            "fedex",
+            "dhl",
+            "usps"
+        ],
+        "analytics": [
+            "google_analytics",
+            "google_tag_manager",
+            "facebook_pixel",
+            "hotjar"
+        ],
+        "social": [
+            "facebook",
+            "twitter",
+            "instagram",
+            "linkedin",
+            "pinterest",
+            "youtube",
+            "whatsapp",
+            "telegram"
+        ],
+        "email": [
+            "smtp",
+            "mailgun",
+            "sendgrid",
+            "amazon_ses",
+            "sparkpost"
+        ],
+        "storage": [
+            "local",
+            "aws_s3",
+            "google_cloud_storage",
+            "azure_blob_storage",
+            "digitalocean_spaces"
+        ],
+        "cache": [
+            "locmem",
+            "redis",
+            "memcached"
+        ],
+        "search": [
+            "django_search",
+            "elasticsearch",
+            "algolia",
+            "meilisearch"
+        ]
+    },
+    "dependencies": {
+        "python": ">=3.8",
+        "django": ">=4.0",
+        "django-rest-framework": ">=3.13",
+        "django-filter": ">=21.1",
+        "django-crispy-forms": ">=1.14",
+        "crispy-bootstrap5": ">=2021.1",
+        "pillow": ">=8.4",
+        "python-dotenv": ">=0.19",
+        "psycopg2-binary": ">=2.9",
+        "redis": ">=4.0",
+        "celery": ">=5.2",
+        "django-celery-beat": ">=2.2",
+        "django-celery-results": ">=2.2",
+        "channels": ">=3.0",
+        "daphne": ">=3.0",
+        "django-allauth": ">=0.47",
+        "django-crispy-forms": ">=1.14",
+        "django-import-export": ">=2.8",
+        "django-debug-toolbar": ">=3.2",
+        "django-extensions": ">=3.1",
+        "django-compressor": ">=2.4",
+        "django-libsass": ">=0.9",
+        "whitenoise": ">=5.3"
+    },
+    "dev_dependencies": {
+        "pytest": ">=7.0",
+        "pytest-django": ">=4.4",
+        "pytest-cov": ">=3.0",
+        "factory-boy": ">=3.2",
+        "faker": ">=8.14",
+        "black": ">=22.1",
+        "flake8": ">=4.0",
+        "isort": ">=5.10",
+        "pre-commit": ">=2.17",
+        "bandit": ">=1.7",
+        "safety": ">=1.10",
+        "mypy": ">=0.930",
+        "django-stubs": ">=1.9"
+    },
+    "scripts": {
+        "start": "python manage.py runserver",
+        "start:dev": "python manage.py runserver 0.0.0.0:8000",
+        "start:prod": "gunicorn --bind 0.0.0.0:8000 --workers 4 shop_template.wsgi:application",
+        "start:async": "daphne -b 0.0.0.0 -p 8000 shop_template.asgi:application",
+        "migrate": "python manage.py migrate",
+        "makemigrations": "python manage.py makemigrations",
+        "createsuperuser": "python manage.py createsuperuser",
+        "collectstatic": "python manage.py collectstatic --noinput",
+        "compress": "python manage.py compress",
+        "test": "pytest",
+        "test:cov": "pytest --cov=shop_template --cov-report=html",
+        "lint": "flake8 . && isort --check-only . && black --check .",
+        "format": "black . && isort .",
+        "typecheck": "mypy .",
+        "security": "bandit -r . && safety check",
+        "celery": "celery -A shop_template worker -l info",
+        "celery:beat": "celery -A shop_template beat -l info",
+        "shell": "python manage.py shell_plus",
+        "shell:ipython": "ipython manage.py shell_plus",
+        "export": "python manage.py export",
+        "import": "python manage.py import"
+    },
+    "docker": {
+        "image": "shop-template",
+        "container_name": "shop-template",
+        "ports": ["8000:8000"],
+        "volumes": [".:/app"],
+        "environment": {
+            "DEBUG": "True",
+            "DJANGO_SETTINGS_MODULE": "shop_template.settings.development",
+            "DATABASE_URL": "postgres://postgres:postgres@db:5432/postgres",
+            "REDIS_URL": "redis://redis:6379/0",
+            "CELERY_BROKER_URL": "redis://redis:6379/1",
+            "CELERY_RESULT_BACKEND": "redis://redis:6379/2"
+        },
+        "depends_on": ["db", "redis"],
+        "networks": ["shop-template-network"],
+        "restart": "unless-stopped"
+    },
+    "docker_compose": {
+        "version": "3.8",
+        "services": {
+            "web": {
+                "build": ".",
+                "command": "gunicorn --bind 0.0.0.0:8000 --workers 4 shop_template.wsgi:application",
+                "volumes": [".:/app"],
+                "ports": ["8000:8000"],
+                "environment": {
+                    "DEBUG": "False",
+                    "DJANGO_SETTINGS_MODULE": "shop_template.settings.production",
+                    "DATABASE_URL": "postgres://postgres:postgres@db:5432/postgres",
+                    "REDIS_URL": "redis://redis:6379/0",
+                    "SECRET_KEY": "your-secret-key-here",
+                    "ALLOWED_HOSTS": ".localhost,127.0.0.1,0.0.0.0"
+                },
+                "depends_on": ["db", "redis"]
+            },
+            "db": {
+                "image": "postgres:14",
+                "environment": {
+                    "POSTGRES_DB": "postgres",
+                    "POSTGRES_USER": "postgres",
+                    "POSTGRES_PASSWORD": "postgres"
+                },
+                "volumes": ["postgres_data:/var/lib/postgresql/data"],
+                "ports": ["5432:5432"]
+            },
+            "redis": {
+                "image": "redis:7",
+                "ports": ["6379:6379"],
+                "volumes": ["redis_data:/data"]
+            },
+            "celery": {
+                "build": ".",
+                "command": "celery -A shop_template worker -l info",
+                "volumes": [".:/app"],
+                "environment": {
+                    "DEBUG": "False",
+                    "DJANGO_SETTINGS_MODULE": "shop_template.settings.production",
+                    "DATABASE_URL": "postgres://postgres:postgres@db:5432/postgres",
+                    "REDIS_URL": "redis://redis:6379/0",
+                    "CELERY_BROKER_URL": "redis://redis:6379/1",
+                    "CELERY_RESULT_BACKEND": "redis://redis:6379/2"
+                },
+                "depends_on": ["db", "redis", "web"]
+            },
+            "celery-beat": {
+                "build": ".",
+                "command": "celery -A shop_template beat -l info",
+                "volumes": [".:/app"],
+                "environment": {
+                    "DEBUG": "False",
+                    "DJANGO_SETTINGS_MODULE": "shop_template.settings.production",
+                    "DATABASE_URL": "postgres://postgres:postgres@db:5432/postgres",
+                    "REDIS_URL": "redis://redis:6379/0"
+                },
+                "depends_on": ["db", "redis", "web"]
+            }
+        },
+        "volumes": {
+            "postgres_data": null,
+            "redis_data": null
+        },
+        "networks": {
+            "shop-template-network": {
+                "driver": "bridge"
+            }
+        }
+    },
+    "environment": {
+        "development": {
+            "DEBUG": "True",
+            "DJANGO_SETTINGS_MODULE": "shop_template.settings.development",
+            "DATABASE_URL": "sqlite:///db.sqlite3",
+            "SECRET_KEY": "dev-secret-key-change-in-production",
+            "ALLOWED_HOSTS": "localhost,127.0.0.1",
+            "INTERNAL_IPS": "127.0.0.1"
+        },
+        "staging": {
+            "DEBUG": "False",
+            "DJANGO_SETTINGS_MODULE": "shop_template.settings.staging",
+            "DATABASE_URL": "postgres://postgres:postgres@db:5432/postgres",
+            "REDIS_URL": "redis://redis:6379/0",
+            "SECRET_KEY": "staging-secret-key",
+            "ALLOWED_HOSTS": ".staging.example.com"
+        },
+        "production": {
+            "DEBUG": "False",
+            "DJANGO_SETTINGS_MODULE": "shop_template.settings.production",
+            "DATABASE_URL": "postgres://user:password@localhost:5432/dbname",
+            "REDIS_URL": "redis://localhost:6379/0",
+            "SECRET_KEY": "production-secret-key",
+            "ALLOWED_HOSTS": ".example.com",
+            "SESSION_COOKIE_SECURE": "True",
+            "CSRF_COOKIE_SECURE": "True",
+            "SECURE_SSL_REDIRECT": "True"
+        }
+    },
+    "security": {
+        "secret_key_required": true,
+        "debug_disabled_in_production": true,
+        "https_recommended": true,
+        "csrf_protection": true,
+        "xss_protection": true,
+        "content_security_policy": true,
+        "security_headers": true,
+        "rate_limiting": true,
+        "django_security_middleware": true
+    },
+    "performance": {
+        "caching": {
+            "enabled": true,
+            "backend": "redis",
+            "timeout": 3600,
+            "cache_middleware": true,
+            "template_cache": true,
+            "view_cache": true
+        },
+        "compression": {
+            "enabled": true,
+            "level": 6,
+            "types": ["text/html", "text/css", "application/javascript", "application/json"]
+        },
+        "static_files": {
+            "compress": true,
+            "minify_css": true,
+            "minify_js": true,
+            "versioning": true,
+            "manifest": true
+        },
+        "database": {
+            "connection_pooling": true,
+            "query_optimization": true,
+            "select_related": true,
+            "prefetch_related": true
+        },
+        "image_optimization": {
+            "enabled": true,
+            "quality": 85,
+            "resize": true,
+            "webp": true,
+            "lazy_loading": true
+        }
+    },
+    "seo": {
+        "meta_tags": true,
+        "sitemap": true,
+        "robots_txt": true,
+        "canonical_urls": true,
+        "open_graph": true,
+        "twitter_cards": true,
+        "schema_markup": true,
+        "json_ld": true,
+        "alternate_links": true,
+        "hreflang": true
+    },
+    "analytics": {
+        "google_analytics_id": null,
+        "google_tag_manager_id": null,
+        "facebook_pixel_id": null,
+        "hotjar_id": null,
+        "track_pageviews": true,
+        "track_events": true,
+        "track_ecommerce": true,
+        "anonymize_ip": true
+    },
+    "social": {
+        "facebook": {
+            "app_id": null,
+            "app_secret": null,
+            "page_url": null
+        },
+        "twitter": {
+            "handle": null,
+            "card_type": "summary_large_image"
+        },
+        "instagram": {
+            "username": null
+        },
+        "linkedin": {
+            "company_id": null
+        },
+        "pinterest": {
+            "username": null
+        },
+        "youtube": {
+            "channel_id": null
+        }
+    },
+    "email": {
+        "smtp": {
+            "host": null,
+            "port": 587,
+            "username": null,
+            "password": null,
+            "use_tls": true,
+            "use_ssl": false
+        },
+        "default_from": "noreply@example.com",
+        "reply_to": "info@example.com",
+        "support_email": "support@example.com",
+        "noreply_email": "noreply@example.com"
+    },
+    "payment": {
+        "stripe": {
+            "public_key": null,
+            "secret_key": null,
+            "webhook_secret": null,
+            "enabled": false
+        },
+        "paypal": {
+            "client_id": null,
+            "client_secret": null,
+            "mode": "sandbox",
+            "enabled": false
+        },
+        "cod": {
+            "enabled": true,
+            "instructions": "Pay when you receive your order."
+        },
+        "bank_transfer": {
+            "enabled": false,
+            "instructions": "Transfer the amount to our bank account."
+        }
+    },
+    "shipping": {
+        "flat_rate": {
+            "enabled": true,
+            "cost": 5.0,
+            "name": "Flat Rate"
+        },
+        "free_shipping": {
+            "enabled": true,
+            "threshold": 50.0,
+            "name": "Free Shipping"
+        },
+        "local_pickup": {
+            "enabled": true,
+            "cost": 0.0,
+            "name": "Local Pickup"
+        }
+    },
+    "notifications": {
+        "email": {
+            "enabled": true,
+            "order_confirmation": true,
+            "order_shipped": true,
+            "order_delivered": true,
+            "order_cancelled": true,
+            "password_reset": true,
+            "account_registration": true,
+            "newsletter": true
+        },
+        "sms": {
+            "enabled": false,
+            "provider": null,
+            "order_confirmation": false,
+            "order_shipped": false
+        },
+        "push": {
+            "enabled": false,
+            "provider": null,
+            "welcome": false,
+            "abandoned_cart": false,
+            "promotions": false
+        },
+        "webhook": {
+            "enabled": false,
+            "urls": []
+        }
+    },
+    "legal": {
+        "privacy_policy_url": null,
+        "terms_of_service_url": null,
+        "refund_policy_url": null,
+        "shipping_policy_url": null,
+        "cookie_policy": true,
+        "gdpr_compliance": false,
+        "ccpa_compliance": false
+    },
+    "support": {
+        "email": "support@example.com",
+        "phone": "+1 234 567 890",
+        "address": "123 Main Street, City, Country",
+        "working_hours": "Mon-Fri: 9am-6pm",
+        "timezone": "UTC"
+    }
+}

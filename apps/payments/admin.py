@@ -35,7 +35,7 @@ class PaymentGatewayAdmin(admin.ModelAdmin):
 class TransactionAdmin(admin.ModelAdmin):
     """Admin configuration for Transaction model."""
     list_display = (
-        'transaction_id', 'user', 'order', 'gateway', 'amount', 
+        'transaction_id', 'user', 'gateway', 'amount', 
         'currency', 'status', 'transaction_type', 'created_at'
     )
     list_filter = ('status', 'transaction_type', 'gateway', 'created_at')
@@ -48,7 +48,7 @@ class TransactionAdmin(admin.ModelAdmin):
             'fields': ('transaction_id', 'transaction_type', 'amount', 'currency')
         }),
         (_('ارتباط‌ها'), {
-            'fields': ('user', 'order', 'refund', 'gateway')
+            'fields': ('user', 'gateway')
         }),
         (_('وضعیت'), {
             'fields': ('status', 'gateway_reference')

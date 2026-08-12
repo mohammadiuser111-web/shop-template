@@ -1,5 +1,6 @@
 """
 Views for ads app.
+Manages advertisement slots, ads, impressions, and clicks.
 """
 import json
 from django.shortcuts import render, redirect, get_object_or_404
@@ -14,16 +15,9 @@ from django.db.models import Q, Sum, Count, F
 from django.utils import timezone
 from django.conf import settings
 
-from .models import (
-    Ad, AdGroup, AdCampaign, AdPlacement, AdClick, AdImpression,
-    AdConversion, AdTargeting, AdBudget
-)
-from .forms import (
-    AdForm, AdGroupForm, AdCampaignForm, AdPlacementForm,
-    AdSearchForm, AdReportForm
-)
-from apps.products.models import Product, Category, Brand
-from apps.orders.models import Order
+from .models import AdSlot, Advertisement, AdImpression, AdClick
+from .forms import AdSlotForm, AdvertisementForm, AdSearchForm, AdStatsForm
+from .services import AdService, AdRotationService, AdReportService
 
 
 def is_staff(user):
@@ -31,304 +25,221 @@ def is_staff(user):
     return user.is_staff
 
 
-# ==================== AD CAMPAIGNS ====================
+# ==================== AD DISPLAY VIEWS ====================
+
+@require_http_methods(["GET"])
+def display_ad(request, slot_code):
+    """Display advertisement for a slot."""
+    ad = AdService.get_current_ad(slot_code, request)
+    
+    if not ad:
+        # Return empty response or default content
+        return HttpResponse('', content_type='text/html')
+    
+    # Track impression
+    AdService.track_impression(ad, request)
+    
+    # Render appropriate template based on ad type
+    if ad.ad_type == 'image':
+        return render(request, 'ads/includes/ad_image.html', {'ad': ad})
+    elif ad.ad_type == 'html':
+        return HttpResponse(ad.html_content, content_type='text/html')
+    elif ad.ad_type == 'script':
+        return HttpResponse(ad.script_content, content_type='application/javascript')
+    elif ad.ad_type == 'video':
+        return render(request, 'ads/includes/ad_video.html', {'ad': ad})
+    else:
+        return HttpResponse('', content_type='text/html')
+
+
+@require_http_methods(["GET"])
+def display_ad_responsive(request, slot_code, width, height):
+    """Display responsive advertisement for a slot with specific dimensions."""
+    ad = AdService.get_current_ad(slot_code, request)
+    
+    if not ad:
+        return HttpResponse('', content_type='text/html')
+    
+    # Track impression
+    AdService.track_impression(ad, request)
+    
+    context = {
+        'ad': ad,
+        'width': width,
+        'height': height,
+    }
+    
+    if ad.ad_type == 'image':
+        return render(request, 'ads/includes/ad_image_responsive.html', context)
+    elif ad.ad_type == 'html':
+        return HttpResponse(ad.html_content, content_type='text/html')
+    elif ad.ad_type == 'script':
+        return HttpResponse(ad.script_content, content_type='application/javascript')
+    elif ad.ad_type == 'video':
+        return render(request, 'ads/includes/ad_video_responsive.html', context)
+    else:
+        return HttpResponse('', content_type='text/html')
+
+
+# ==================== TRACKING VIEWS ====================
+
+@csrf_exempt
+@require_http_methods(["GET", "POST"])
+def track_impression(request, ad_id):
+    """Track ad impression."""
+    ad = get_object_or_404(Advertisement, pk=ad_id)
+    
+    # Track impression
+    AdService.track_impression(ad, request)
+    
+    # Return 1x1 transparent pixel for tracking
+    response = HttpResponse(content_type='image/png')
+    response.write(b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82')
+    return response
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST"])
+def track_click(request, ad_id):
+    """Track ad click and redirect."""
+    ad = get_object_or_404(Advertisement, pk=ad_id)
+    
+    # Track click
+    click = AdService.track_click(ad, request)
+    
+    # Redirect to ad URL if available
+    if ad.url:
+        return redirect(ad.url)
+    
+    return redirect('store:home')
+
+
+# ==================== AD SLOT MANAGEMENT ====================
 
 @login_required
 @user_passes_test(is_staff)
-@require_http_methods(["GET"])
-def campaign_list(request):
-    """List all ad campaigns."""
-    campaigns = AdCampaign.objects.filter(
-        created_by=request.user
-    ).select_related('ad_group').order_by('-created_at')
-    
-    # Filter by status
-    status_filter = request.GET.get('status')
-    if status_filter:
-        campaigns = campaigns.filter(status=status_filter)
+def ad_slot_list(request):
+    """List all ad slots."""
+    slots = AdSlot.objects.all().order_by('name')
     
     # Search
     query = request.GET.get('q')
     if query:
-        campaigns = campaigns.filter(
+        slots = slots.filter(
             Q(name__icontains=query) | 
-            Q(description__icontains=query) | 
-            Q(campaign_id__icontains=query)
-        )
-    
-    # Pagination
-    paginator = Paginator(campaigns, 20)
-    page = request.GET.get('page')
-    
-    try:
-        campaigns_page = paginator.page(page)
-    except PageNotAnInteger:
-        campaigns_page = paginator.page(1)
-    except EmptyPage:
-        campaigns_page = paginator.page(paginator.num_pages)
-    
-    context = {
-        'campaigns': campaigns_page,
-        'current_status': status_filter,
-        'query': query,
-        'title': _('Ad Campaigns'),
-    }
-    return render(request, 'ads/campaign_list.html', context)
-
-
-@login_required
-@user_passes_test(is_staff)
-@require_http_methods(["GET", "POST"])
-def create_campaign(request):
-    """Create a new ad campaign."""
-    if request.method == 'POST':
-        form = AdCampaignForm(data=request.POST)
-        if form.is_valid():
-            campaign = form.save(commit=False)
-            campaign.created_by = request.user
-            campaign.campaign_id = f'CAM-{timezone.now().strftime("%Y%m%d")}-{AdCampaign.objects.count() + 1:04d}'
-            campaign.save()
-            
-            messages.success(request, _('Ad campaign created successfully.'))
-            return redirect('ads:campaign_list')
-        else:
-            messages.error(request, _('Please correct the errors below.'))
-    else:
-        form = AdCampaignForm()
-    
-    context = {
-        'form': form,
-        'title': _('Create Ad Campaign'),
-    }
-    return render(request, 'ads/create_campaign.html', context)
-
-
-@login_required
-@user_passes_test(is_staff)
-@require_http_methods(["GET", "POST"])
-def edit_campaign(request, campaign_id):
-    """Edit an ad campaign."""
-    campaign = get_object_or_404(AdCampaign, pk=campaign_id, created_by=request.user)
-    
-    if request.method == 'POST':
-        form = AdCampaignForm(data=request.POST, instance=campaign)
-        if form.is_valid():
-            campaign = form.save()
-            messages.success(request, _('Ad campaign updated.'))
-            return redirect('ads:campaign_list')
-        else:
-            messages.error(request, _('Please correct the errors below.'))
-    else:
-        form = AdCampaignForm(instance=campaign)
-    
-    context = {
-        'campaign': campaign,
-        'form': form,
-        'title': _('Edit Ad Campaign'),
-    }
-    return render(request, 'ads/edit_campaign.html', context)
-
-
-@login_required
-@user_passes_test(is_staff)
-@require_http_methods(["POST"])
-def delete_campaign(request, campaign_id):
-    """Delete an ad campaign."""
-    campaign = get_object_or_404(AdCampaign, pk=campaign_id, created_by=request.user)
-    
-    # Check if campaign has ads
-    if Ad.objects.filter(campaign=campaign).exists():
-        messages.error(request, _('Cannot delete a campaign with active ads.'))
-        return redirect('ads:campaign_list')
-    
-    campaign.delete()
-    messages.success(request, _('Ad campaign deleted.'))
-    return redirect('ads:campaign_list')
-
-
-@login_required
-@user_passes_test(is_staff)
-@require_http_methods(["POST"])
-def update_campaign_status(request, campaign_id):
-    """Update campaign status."""
-    campaign = get_object_or_404(AdCampaign, pk=campaign_id, created_by=request.user)
-    new_status = request.POST.get('status')
-    
-    if new_status not in dict(AdCampaign.STATUS_CHOICES):
-        messages.error(request, _('Invalid status.'))
-        return redirect('ads:campaign_list')
-    
-    campaign.status = new_status
-    campaign.save()
-    
-    messages.success(request, _('Campaign status updated.'))
-    return redirect('ads:campaign_list')
-
-
-@login_required
-@user_passes_test(is_staff)
-@require_http_methods(["GET"])
-def campaign_detail(request, campaign_id):
-    """Campaign detail page."""
-    campaign = get_object_or_404(AdCampaign, pk=campaign_id, created_by=request.user)
-    
-    # Get ads in this campaign
-    ads = Ad.objects.filter(campaign=campaign)
-    
-    # Get statistics
-    total_clicks = AdClick.objects.filter(ad__campaign=campaign).count()
-    total_impressions = AdImpression.objects.filter(ad__campaign=campaign).count()
-    total_conversions = AdConversion.objects.filter(ad__campaign=campaign).count()
-    
-    # Get budget usage
-    budget_usage = ads.aggregate(
-        total_spent=Sum('cost_per_click') * Count('id')
-    )['total_spent'] or 0
-    
-    context = {
-        'campaign': campaign,
-        'ads': ads,
-        'total_clicks': total_clicks,
-        'total_impressions': total_impressions,
-        'total_conversions': total_conversions,
-        'budget_usage': budget_usage,
-        'title': f"{_('Campaign')} {campaign.name}",
-    }
-    return render(request, 'ads/campaign_detail.html', context)
-
-
-# ==================== AD GROUPS ====================
-
-@login_required
-@user_passes_test(is_staff)
-@require_http_methods(["GET"])
-def ad_group_list(request):
-    """List all ad groups."""
-    groups = AdGroup.objects.filter(
-        created_by=request.user
-    ).order_by('-created_at')
-    
-    # Search
-    query = request.GET.get('q')
-    if query:
-        groups = groups.filter(
-            Q(name__icontains=query) | 
+            Q(code__icontains=query) | 
             Q(description__icontains=query)
         )
     
     # Pagination
-    paginator = Paginator(groups, 20)
+    paginator = Paginator(slots, 20)
     page = request.GET.get('page')
     
     try:
-        groups_page = paginator.page(page)
+        slots_page = paginator.page(page)
     except PageNotAnInteger:
-        groups_page = paginator.page(1)
+        slots_page = paginator.page(1)
     except EmptyPage:
-        groups_page = paginator.page(paginator.num_pages)
+        slots_page = paginator.page(paginator.num_pages)
     
     context = {
-        'groups': groups_page,
+        'slots': slots_page,
         'query': query,
-        'title': _('Ad Groups'),
+        'page_title': _('مدیریت Slot‌های تبلیغاتی'),
     }
-    return render(request, 'ads/ad_group_list.html', context)
+    return render(request, 'admin_panel/ads.html', context)
 
 
 @login_required
 @user_passes_test(is_staff)
 @require_http_methods(["GET", "POST"])
-def create_ad_group(request):
-    """Create a new ad group."""
+def ad_slot_create(request):
+    """Create a new ad slot."""
     if request.method == 'POST':
-        form = AdGroupForm(data=request.POST)
+        form = AdSlotForm(data=request.POST)
         if form.is_valid():
-            group = form.save(commit=False)
-            group.created_by = request.user
-            group.save()
-            
-            messages.success(request, _('Ad group created successfully.'))
-            return redirect('ads:ad_group_list')
+            slot = form.save()
+            messages.success(request, _('Slot تبلیغاتی با موفقیت ایجاد شد.'))
+            return redirect('ads:ad_slot_list')
         else:
-            messages.error(request, _('Please correct the errors below.'))
+            messages.error(request, _('لطفاً خطاهای زیر را اصلاح کنید.'))
     else:
-        form = AdGroupForm()
+        form = AdSlotForm()
     
     context = {
         'form': form,
-        'title': _('Create Ad Group'),
+        'page_title': _('ایجاد Slot تبلیغاتی'),
     }
-    return render(request, 'ads/create_ad_group.html', context)
+    return render(request, 'admin_panel/ad_slot_form.html', context)
 
 
 @login_required
 @user_passes_test(is_staff)
 @require_http_methods(["GET", "POST"])
-def edit_ad_group(request, group_id):
-    """Edit an ad group."""
-    group = get_object_or_404(AdGroup, pk=group_id, created_by=request.user)
+def ad_slot_edit(request, pk):
+    """Edit an ad slot."""
+    slot = get_object_or_404(AdSlot, pk=pk)
     
     if request.method == 'POST':
-        form = AdGroupForm(data=request.POST, instance=group)
+        form = AdSlotForm(data=request.POST, instance=slot)
         if form.is_valid():
-            group = form.save()
-            messages.success(request, _('Ad group updated.'))
-            return redirect('ads:ad_group_list')
+            form.save()
+            # Clear cache for this slot
+            AdService.clear_ad_cache(slot_code=slot.code)
+            messages.success(request, _('Slot تبلیغاتی با موفقیت بروزرسانی شد.'))
+            return redirect('ads:ad_slot_list')
         else:
-            messages.error(request, _('Please correct the errors below.'))
+            messages.error(request, _('لطفاً خطاهای زیر را اصلاح کنید.'))
     else:
-        form = AdGroupForm(instance=group)
+        form = AdSlotForm(instance=slot)
     
     context = {
-        'group': group,
         'form': form,
-        'title': _('Edit Ad Group'),
+        'slot': slot,
+        'page_title': _('ویرایش Slot تبلیغاتی'),
     }
-    return render(request, 'ads/edit_ad_group.html', context)
+    return render(request, 'admin_panel/ad_slot_form.html', context)
 
 
 @login_required
 @user_passes_test(is_staff)
 @require_http_methods(["POST"])
-def delete_ad_group(request, group_id):
-    """Delete an ad group."""
-    group = get_object_or_404(AdGroup, pk=group_id, created_by=request.user)
+def ad_slot_delete(request, pk):
+    """Delete an ad slot."""
+    slot = get_object_or_404(AdSlot, pk=pk)
     
-    # Check if group has campaigns
-    if AdCampaign.objects.filter(ad_group=group).exists():
-        messages.error(request, _('Cannot delete a group with active campaigns.'))
-        return redirect('ads:ad_group_list')
+    # Check if slot has ads
+    if Advertisement.objects.filter(slot=slot).exists():
+        messages.error(request, _('نمی‌توان Slot را حذف کرد زیرا حاوی تبلیغات است.'))
+        return redirect('ads:ad_slot_list')
     
-    group.delete()
-    messages.success(request, _('Ad group deleted.'))
-    return redirect('ads:ad_group_list')
+    slot.delete()
+    messages.success(request, _('Slot تبلیغاتی حذف شد.'))
+    return redirect('ads:ad_slot_list')
 
 
-# ==================== ADS ====================
+# ==================== ADVERTISEMENT MANAGEMENT ====================
 
 @login_required
 @user_passes_test(is_staff)
-@require_http_methods(["GET"])
 def ad_list(request):
-    """List all ads."""
-    ads = Ad.objects.filter(
-        campaign__created_by=request.user
-    ).select_related('campaign', 'placement').order_by('-created_at')
+    """List all advertisements."""
+    ads = Advertisement.objects.select_related('slot', 'created_by').order_by('-priority', '-created_at')
+    
+    # Filter by slot
+    slot_id = request.GET.get('slot')
+    if slot_id:
+        ads = ads.filter(slot__id=slot_id)
     
     # Filter by status
-    status_filter = request.GET.get('status')
-    if status_filter:
-        ads = ads.filter(status=status_filter)
+    is_active = request.GET.get('is_active')
+    if is_active:
+        ads = ads.filter(is_active=(is_active == '1'))
     
-    # Filter by campaign
-    campaign_id = request.GET.get('campaign')
-    if campaign_id:
-        ads = ads.filter(campaign__id=campaign_id)
-    
-    # Filter by placement
-    placement_id = request.GET.get('placement')
-    if placement_id:
-        ads = ads.filter(placement__id=placement_id)
+    # Filter by ad type
+    ad_type = request.GET.get('ad_type')
+    if ad_type:
+        ads = ads.filter(ad_type=ad_type)
     
     # Search
     query = request.GET.get('q')
@@ -350,683 +261,356 @@ def ad_list(request):
     except EmptyPage:
         ads_page = paginator.page(paginator.num_pages)
     
-    campaigns = AdCampaign.objects.filter(created_by=request.user)
-    placements = AdPlacement.objects.all()
+    slots = AdSlot.objects.filter(is_active=True)
     
     context = {
         'ads': ads_page,
-        'campaigns': campaigns,
-        'placements': placements,
-        'current_status': status_filter,
-        'current_campaign': campaign_id,
-        'current_placement': placement_id,
+        'slots': slots,
+        'current_slot': slot_id,
+        'current_active': is_active,
+        'current_type': ad_type,
         'query': query,
-        'title': _('Ads'),
+        'page_title': _('مدیریت تبلیغات'),
     }
-    return render(request, 'ads/ad_list.html', context)
+    return render(request, 'admin_panel/ads.html', context)
 
 
 @login_required
 @user_passes_test(is_staff)
 @require_http_methods(["GET", "POST"])
-def create_ad(request):
-    """Create a new ad."""
-    campaigns = AdCampaign.objects.filter(created_by=request.user)
-    placements = AdPlacement.objects.all()
-    products = Product.objects.filter(is_active=True)[:100]
-    categories = Category.objects.filter(is_active=True)[:100]
+def ad_create(request):
+    """Create a new advertisement."""
+    slots = AdSlot.objects.filter(is_active=True)
     
     if request.method == 'POST':
-        form = AdForm(data=request.POST, files=request.FILES)
+        form = AdvertisementForm(data=request.POST, files=request.FILES)
         if form.is_valid():
             ad = form.save(commit=False)
-            ad.ad_id = f'AD-{timezone.now().strftime("%Y%m%d")}-{Ad.objects.count() + 1:04d}'
+            ad.created_by = request.user
             ad.save()
             
-            # Handle targeting
-            targeting_data = request.POST.get('targeting')
-            if targeting_data:
-                try:
-                    targeting_data = json.loads(targeting_data)
-                    AdTargeting.objects.create(
-                        ad=ad,
-                        target_url=targeting_data.get('url'),
-                        target_product_id=targeting_data.get('product_id'),
-                        target_category_id=targeting_data.get('category_id'),
-                        target_audience=targeting_data.get('audience'),
-                    )
-                except json.JSONDecodeError:
-                    pass
+            # Clear cache for this slot
+            AdService.clear_ad_cache(slot_code=ad.slot.code)
             
-            # Handle budget
-            budget_data = request.POST.get('budget')
-            if budget_data:
-                try:
-                    budget_data = json.loads(budget_data)
-                    AdBudget.objects.create(
-                        ad=ad,
-                        daily_budget=budget_data.get('daily_budget'),
-                        total_budget=budget_data.get('total_budget'),
-                        bidding_strategy=budget_data.get('bidding_strategy'),
-                    )
-                except json.JSONDecodeError:
-                    pass
-            
-            messages.success(request, _('Ad created successfully.'))
+            messages.success(request, _('تبلیغ با موفقیت ایجاد شد.'))
             return redirect('ads:ad_list')
         else:
-            messages.error(request, _('Please correct the errors below.'))
+            messages.error(request, _('لطفاً خطاهای زیر را اصلاح کنید.'))
     else:
-        form = AdForm()
+        form = AdvertisementForm()
     
     context = {
         'form': form,
-        'campaigns': campaigns,
-        'placements': placements,
-        'products': products,
-        'categories': categories,
-        'title': _('Create Ad'),
+        'slots': slots,
+        'page_title': _('ایجاد تبلیغ جدید'),
     }
-    return render(request, 'ads/create_ad.html', context)
+    return render(request, 'admin_panel/ad_form.html', context)
 
 
 @login_required
 @user_passes_test(is_staff)
 @require_http_methods(["GET", "POST"])
-def edit_ad(request, ad_id):
-    """Edit an ad."""
-    ad = get_object_or_404(Ad, pk=ad_id, campaign__created_by=request.user)
-    
-    campaigns = AdCampaign.objects.filter(created_by=request.user)
-    placements = AdPlacement.objects.all()
-    products = Product.objects.filter(is_active=True)[:100]
-    categories = Category.objects.filter(is_active=True)[:100]
+def ad_edit(request, pk):
+    """Edit an advertisement."""
+    ad = get_object_or_404(Advertisement, pk=pk)
+    slots = AdSlot.objects.filter(is_active=True)
     
     if request.method == 'POST':
-        form = AdForm(data=request.POST, files=request.FILES, instance=ad)
+        form = AdvertisementForm(data=request.POST, files=request.FILES, instance=ad)
         if form.is_valid():
             ad = form.save()
-            messages.success(request, _('Ad updated.'))
+            # Clear cache for this slot
+            AdService.clear_ad_cache(slot_code=ad.slot.code)
+            messages.success(request, _('تبلیغ با موفقیت بروزرسانی شد.'))
             return redirect('ads:ad_list')
         else:
-            messages.error(request, _('Please correct the errors below.'))
+            messages.error(request, _('لطفاً خطاهای زیر را اصلاح کنید.'))
     else:
-        form = AdForm(instance=ad)
+        form = AdvertisementForm(instance=ad)
     
     context = {
-        'ad': ad,
         'form': form,
-        'campaigns': campaigns,
-        'placements': placements,
-        'products': products,
-        'categories': categories,
-        'title': _('Edit Ad'),
+        'ad': ad,
+        'slots': slots,
+        'page_title': _('ویرایش تبلیغ'),
     }
-    return render(request, 'ads/edit_ad.html', context)
+    return render(request, 'admin_panel/ad_form.html', context)
 
 
 @login_required
 @user_passes_test(is_staff)
 @require_http_methods(["POST"])
-def delete_ad(request, ad_id):
-    """Delete an ad."""
-    ad = get_object_or_404(Ad, pk=ad_id, campaign__created_by=request.user)
+def ad_delete(request, pk):
+    """Delete an advertisement."""
+    ad = get_object_or_404(Advertisement, pk=pk)
+    slot_code = ad.slot.code
     ad.delete()
-    messages.success(request, _('Ad deleted.'))
+    
+    # Clear cache for this slot
+    AdService.clear_ad_cache(slot_code=slot_code)
+    
+    messages.success(request, _('تبلیغ حذف شد.'))
     return redirect('ads:ad_list')
 
 
 @login_required
 @user_passes_test(is_staff)
 @require_http_methods(["POST"])
-def update_ad_status(request, ad_id):
-    """Update ad status."""
-    ad = get_object_or_404(Ad, pk=ad_id, campaign__created_by=request.user)
-    new_status = request.POST.get('status')
-    
-    if new_status not in dict(Ad.STATUS_CHOICES):
-        messages.error(request, _('Invalid status.'))
-        return redirect('ads:ad_list')
-    
-    ad.status = new_status
+def ad_toggle_active(request, pk):
+    """Toggle ad active status."""
+    ad = get_object_or_404(Advertisement, pk=pk)
+    ad.is_active = not ad.is_active
     ad.save()
     
-    messages.success(request, _('Ad status updated.'))
-    return redirect('ads:ad_list')
-
-
-@require_http_methods(["GET"])
-def ad_detail(request, ad_id):
-    """Ad detail page (public)."""
-    ad = get_object_or_404(Ad, pk=ad_id, status='active')
-    
-    # Record impression
-    AdImpression.objects.create(
-        ad=ad,
-        ip_address=request.META.get('REMOTE_ADDR'),
-        user_agent=request.META.get('HTTP_USER_AGENT', '')[:200],
-        referrer=request.META.get('HTTP_REFERER', ''),
-    )
-    
-    # Update ad impression count
-    ad.impressions += 1
-    ad.save()
-    
-    context = {
-        'ad': ad,
-        'title': ad.title or ad.name,
-        'meta_title': ad.meta_title or ad.title or ad.name,
-        'meta_description': ad.meta_description or ad.description,
-    }
-    return render(request, 'ads/ad_detail.html', context)
-
-
-# ==================== AD PLACEMENTS ====================
-
-@login_required
-@user_passes_test(is_staff)
-@require_http_methods(["GET"])
-def placement_list(request):
-    """List all ad placements."""
-    placements = AdPlacement.objects.all()
-    
-    # Search
-    query = request.GET.get('q')
-    if query:
-        placements = placements.filter(
-            Q(name__icontains=query) | 
-            Q(description__icontains=query) | 
-            Q(placement_id__icontains=query)
-        )
-    
-    # Pagination
-    paginator = Paginator(placements, 20)
-    page = request.GET.get('page')
-    
-    try:
-        placements_page = paginator.page(page)
-    except PageNotAnInteger:
-        placements_page = paginator.page(1)
-    except EmptyPage:
-        placements_page = paginator.page(paginator.num_pages)
-    
-    context = {
-        'placements': placements_page,
-        'query': query,
-        'title': _('Ad Placements'),
-    }
-    return render(request, 'ads/placement_list.html', context)
-
-
-@login_required
-@user_passes_test(is_staff)
-@require_http_methods(["GET", "POST"])
-def create_placement(request):
-    """Create a new ad placement."""
-    if request.method == 'POST':
-        form = AdPlacementForm(data=request.POST)
-        if form.is_valid():
-            placement = form.save(commit=False)
-            placement.placement_id = f'PL-{AdPlacement.objects.count() + 1:04d}'
-            placement.save()
-            
-            messages.success(request, _('Ad placement created successfully.'))
-            return redirect('ads:placement_list')
-        else:
-            messages.error(request, _('Please correct the errors below.'))
-    else:
-        form = AdPlacementForm()
-    
-    context = {
-        'form': form,
-        'title': _('Create Ad Placement'),
-    }
-    return render(request, 'ads/create_placement.html', context)
-
-
-@login_required
-@user_passes_test(is_staff)
-@require_http_methods(["GET", "POST"])
-def edit_placement(request, placement_id):
-    """Edit an ad placement."""
-    placement = get_object_or_404(AdPlacement, pk=placement_id)
-    
-    if request.method == 'POST':
-        form = AdPlacementForm(data=request.POST, instance=placement)
-        if form.is_valid():
-            placement = form.save()
-            messages.success(request, _('Ad placement updated.'))
-            return redirect('ads:placement_list')
-        else:
-            messages.error(request, _('Please correct the errors below.'))
-    else:
-        form = AdPlacementForm(instance=placement)
-    
-    context = {
-        'placement': placement,
-        'form': form,
-        'title': _('Edit Ad Placement'),
-    }
-    return render(request, 'ads/edit_placement.html', context)
-
-
-@login_required
-@user_passes_test(is_staff)
-@require_http_methods(["POST"])
-def delete_placement(request, placement_id):
-    """Delete an ad placement."""
-    placement = get_object_or_404(AdPlacement, pk=placement_id)
-    
-    # Check if placement has ads
-    if Ad.objects.filter(placement=placement).exists():
-        messages.error(request, _('Cannot delete a placement with active ads.'))
-        return redirect('ads:placement_list')
-    
-    placement.delete()
-    messages.success(request, _('Ad placement deleted.'))
-    return redirect('ads:placement_list')
-
-
-# ==================== AD TRACKING ====================
-
-@require_http_methods(["GET"])
-def track_ad_click(request, ad_id):
-    """Track ad click."""
-    ad = get_object_or_404(Ad, pk=ad_id, status='active')
-    
-    # Record click
-    AdClick.objects.create(
-        ad=ad,
-        ip_address=request.META.get('REMOTE_ADDR'),
-        user_agent=request.META.get('HTTP_USER_AGENT', '')[:200],
-        referrer=request.META.get('HTTP_REFERER', ''),
-        clicked_at=timezone.now(),
-    )
-    
-    # Update ad click count
-    ad.clicks += 1
-    ad.save()
-    
-    # Redirect to target URL
-    targeting = AdTargeting.objects.filter(ad=ad).first()
-    if targeting and targeting.target_url:
-        return redirect(targeting.target_url)
-    
-    return redirect('home')
-
-
-@require_http_methods(["GET"])
-def track_ad_impression(request, ad_id):
-    """Track ad impression (for image/iframe ads)."""
-    ad = get_object_or_404(Ad, pk=ad_id, status='active')
-    
-    # Record impression
-    AdImpression.objects.create(
-        ad=ad,
-        ip_address=request.META.get('REMOTE_ADDR'),
-        user_agent=request.META.get('HTTP_USER_AGENT', '')[:200],
-        referrer=request.META.get('HTTP_REFERER', ''),
-    )
-    
-    # Update ad impression count
-    ad.impressions += 1
-    ad.save()
-    
-    # Return 1x1 transparent pixel
-    response = HttpResponse(content_type='image/png')
-    response.write(b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82')
-    return response
-
-
-@require_http_methods(["GET"])
-def track_ad_conversion(request, ad_id, order_id):
-    """Track ad conversion (when order is placed)."""
-    ad = get_object_or_404(Ad, pk=ad_id)
-    order = get_object_or_404(Order, pk=order_id)
-    
-    # Check if this conversion already exists
-    existing_conversion = AdConversion.objects.filter(
-        ad=ad,
-        order=order
-    ).first()
-    
-    if not existing_conversion:
-        AdConversion.objects.create(
-            ad=ad,
-            order=order,
-            user=order.user,
-            conversion_value=order.total_amount,
-            converted_at=timezone.now(),
-        )
-        
-        # Update ad conversion count
-        ad.conversions += 1
-        ad.save()
-    
-    # Return 1x1 transparent pixel
-    response = HttpResponse(content_type='image/png')
-    response.write(b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82')
-    return response
-
-
-# ==================== AD REPORTS ====================
-
-@login_required
-@user_passes_test(is_staff)
-@require_http_methods(["GET"])
-def ad_reports(request):
-    """Ad performance reports."""
-    # Filter by date range
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
-    
-    # Default to last 30 days
-    if not start_date:
-        start_date = (timezone.now() - timezone.timedelta(days=30)).strftime('%Y-%m-%d')
-    if not end_date:
-        end_date = timezone.now().strftime('%Y-%m-%d')
-    
-    # Get ads
-    ads = Ad.objects.filter(
-        campaign__created_by=request.user
-    )
-    
-    # Get statistics
-    report_data = {}
-    
-    for ad in ads:
-        clicks = AdClick.objects.filter(
-            ad=ad,
-            clicked_at__date__range=[start_date, end_date]
-        ).count()
-        
-        impressions = AdImpression.objects.filter(
-            ad=ad,
-            created_at__date__range=[start_date, end_date]
-        ).count()
-        
-        conversions = AdConversion.objects.filter(
-            ad=ad,
-            converted_at__date__range=[start_date, end_date]
-        ).count()
-        
-        conversion_value = AdConversion.objects.filter(
-            ad=ad,
-            converted_at__date__range=[start_date, end_date]
-        ).aggregate(total=Sum('conversion_value'))['total'] or 0
-        
-        ctr = (clicks / impressions * 100) if impressions > 0 else 0
-        conversion_rate = (conversions / clicks * 100) if clicks > 0 else 0
-        
-        report_data[str(ad.id)] = {
-            'ad_id': ad.ad_id,
-            'name': ad.name,
-            'campaign': ad.campaign.name,
-            'impressions': impressions,
-            'clicks': clicks,
-            'conversions': conversions,
-            'conversion_value': conversion_value,
-            'ctr': round(ctr, 2),
-            'conversion_rate': round(conversion_rate, 2),
-            'cost': ad.cost_per_click * clicks if ad.cost_per_click else 0,
-        }
-    
-    # Sort by clicks
-    sorted_data = sorted(report_data.values(), key=lambda x: x['clicks'], reverse=True)
-    
-    # Calculate totals
-    total_impressions = sum(item['impressions'] for item in sorted_data)
-    total_clicks = sum(item['clicks'] for item in sorted_data)
-    total_conversions = sum(item['conversions'] for item in sorted_data)
-    total_conversion_value = sum(item['conversion_value'] for item in sorted_data)
-    total_cost = sum(item['cost'] for item in sorted_data)
-    overall_ctr = (total_clicks / total_impressions * 100) if total_impressions > 0 else 0
-    overall_conversion_rate = (total_conversions / total_clicks * 100) if total_clicks > 0 else 0
-    
-    context = {
-        'report_data': sorted_data,
-        'start_date': start_date,
-        'end_date': end_date,
-        'total_impressions': total_impressions,
-        'total_clicks': total_clicks,
-        'total_conversions': total_conversions,
-        'total_conversion_value': total_conversion_value,
-        'total_cost': total_cost,
-        'overall_ctr': round(overall_ctr, 2),
-        'overall_conversion_rate': round(overall_conversion_rate, 2),
-        'title': _('Ad Performance Reports'),
-    }
-    return render(request, 'ads/ad_reports.html', context)
-
-
-@login_required
-@user_passes_test(is_staff)
-@require_http_methods(["GET"])
-def ad_dashboard(request):
-    """Ad dashboard."""
-    # Get counts
-    total_ads = Ad.objects.filter(campaign__created_by=request.user).count()
-    active_ads = Ad.objects.filter(campaign__created_by=request.user, status='active').count()
-    total_campaigns = AdCampaign.objects.filter(created_by=request.user).count()
-    active_campaigns = AdCampaign.objects.filter(created_by=request.user, status='active').count()
-    
-    # Get recent ads
-    recent_ads = Ad.objects.filter(
-        campaign__created_by=request.user
-    ).order_by('-created_at')[:5]
-    
-    # Get top performing ads
-    top_ads = Ad.objects.filter(
-        campaign__created_by=request.user
-    ).annotate(
-        total_clicks=Count('adclick')
-    ).order_by('-total_clicks')[:5]
-    
-    # Get recent campaigns
-    recent_campaigns = AdCampaign.objects.filter(
-        created_by=request.user
-    ).order_by('-created_at')[:5]
-    
-    # Get statistics
-    total_clicks = AdClick.objects.filter(ad__campaign__created_by=request.user).count()
-    total_impressions = AdImpression.objects.filter(ad__campaign__created_by=request.user).count()
-    total_conversions = AdConversion.objects.filter(ad__campaign__created_by=request.user).count()
-    total_spent = Ad.objects.filter(
-        campaign__created_by=request.user
-    ).aggregate(total=Sum('cost_per_click'))['total'] or 0
-    
-    context = {
-        'total_ads': total_ads,
-        'active_ads': active_ads,
-        'total_campaigns': total_campaigns,
-        'active_campaigns': active_campaigns,
-        'recent_ads': recent_ads,
-        'top_ads': top_ads,
-        'recent_campaigns': recent_campaigns,
-        'total_clicks': total_clicks,
-        'total_impressions': total_impressions,
-        'total_conversions': total_conversions,
-        'total_spent': total_spent,
-        'title': _('Ad Dashboard'),
-    }
-    return render(request, 'ads/ad_dashboard.html', context)
-
-
-# ==================== AJAX VIEWS ====================
-
-@require_http_methods(["GET"])
-def get_ad_statistics_ajax(request, ad_id):
-    """Get ad statistics via AJAX."""
-    ad = get_object_or_404(Ad, pk=ad_id)
-    
-    # Get statistics for different time periods
-    today = timezone.now().date()
-    
-    # Today
-    today_clicks = AdClick.objects.filter(
-        ad=ad,
-        clicked_at__date=today
-    ).count()
-    
-    today_impressions = AdImpression.objects.filter(
-        ad=ad,
-        created_at__date=today
-    ).count()
-    
-    # Last 7 days
-    last_7_days_clicks = AdClick.objects.filter(
-        ad=ad,
-        clicked_at__date__gte=today - timezone.timedelta(days=7)
-    ).count()
-    
-    last_7_days_impressions = AdImpression.objects.filter(
-        ad=ad,
-        created_at__date__gte=today - timezone.timedelta(days=7)
-    ).count()
-    
-    # Last 30 days
-    last_30_days_clicks = AdClick.objects.filter(
-        ad=ad,
-        clicked_at__date__gte=today - timezone.timedelta(days=30)
-    ).count()
-    
-    last_30_days_impressions = AdImpression.objects.filter(
-        ad=ad,
-        created_at__date__gte=today - timezone.timedelta(days=30)
-    ).count()
-    
-    # All time
-    all_time_clicks = AdClick.objects.filter(ad=ad).count()
-    all_time_impressions = AdImpression.objects.filter(ad=ad).count()
-    all_time_conversions = AdConversion.objects.filter(ad=ad).count()
+    # Clear cache for this slot
+    AdService.clear_ad_cache(slot_code=ad.slot.code)
     
     return JsonResponse({
-        'today': {
-            'clicks': today_clicks,
-            'impressions': today_impressions,
-        },
-        'last_7_days': {
-            'clicks': last_7_days_clicks,
-            'impressions': last_7_days_impressions,
-        },
-        'last_30_days': {
-            'clicks': last_30_days_clicks,
-            'impressions': last_30_days_impressions,
-        },
-        'all_time': {
-            'clicks': all_time_clicks,
-            'impressions': all_time_impressions,
-            'conversions': all_time_conversions,
-        },
+        'success': True,
+        'is_active': ad.is_active
     })
 
 
 @login_required
 @user_passes_test(is_staff)
-@require_http_methods(["GET"])
-def get_ad_list_ajax(request):
-    """Get ad list via AJAX."""
-    ads = Ad.objects.filter(
-        campaign__created_by=request.user
-    ).select_related('campaign', 'placement')
+def ad_stats(request, pk):
+    """Advertisement statistics page."""
+    ad = get_object_or_404(Advertisement, pk=pk)
     
-    ads_data = []
-    for ad in ads:
-        ads_data.append({
-            'id': str(ad.id),
-            'ad_id': ad.ad_id,
-            'name': ad.name,
-            'title': ad.title,
-            'campaign': ad.campaign.name,
-            'placement': ad.placement.name if ad.placement else None,
-            'status': ad.status,
-            'impressions': ad.impressions,
-            'clicks': ad.clicks,
-            'conversions': ad.conversions,
-            'created_at': ad.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-        })
+    # Get stats
+    stats = AdService.get_ad_stats(pk)
     
-    return JsonResponse({'ads': ads_data})
+    # Get recent impressions
+    recent_impressions = AdImpression.objects.filter(
+        ad=ad
+    ).select_related('user').order_by('-created_at')[:20]
+    
+    # Get recent clicks
+    recent_clicks = AdClick.objects.filter(
+        ad=ad
+    ).select_related('user').order_by('-created_at')[:20]
+    
+    # Get daily stats for chart
+    from django.db.models.functions import TruncDate
+    from django.db.models import Count
+    
+    daily_impressions = AdImpression.objects.filter(ad=ad).annotate(
+        date=TruncDate('created_at')
+    ).values('date').annotate(
+        count=Count('id')
+    ).order_by('date')[:30]
+    
+    daily_clicks = AdClick.objects.filter(ad=ad).annotate(
+        date=TruncDate('created_at')
+    ).values('date').annotate(
+        count=Count('id')
+    ).order_by('date')[:30]
+    
+    context = {
+        'ad': ad,
+        'stats': stats,
+        'recent_impressions': recent_impressions,
+        'recent_clicks': recent_clicks,
+        'daily_impressions': list(daily_impressions),
+        'daily_clicks': list(daily_clicks),
+        'page_title': f"{_('آمار تبلیغ')} - {ad.name}",
+    }
+    return render(request, 'admin_panel/ad_stats.html', context)
+
+
+# ==================== REPORT VIEWS ====================
+
+@login_required
+@user_passes_test(is_staff)
+def ads_report(request):
+    """Overall ads report."""
+    # Get overall stats
+    stats = AdService.get_all_stats()
+    
+    # Get top performing ads
+    top_ads = Advertisement.objects.filter(
+        click_count__gt=0
+    ).order_by('-click_count')[:10]
+    
+    # Get recent activity
+    recent_impressions = AdImpression.objects.select_related('ad').order_by('-created_at')[:10]
+    recent_clicks = AdClick.objects.select_related('ad').order_by('-created_at')[:10]
+    
+    context = {
+        'stats': stats,
+        'top_ads': top_ads,
+        'recent_impressions': recent_impressions,
+        'recent_clicks': recent_clicks,
+        'page_title': _('گزارش کلی تبلیغات'),
+    }
+    return render(request, 'admin_panel/reports.html', context)
 
 
 @login_required
 @user_passes_test(is_staff)
+def impression_report(request):
+    """Impression report."""
+    form = AdStatsForm(request.GET or None)
+    
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    slot_id = request.GET.get('slot')
+    
+    report = AdReportService.get_impression_report(date_from, date_to, slot_id)
+    
+    context = {
+        'form': form,
+        'report': report,
+        'page_title': _('گزارش نمایش‌ها'),
+    }
+    return render(request, 'admin_panel/impression_report.html', context)
+
+
+@login_required
+@user_passes_test(is_staff)
+def click_report(request):
+    """Click report."""
+    form = AdStatsForm(request.GET or None)
+    
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    slot_id = request.GET.get('slot')
+    
+    report = AdReportService.get_click_report(date_from, date_to, slot_id)
+    
+    context = {
+        'form': form,
+        'report': report,
+        'page_title': _('گزارش کلیک‌ها'),
+    }
+    return render(request, 'admin_panel/click_report.html', context)
+
+
+@login_required
+@user_passes_test(is_staff)
+def performance_report(request):
+    """Performance report."""
+    form = AdStatsForm(request.GET or None)
+    
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    
+    report = AdReportService.get_performance_report(date_from, date_to)
+    
+    context = {
+        'form': form,
+        'report': report,
+        'page_title': _('گزارش عملکرد تبلیغات'),
+    }
+    return render(request, 'admin_panel/performance_report.html', context)
+
+
+# ==================== AJAX VIEWS ====================
+
 @require_http_methods(["GET"])
-def get_campaign_list_ajax(request):
-    """Get campaign list via AJAX."""
-    campaigns = AdCampaign.objects.filter(created_by=request.user)
+def get_ad_json(request, slot_code):
+    """Get ad data as JSON for a slot."""
+    ad = AdService.get_current_ad(slot_code, request)
     
-    campaigns_data = []
-    for campaign in campaigns:
-        campaigns_data.append({
-            'id': str(campaign.id),
-            'campaign_id': campaign.campaign_id,
-            'name': campaign.name,
-            'description': campaign.description,
-            'status': campaign.status,
-            'budget': campaign.budget,
-            'start_date': campaign.start_date.strftime('%Y-%m-%d') if campaign.start_date else None,
-            'end_date': campaign.end_date.strftime('%Y-%m-%d') if campaign.end_date else None,
-            'created_at': campaign.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-        })
+    if not ad:
+        return JsonResponse({'error': 'No ad found for this slot'}, status=404)
     
-    return JsonResponse({'campaigns': campaigns_data})
+    ad_data = {
+        'id': str(ad.id),
+        'name': ad.name,
+        'title': ad.title,
+        'description': ad.description,
+        'ad_type': ad.ad_type,
+        'image_url': ad.image.url if ad.image else None,
+        'html_content': ad.html_content,
+        'script_content': ad.script_content,
+        'video_url': ad.video_url,
+        'video_embed_code': ad.video_embed_code,
+        'url': ad.url,
+        'target': ad.target,
+        'priority': ad.priority,
+        'is_active': ad.is_active,
+    }
+    
+    return JsonResponse(ad_data)
 
 
 @require_http_methods(["GET"])
-def get_ad_by_placement_ajax(request, placement_id):
-    """Get ads for a specific placement via AJAX."""
-    placement = get_object_or_404(AdPlacement, pk=placement_id)
+def get_ad_stats_json(request, ad_id):
+    """Get ad statistics as JSON."""
+    stats = AdService.get_ad_stats(ad_id)
     
-    ads = Ad.objects.filter(
-        placement=placement,
-        status='active'
-    ).order_by('-created_at')
+    if not stats:
+        return JsonResponse({'error': 'Ad not found'}, status=404)
     
-    ads_data = []
-    for ad in ads:
-        # Check if user has already seen this ad
-        seen = False
-        if request.user.is_authenticated:
-            seen = AdImpression.objects.filter(
-                ad=ad,
-                user=request.user
-            ).exists()
-        
-        ads_data.append({
-            'id': str(ad.id),
-            'name': ad.name,
-            'title': ad.title,
-            'description': ad.description,
-            'image': ad.image.url if ad.image else None,
-            'url': ad.get_absolute_url(),
-            'seen': seen,
-        })
-    
-    return JsonResponse({'ads': ads_data})
+    return JsonResponse(stats)
 
 
+@require_http_methods(["GET"])
+def get_slot_stats_json(request, slot_code):
+    """Get slot statistics as JSON."""
+    stats = AdService.get_slot_stats(slot_code)
+    
+    if not stats:
+        return JsonResponse({'error': 'Slot not found'}, status=404)
+    
+    return JsonResponse(stats)
+
+
+@require_http_methods(["GET"])
+def get_all_stats_json(request):
+    """Get all advertisement statistics as JSON."""
+    stats = AdService.get_all_stats()
+    
+    return JsonResponse(stats)
+
+
+@login_required
+@user_passes_test(is_staff)
 @require_http_methods(["POST"])
-@csrf_exempt
-def record_ad_view_ajax(request):
-    """Record ad view via AJAX."""
+def clear_ad_cache(request):
+    """Clear ad cache."""
+    slot_code = request.POST.get('slot_code')
     ad_id = request.POST.get('ad_id')
     
-    if not ad_id:
-        return JsonResponse({'error': 'Ad ID is required'}, status=400)
-    
-    ad = get_object_or_404(Ad, pk=ad_id, status='active')
-    
-    # Record impression
-    AdImpression.objects.create(
-        ad=ad,
-        ip_address=request.META.get('REMOTE_ADDR'),
-        user_agent=request.META.get('HTTP_USER_AGENT', '')[:200],
-        referrer=request.META.get('HTTP_REFERER', ''),
-    )
-    
-    # Update ad impression count
-    ad.impressions += 1
-    ad.save()
+    if slot_code:
+        AdService.clear_ad_cache(slot_code=slot_code)
+    if ad_id:
+        AdService.clear_ad_cache(ad_id=ad_id)
     
     return JsonResponse({'success': True})
+
+
+# ==================== PUBLIC VIEWS ====================
+
+@require_http_methods(["GET"])
+def view_ad(request, ad_id):
+    """Public view for an ad."""
+    ad = get_object_or_404(Advertisement, pk=ad_id, is_active=True)
+    
+    # Check if ad is valid
+    if not ad.is_valid():
+        return redirect('store:home')
+    
+    # Track impression
+    AdService.track_impression(ad, request)
+    
+    # Track click if this is a click request
+    if request.GET.get('track') == 'click':
+        AdService.track_click(ad, request)
+        if ad.url:
+            return redirect(ad.url)
+    
+    context = {
+        'ad': ad,
+        'page_title': ad.title or ad.name,
+    }
+    
+    if ad.ad_type == 'image':
+        return render(request, 'ads/ad_detail_image.html', context)
+    elif ad.ad_type == 'html':
+        return render(request, 'ads/ad_detail_html.html', context)
+    elif ad.ad_type == 'video':
+        return render(request, 'ads/ad_detail_video.html', context)
+    else:
+        return render(request, 'ads/ad_detail.html', context)

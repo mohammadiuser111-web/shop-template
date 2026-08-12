@@ -272,7 +272,7 @@ class Campaign(Discount):
     bogo_quantity = models.PositiveIntegerField(verbose_name='BOGO Quantity', null=True, blank=True)
     bogo_discount_type = models.CharField(
         max_length=20, 
-        choices=DISCOUNT_TYPES, 
+        choices=Discount.DISCOUNT_TYPES, 
         verbose_name='BOGO Discount Type',
         null=True, 
         blank=True

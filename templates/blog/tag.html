@@ -1,0 +1,302 @@
+{# ============================================
+   Blog Tag Template
+   Shop Template - Django E-commerce Template
+   ============================================ #}
+
+{% extends "store/base.html" %}
+
+{% block title %}{{ _('Tag') }}: {{ tag.name }} - {{ settings.SITE_NAME }}{% endblock %}
+
+{% block meta_description %}{{ _('Posts tagged with') }} {{ tag.name }}{% endblock %}
+
+{% block meta_keywords %}{{ tag.name }},{{ tag.meta_keywords }}{% endblock %}
+
+{% block breadcrumb %}
+<div class="breadcrumb-container">
+    <nav class="breadcrumb" aria-label="breadcrumb">
+        <ol class="breadcrumb-list">
+            <li class="breadcrumb-item"><a href="{% url 'store:home' %}">{{ _('Home') }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'blog:post_list' %}">{{ _('Blog') }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ _('Tag') }}: {{ tag.name }}</li>
+        </ol>
+    </nav>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="blog-tag-page">
+    {# Tag Header #}
+    <div class="blog-tag-header">
+        <h1 class="blog-tag-title">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                <line x1="7" y1="7" x2="7.01" y2="7"/>
+            </svg>
+            {{ _('Tag') }}: {{ tag.name }}
+        </h1>
+        
+        {# Tag Stats #}
+        <div class="blog-tag-stats">
+            <span class="blog-tag-stat">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+                {{ post_count }} {{ _('Posts') }}
+            </span>
+        </div>
+    </div>
+    
+    {# Posts Grid #}
+    <div class="blog-posts-grid">
+        {% for post in posts %}
+        <article class="blog-post-card">
+            <div class="blog-post-card-inner">
+                {# Post Image #}
+                <div class="blog-post-image">
+                    <a href="{{ post.get_absolute_url }}" class="blog-post-image-link">
+                        {% if post.thumbnail %}
+                        <img src="{{ post.thumbnail.url }}" alt="{{ post.title }}" loading="lazy">
+                        {% else %}
+                        <div class="placeholder-image blog-placeholder">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                            </svg>
+                        </div>
+                        {% endif %}
+                    </a>
+                    
+                    {# Post Category Badge #}
+                    {% if post.category %}
+                    <span class="blog-post-category-badge">{{ post.category.name }}</span>
+                    {% endif %}
+                </div>
+                
+                {# Post Content #}
+                <div class="blog-post-content">
+                    <div class="blog-post-meta">
+                        <span class="blog-post-date">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                <line x1="3" y1="10" x2="21" y2="10"/>
+                            </svg>
+                            {{ post.published_at|date:"F j, Y" }}
+                        </span>
+                        <span class="blog-post-author">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            {{ post.author.get_full_name|default:post.author.username }}
+                        </span>
+                        {% if post.reading_time %}
+                        <span class="blog-post-reading-time">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                            {{ post.reading_time }} {{ _('min read') }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    <h3 class="blog-post-title">
+                        <a href="{{ post.get_absolute_url }}">{{ post.title }}</a>
+                    </h3>
+                    
+                    <div class="blog-post-excerpt">{{ post.excerpt|safe|truncatewords:20 }}</div>
+                    
+                    <div class="blog-post-footer">
+                        <a href="{{ post.get_absolute_url }}" class="blog-post-read-more">
+                            {{ _('Read More') }}
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                                <polyline points="12 5 19 12 12 19"/>
+                            </svg>
+                        </a>
+                        <div class="blog-post-stats">
+                            <span class="blog-post-comment-count">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                </svg>
+                                {{ post.comments_count|default:0 }}
+                            </span>
+                            <span class="blog-post-like-count">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                                </svg>
+                                {{ post.likes_count|default:0 }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </article>
+        {% empty %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+            </div>
+            <div class="empty-state-title">{{ _('No posts found') }}</div>
+            <div class="empty-state-description">{{ _('There are no posts with this tag yet.') }}</div>
+            <a href="{% url 'blog:post_list' %}" class="btn btn-primary">{{ _('Back to Blog') }}</a>
+        </div>
+        {% endfor %}
+    </div>
+    
+    {# Pagination #}
+    {% if is_paginated %}
+    <div class="pagination-container">
+        <nav class="pagination" aria-label="pagination">
+            <ul class="pagination-list">
+                {% if page_obj.has_previous %}
+                <li class="pagination-item">
+                    <a href="?page=1" class="pagination-link">&laquo;</a>
+                </li>
+                <li class="pagination-item">
+                    <a href="?page={{ page_obj.previous_page_number }}" class="pagination-link">&lsaquo;</a>
+                </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="pagination-item active">
+                    <span class="pagination-link">{{ num }}</span>
+                </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="pagination-item">
+                    <a href="?page={{ num }}" class="pagination-link">{{ num }}</a>
+                </li>
+                {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <li class="pagination-item">
+                    <a href="?page={{ page_obj.next_page_number }}" class="pagination-link">&rsaquo;</a>
+                </li>
+                <li class="pagination-item">
+                    <a href="?page={{ page_obj.paginator.num_pages }}" class="pagination-link">&raquo;</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar">
+    {# Search Widget #}
+    <div class="sidebar-widget search-widget">
+        <h3 class="sidebar-widget-title">{{ _('Search') }}</h3>
+        <form class="sidebar-search-form" method="get" action="{% url 'blog:post_list' %}">
+            <div class="form-group">
+                <div class="form-input-wrapper">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="m21 21-4.35-4.35"/>
+                    </svg>
+                    <input type="text" name="q" class="form-input" placeholder="{{ _('Search posts...') }}" value="{{ request.GET.q|default:'' }}">
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    {# Categories Widget #}
+    <div class="sidebar-widget categories-widget">
+        <h3 class="sidebar-widget-title">{{ _('Categories') }}</h3>
+        <ul class="sidebar-categories-list">
+            {% for cat in blog_categories %}
+            <li class="sidebar-categories-item">
+                <a href="{{ cat.get_absolute_url }}" class="sidebar-categories-link">
+                    <span class="sidebar-categories-name">{{ cat.name }}</span>
+                    <span class="sidebar-categories-count">({{ cat.post_count|default:0 }})</span>
+                </a>
+                {% if cat.children.count %}
+                <ul class="sidebar-categories-children">
+                    {% for child in cat.children.all %}
+                    <li class="sidebar-categories-child">
+                        <a href="{{ child.get_absolute_url }}" class="sidebar-categories-link">
+                            <span class="sidebar-categories-name">{{ child.name }}</span>
+                            <span class="sidebar-categories-count">({{ child.post_count|default:0 }})</span>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+    {# Recent Posts Widget #}
+    <div class="sidebar-widget recent-posts-widget">
+        <h3 class="sidebar-widget-title">{{ _('Recent Posts') }}</h3>
+        <ul class="sidebar-posts-list">
+            {% for post in recent_posts[:5] %}
+            <li class="sidebar-posts-item">
+                <a href="{{ post.get_absolute_url }}" class="sidebar-posts-link">
+                    <div class="sidebar-posts-image">
+                        {% if post.thumbnail %}
+                        <img src="{{ post.thumbnail.url }}" alt="{{ post.title }}" loading="lazy">
+                        {% else %}
+                        <div class="placeholder-image"></div>
+                        {% endif %}
+                    </div>
+                    <div class="sidebar-posts-info">
+                        <div class="sidebar-posts-title">{{ post.title }}</div>
+                        <div class="sidebar-posts-date">{{ post.published_at|date:"M j, Y" }}</div>
+                    </div>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+    {# Tags Widget #}
+    <div class="sidebar-widget tags-widget">
+        <h3 class="sidebar-widget-title">{{ _('Tags') }}</h3>
+        <div class="tag-cloud">
+            {% for tag in blog_tags %}
+            <a href="{% url 'blog:post_list' %}?tag={{ tag.slug }}" class="tag-link {% if tag.slug == tag.slug %}active{% endif %}">{{ tag.name }}</a>
+            {% endfor %}
+        </div>
+    </div>
+    
+    {# Archive Widget #}
+    <div class="sidebar-widget archive-widget">
+        <h3 class="sidebar-widget-title">{{ _('Archive') }}</h3>
+        <ul class="sidebar-archive-list">
+            {% for date in post_archive %}
+            <li class="sidebar-archive-item">
+                <a href="{% url 'blog:post_list' %}?year={{ date.year }}&month={{ date.month }}" class="sidebar-archive-link">
+                    <span class="sidebar-archive-month">{{ date|date:"F" }}</span>
+                    <span class="sidebar-archive-year">{{ date.year }}</span>
+                    <span class="sidebar-archive-count">({{ date.count }})</span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+    {# Newsletter Widget #}
+    <div class="sidebar-widget newsletter-widget">
+        <h3 class="sidebar-widget-title">{{ _('Newsletter') }}</h3>
+        <form class="sidebar-newsletter-form" method="post" action="{% url 'newsletter:subscribe' %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">{{ _('Email Address') }}</label>
+                <input type="email" name="email" class="form-input" placeholder="{{ _('Your email') }}" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">{{ _('Subscribe') }}</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

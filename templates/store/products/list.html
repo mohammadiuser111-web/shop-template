@@ -1,0 +1,390 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}محصولات - {% if site_settings.site_name %}{{ site_settings.site_name }}{% else %}فروشگاه{% endif %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/products.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="{% url 'store:home' %}">خانه</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">محصولات</span>
+        </div>
+        <h1 class="page-title">
+            {% if category %}
+                {{ category.name }}
+            {% elif search_query %}
+                نتایج جستجو برای "{{ search_query }}"
+            {% elif tag %}
+                محصولات با تگ "{{ tag.name }}"
+            {% else %}
+                همه محصولات
+            {% endif %}
+        </h1>
+    </div>
+</div>
+
+<div class="main-container">
+    <div class="container">
+        <div class="products-page-layout">
+            <!-- Sidebar -->
+            <aside class="products-sidebar">
+                <!-- Categories Filter -->
+                <div class="filter-card">
+                    <h3 class="filter-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        دسته‌بندی‌ها
+                    </h3>
+                    <ul class="filter-list">
+                        <li class="filter-item {% if not category %}active{% endif %}">
+                            <a href="{% url 'store:products' %}">همه محصولات</a>
+                        </li>
+                        {% for cat in categories %}
+                        <li class="filter-item {% if category and category.id == cat.id %}active{% endif %}">
+                            <a href="{% url 'store:category' cat.slug %}">
+                                {{ cat.name }}
+                                {% if cat.children.all %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="9 6 15 12 9 18"/>
+                                </svg>
+                                {% endif %}
+                            </a>
+                            {% if cat.children.all %}
+                            <ul class="filter-sublist">
+                                {% for child in cat.children.all %}
+                                <li class="filter-subitem {% if category and category.id == child.id %}active{% endif %}">
+                                    <a href="{% url 'store:category' child.slug %}">{{ child.name }}</a>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- Price Filter -->
+                <div class="filter-card">
+                    <h3 class="filter-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="1" x2="12" y2="23"/>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                        </svg>
+                        محدوده قیمت
+                    </h3>
+                    <form action="" method="get" class="price-filter-form">
+                        <div class="price-filter-inputs">
+                            <div class="price-input-group">
+                                <label for="min_price">از</label>
+                                <input type="number" id="min_price" name="min_price" 
+                                       value="{{ request.GET.min_price|default:'' }}" 
+                                       placeholder="حداقل" class="price-input">
+                                <span class="price-currency">تومان</span>
+                            </div>
+                            <span class="price-separator">-</span>
+                            <div class="price-input-group">
+                                <label for="max_price">تا</label>
+                                <input type="number" id="max_price" name="max_price" 
+                                       value="{{ request.GET.max_price|default:'' }}" 
+                                       placeholder="حداکثر" class="price-input">
+                                <span class="price-currency">تومان</span>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-price-filter">اعمال فیلتر</button>
+                    </form>
+                </div>
+
+                <!-- Brands Filter -->
+                {% if brands %}
+                <div class="filter-card">
+                    <h3 class="filter-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                            <line x1="7" y1="7" x2="7.01" y2="7"/>
+                        </svg>
+                        برندها
+                    </h3>
+                    <ul class="filter-list filter-list-checkbox">
+                        {% for brand in brands %}
+                        <li class="filter-item">
+                            <label class="filter-checkbox">
+                                <input type="checkbox" name="brand" value="{{ brand.id }}" 
+                                       {% if brand.id|stringformat:"s" in request.GET.getlist.brand %}checked{% endif %}>
+                                <span class="filter-checkbox-custom"></span>
+                                <span class="filter-checkbox-label">{{ brand.name }}</span>
+                                <span class="filter-checkbox-count">{{ brand.product_count }}</span>
+                            </label>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <!-- Attributes Filter -->
+                {% if attributes %}
+                {% for attribute in attributes %}
+                <div class="filter-card">
+                    <h3 class="filter-title">{{ attribute.name }}</h3>
+                    <ul class="filter-list filter-list-checkbox">
+                        {% for value in attribute.values.all %}
+                        <li class="filter-item">
+                            <label class="filter-checkbox">
+                                <input type="checkbox" name="attribute_{{ attribute.id }}" 
+                                       value="{{ value.id }}">
+                                <span class="filter-checkbox-custom"></span>
+                                <span class="filter-checkbox-label">{{ value.value }}</span>
+                            </label>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                <!-- Availability Filter -->
+                <div class="filter-card">
+                    <h3 class="filter-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                        موجودی
+                    </h3>
+                    <ul class="filter-list">
+                        <li class="filter-item">
+                            <a href="?in_stock=true{% if request.GET %}&{{ request.GET.urlencode }}{% endif %}" 
+                               class="{% if request.GET.in_stock == 'true' %}active{% endif %}">
+                                فقط کالاهای موجود
+                            </a>
+                        </li>
+                        <li class="filter-item">
+                            <a href="?{% if request.GET %}{{ request.GET.urlencode|cut:'in_stock=' }}{% endif %}" 
+                               class="{% if request.GET.in_stock != 'true' %}active{% endif %}">
+                                همه محصولات
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Sorting -->
+                <div class="filter-card">
+                    <h3 class="filter-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18M7 12h10M7 18h10"/>
+                        </svg>
+                        مرتب‌سازی
+                    </h3>
+                    <ul class="filter-list">
+                        <li class="filter-item {% if request.GET.sort == 'newest' %}active{% endif %}">
+                            <a href="?sort=newest{% if request.GET %}&{{ request.GET.urlencode|cut:'sort=' }}{% endif %}">جدیدترین</a>
+                        </li>
+                        <li class="filter-item {% if request.GET.sort == 'price_asc' %}active{% endif %}">
+                            <a href="?sort=price_asc{% if request.GET %}&{{ request.GET.urlencode|cut:'sort=' }}{% endif %}">ارزان‌ترین</a>
+                        </li>
+                        <li class="filter-item {% if request.GET.sort == 'price_desc' %}active{% endif %}">
+                            <a href="?sort=price_desc{% if request.GET %}&{{ request.GET.urlencode|cut:'sort=' }}{% endif %}">گران‌ترین</a>
+                        </li>
+                        <li class="filter-item {% if request.GET.sort == 'rating' %}active{% endif %}">
+                            <a href="?sort=rating{% if request.GET %}&{{ request.GET.urlencode|cut:'sort=' }}{% endif %}">محبوب‌ترین</a>
+                        </li>
+                        <li class="filter-item {% if request.GET.sort == 'bestseller' %}active{% endif %}">
+                            <a href="?sort=bestseller{% if request.GET %}&{{ request.GET.urlencode|cut:'sort=' }}{% endif %}">پرفروش‌ترین</a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Ads -->
+                {% if sidebar_ads %}
+                {% for ad in sidebar_ads %}
+                <div class="sidebar-ad">
+                    <a href="{{ ad.url }}" target="_blank">
+                        <img src="{{ ad.image.url }}" alt="{{ ad.title }}" loading="lazy">
+                    </a>
+                </div>
+                {% endfor %}
+                {% endif %}
+            </aside>
+
+            <!-- Products Grid -->
+            <div class="products-content">
+                <!-- Toolbar -->
+                <div class="products-toolbar">
+                    <div class="toolbar-left">
+                        <span class="products-count">
+                            نمایش {{ paginator.start_index }} تا {{ paginator.end_index }} از {{ paginator.count }} محصول
+                        </span>
+                    </div>
+                    <div class="toolbar-right">
+                        <div class="view-mode">
+                            <button class="view-mode-btn grid-view {% if request.GET.view != 'list' %}active{% endif %}" 
+                                    aria-label="نمایش شبکه‌ای">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="3" width="7" height="7" rx="1"/>
+                                    <rect x="14" y="3" width="7" height="7" rx="1"/>
+                                    <rect x="14" y="14" width="7" height="7" rx="1"/>
+                                    <rect x="3" y="14" width="7" height="7" rx="1"/>
+                                </svg>
+                            </button>
+                            <button class="view-mode-btn list-view {% if request.GET.view == 'list' %}active{% endif %}" 
+                                    aria-label="نمایش لیستی">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="8" y1="6" x2="21" y2="6"/>
+                                    <line x1="8" y1="12" x2="21" y2="12"/>
+                                    <line x1="8" y1="18" x2="21" y2="18"/>
+                                    <line x1="3" y1="6" x2="3.01" y2="6"/>
+                                    <line x1="3" y1="12" x2="3.01" y2="12"/>
+                                    <line x1="3" y1="18" x2="3.01" y2="18"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Products Grid/List -->
+                {% if request.GET.view == 'list' %}
+                <div class="products-list">
+                    {% for product in products %}
+                    <div class="product-list-item">
+                        <a href="{% url 'store:product_detail' product.slug %}" class="product-list-image">
+                            {% if product.main_image %}
+                            <img src="{{ product.main_image.url }}" alt="{{ product.name }}" loading="lazy">
+                            {% else %}
+                            <div class="product-placeholder">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                    <line x1="3" y1="9" x2="21" y2="9"/>
+                                    <line x1="9" y1="21" x2="9" y2="9"/>
+                                </svg>
+                            </div>
+                            {% endif %}
+                        </a>
+                        <div class="product-list-info">
+                            <h3 class="product-list-title">{{ product.name }}</h3>
+                            <div class="product-list-rating">
+                                <div class="rating-stars">
+                                    {% for i in "12345" %}
+                                    {% if product.rating >= forloop.counter %}
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                                    </svg>
+                                    {% else %}
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                                    </svg>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                                <span class="rating-count">({{ product.review_count }} نظر)</span>
+                            </div>
+                            <p class="product-list-description">{{ product.short_description|truncatechars:200 }}</p>
+                            <div class="product-list-prices">
+                                {% if product.sale_price %}
+                                <span class="product-list-price">{{ product.sale_price|intcomma }} تومان</span>
+                                <span class="product-list-original-price">{{ product.price|intcomma }} تومان</span>
+                                {% else %}
+                                <span class="product-list-price">{{ product.price|intcomma }} تومان</span>
+                                {% endif %}
+                            </div>
+                            <div class="product-list-actions">
+                                {% if product.is_in_stock %}
+                                <button class="btn btn-primary btn-add-to-cart" 
+                                        data-product-id="{{ product.id }}">
+                                    افزودن به سبد
+                                </button>
+                                {% else %}
+                                <button class="btn btn-secondary btn-notify-me" 
+                                        data-product-id="{{ product.id }}">
+                                    اطلاع‌رسانی موجودی
+                                </button>
+                                {% endif %}
+                                <button class="btn btn-outline wishlist-btn {% if product.in_wishlist %}active{% endif %}" 
+                                        data-product-id="{{ product.id }}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="products-grid">
+                    {% for product in products %}
+                    {% include 'store/partials/product_card.html' with product=product %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Pagination -->
+                {% if products.has_other_pages %}
+                <nav class="pagination" aria-label="صفحه‌بندی">
+                    <ul class="pagination-list">
+                        {% if products.has_previous %}
+                        <li class="pagination-item">
+                            <a href="?page=1{% if request.GET %}&{{ request.GET.urlencode|cut:'page=' }}{% endif %}" class="pagination-link" aria-label="اولین صفحه">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="19 20 9 12 19 4"/>
+                                    <line x1="12" y1="19" x2="12" y2="5"/>
+                                </svg>
+                            </a>
+                        </li>
+                        <li class="pagination-item">
+                            <a href="?page={{ products.previous_page_number }}{% if request.GET %}&{{ request.GET.urlencode|cut:'page=' }}{% endif %}" class="pagination-link" aria-label="صفحه قبلی">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="15 18 9 12 15 6"/>
+                                </svg>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for num in products.paginator.page_range %}
+                            {% if products.number == num %}
+                            <li class="pagination-item active">
+                                <span class="pagination-link">{{ num }}</span>
+                            </li>
+                            {% elif num > products.number|add:'-3' and num < products.number|add:'3' %}
+                            <li class="pagination-item">
+                                <a href="?page={{ num }}{% if request.GET %}&{{ request.GET.urlencode|cut:'page=' }}{% endif %}" class="pagination-link">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if products.has_next %}
+                        <li class="pagination-item">
+                            <a href="?page={{ products.next_page_number }}{% if request.GET %}&{{ request.GET.urlencode|cut:'page=' }}{% endif %}" class="pagination-link" aria-label="صفحه بعدی">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="9 18 15 12 9 6"/>
+                                </svg>
+                            </a>
+                        </li>
+                        <li class="pagination-item">
+                            <a href="?page={{ products.paginator.num_pages }}{% if request.GET %}&{{ request.GET.urlencode|cut:'page=' }}{% endif %}" class="pagination-link" aria-label="آخرین صفحه">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="5 4 15 12 5 20"/>
+                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                </svg>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/products.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,400 @@
+{# ============================================
+   Sidebar Partial Template
+   Shop Template - Django E-commerce Template
+   ============================================ #}
+
+{# ============================================
+   Product Filter Sidebar
+   ============================================ #}
+<div class="sidebar">
+    {# Filter Widget #}
+    <div class="sidebar-widget filter-widget">
+        <h3 class="sidebar-widget-title">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+            </svg>
+            {{ _('Filters') }}
+        </h3>
+        
+        <form class="filter-form" method="get" action="">
+            {# Price Filter #}
+            <div class="filter-section">
+                <h4 class="filter-section-title">{{ _('Price Range') }}</h4>
+                <div class="filter-section-content">
+                    <div class="price-range-slider" data-min="0" data-max="1000" data-step="10">
+                        <div class="price-range-track">
+                            <div class="price-range-fill"></div>
+                            <div class="price-range-handle min"></div>
+                            <div class="price-range-handle max"></div>
+                        </div>
+                        <div class="price-range-inputs">
+                            <div class="form-group">
+                                <label class="form-label">{{ _('Min') }}</label>
+                                <input type="number" name="min_price" class="form-input price-range-min" value="{{ request.GET.min_price|default:0 }}" placeholder="0">
+                            </div>
+                            <span class="price-range-separator">-</span>
+                            <div class="form-group">
+                                <label class="form-label">{{ _('Max') }}</label>
+                                <input type="number" name="max_price" class="form-input price-range-max" value="{{ request.GET.max_price|default:1000 }}" placeholder="1000">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {# Categories Filter #}
+            <div class="filter-section">
+                <h4 class="filter-section-title">{{ _('Categories') }}</h4>
+                <div class="filter-section-content">
+                    <ul class="filter-list">
+                        {% for category in categories %}
+                        <li class="filter-item">
+                            <label class="filter-checkbox">
+                                <input type="checkbox" name="category" value="{{ category.slug }}" 
+                                       {% if category.slug in request.GET.getlist('category') %}checked{% endif %}>
+                                <span class="filter-checkbox-custom"></span>
+                                <span class="filter-checkbox-label">{{ category.name }}</span>
+                                <span class="filter-count">({{ category.product_count|default:0 }})</span>
+                            </label>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            
+            {# Brands Filter #}
+            <div class="filter-section">
+                <h4 class="filter-section-title">{{ _('Brands') }}</h4>
+                <div class="filter-section-content">
+                    <ul class="filter-list">
+                        {% for brand in brands %}
+                        <li class="filter-item">
+                            <label class="filter-checkbox">
+                                <input type="checkbox" name="brand" value="{{ brand.slug }}" 
+                                       {% if brand.slug in request.GET.getlist('brand') %}checked{% endif %}>
+                                <span class="filter-checkbox-custom"></span>
+                                <span class="filter-checkbox-label">{{ brand.name }}</span>
+                                <span class="filter-count">({{ brand.product_count|default:0 }})</span>
+                            </label>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            
+            {# Rating Filter #}
+            <div class="filter-section">
+                <h4 class="filter-section-title">{{ _('Rating') }}</h4>
+                <div class="filter-section-content">
+                    <ul class="filter-list">
+                        {% for rating in [5,4,3,2,1] %}
+                        <li class="filter-item">
+                            <label class="filter-checkbox">
+                                <input type="checkbox" name="rating" value="{{ rating }}" 
+                                       {% if rating|string in request.GET.getlist('rating') %}checked{% endif %}>
+                                <span class="filter-checkbox-custom"></span>
+                                <span class="filter-checkbox-label">
+                                    <div class="rating-stars" data-rating="{{ rating }}">
+                                        {% for i in '12345' %}
+                                        <svg class="rating-star {% if forloop.counter <= rating %}filled{% endif %}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                        </svg>
+                                        {% endfor %}
+                                    </div>
+                                    <span>& Up</span>
+                                </span>
+                            </label>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            
+            {# Attributes Filter #}
+            {% if product_attributes %}
+            {% for attribute in product_attributes %}
+            <div class="filter-section">
+                <h4 class="filter-section-title">{{ attribute.name }}</h4>
+                <div class="filter-section-content">
+                    {% if attribute.type == 'color' %}
+                    <div class="filter-color-options">
+                        {% for value in attribute.values %}
+                        <label class="filter-color-option">
+                            <input type="checkbox" name="attr_{{ attribute.slug }}" value="{{ value.slug }}" 
+                                   {% if value.slug in request.GET.getlist('attr_' + attribute.slug) %}checked{% endif %}>
+                            <span class="filter-color-swatch" style="background-color: {{ value.color_code }};"></span>
+                            <span class="filter-color-name">{{ value.name }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% elif attribute.type == 'size' %}
+                    <div class="filter-size-options">
+                        {% for value in attribute.values %}
+                        <label class="filter-size-option">
+                            <input type="checkbox" name="attr_{{ attribute.slug }}" value="{{ value.slug }}" 
+                                   {% if value.slug in request.GET.getlist('attr_' + attribute.slug) %}checked{% endif %}>
+                            <span class="filter-size-value">{{ value.name }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <ul class="filter-list">
+                        {% for value in attribute.values %}
+                        <li class="filter-item">
+                            <label class="filter-checkbox">
+                                <input type="checkbox" name="attr_{{ attribute.slug }}" value="{{ value.slug }}" 
+                                       {% if value.slug in request.GET.getlist('attr_' + attribute.slug) %}checked{% endif %}>
+                                <span class="filter-checkbox-custom"></span>
+                                <span class="filter-checkbox-label">{{ value.name }}</span>
+                            </label>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            {% endif %}
+            
+            {# Filter Actions #}
+            <div class="filter-actions">
+                <button type="submit" class="btn btn-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="m21 21-4.35-4.35"/>
+                    </svg>
+                    {{ _('Apply Filters') }}
+                </button>
+                <a href="" class="btn btn-outline-secondary">{{ _('Reset') }}</a>
+            </div>
+        </form>
+    </div>
+    
+    {# Best Sellers Widget #}
+    <div class="sidebar-widget best-sellers-widget">
+        <h3 class="sidebar-widget-title">{{ _('Best Sellers') }}</h3>
+        <ul class="sidebar-product-list">
+            {% for product in best_sellers[:5] %}
+            <li class="sidebar-product-item">
+                <a href="{{ product.get_absolute_url }}" class="sidebar-product-link">
+                    <div class="sidebar-product-image">
+                        {% if product.thumbnail %}
+                        <img src="{{ product.thumbnail.url }}" alt="{{ product.name }}" loading="lazy">
+                        {% else %}
+                        <div class="placeholder-image">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="9" y1="9" x2="15" y2="15"/>
+                                <line x1="15" y1="9" x2="9" y2="15"/>
+                            </svg>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="sidebar-product-info">
+                        <div class="sidebar-product-name">{{ product.name }}</div>
+                        <div class="sidebar-product-price">
+                            {% if product.sale_price %}
+                            <span class="price-sale">{{ product.sale_price|format_price }}</span>
+                            <span class="price-regular">{{ product.regular_price|format_price }}</span>
+                            {% else %}
+                            <span class="price-regular">{{ product.regular_price|format_price }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="sidebar-product-rating">
+                            <div class="rating-stars" data-rating="{{ product.rating|default:0 }}">
+                                {% for i in '12345' %}
+                                <svg class="rating-star {% if forloop.counter <= product.rating|default:0 %}filled{% endif %}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                </svg>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+    {# Tags Widget #}
+    <div class="sidebar-widget tags-widget">
+        <h3 class="sidebar-widget-title">{{ _('Popular Tags') }}</h3>
+        <div class="tag-cloud">
+            {% for tag in popular_tags %}
+            <a href="?tag={{ tag.slug }}" class="tag-link">{{ tag.name }}</a>
+            {% endfor %}
+        </div>
+    </div>
+    
+    {# Banner Widget #}
+    {% if sidebar_banner %}
+    <div class="sidebar-widget banner-widget">
+        <a href="{{ sidebar_banner.url }}" class="sidebar-banner">
+            {% if sidebar_banner.image %}
+            <img src="{{ sidebar_banner.image.url }}" alt="{{ sidebar_banner.title }}" loading="lazy">
+            {% endif %}
+            <div class="sidebar-banner-content">
+                <div class="sidebar-banner-title">{{ sidebar_banner.title }}</div>
+                <div class="sidebar-banner-subtitle">{{ sidebar_banner.subtitle }}</div>
+            </div>
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+{# ============================================
+   Mobile Filter Sidebar (Off-canvas)
+   ============================================ #}
+<div class="sidebar-filter" id="mobileFilterSidebar">
+    <div class="sidebar-filter-header">
+        <h3 class="sidebar-filter-title">{{ _('Filters') }}</h3>
+        <button class="sidebar-filter-close" id="closeMobileFilter">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        </button>
+    </div>
+    <div class="sidebar-filter-content">
+        {# Same filter content as desktop #}
+        <form class="filter-form" method="get" action="">
+            <div class="filter-section">
+                <h4 class="filter-section-title">{{ _('Price Range') }}</h4>
+                <div class="filter-section-content">
+                    <div class="price-range-slider" data-min="0" data-max="1000" data-step="10">
+                        <div class="price-range-track">
+                            <div class="price-range-fill"></div>
+                            <div class="price-range-handle min"></div>
+                            <div class="price-range-handle max"></div>
+                        </div>
+                        <div class="price-range-inputs">
+                            <div class="form-group">
+                                <label class="form-label">{{ _('Min') }}</label>
+                                <input type="number" name="min_price" class="form-input price-range-min" value="{{ request.GET.min_price|default:0 }}">
+                            </div>
+                            <span class="price-range-separator">-</span>
+                            <div class="form-group">
+                                <label class="form-label">{{ _('Max') }}</label>
+                                <input type="number" name="max_price" class="form-input price-range-max" value="{{ request.GET.max_price|default:1000 }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="filter-section">
+                <h4 class="filter-section-title">{{ _('Categories') }}</h4>
+                <div class="filter-section-content">
+                    <ul class="filter-list">
+                        {% for category in categories %}
+                        <li class="filter-item">
+                            <label class="filter-checkbox">
+                                <input type="checkbox" name="category" value="{{ category.slug }}" 
+                                       {% if category.slug in request.GET.getlist('category') %}checked{% endif %}>
+                                <span class="filter-checkbox-custom"></span>
+                                <span class="filter-checkbox-label">{{ category.name }}</span>
+                                <span class="filter-count">({{ category.product_count|default:0 }})</span>
+                            </label>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="filter-actions">
+                <button type="submit" class="btn btn-primary">{{ _('Apply Filters') }}</button>
+                <a href="" class="btn btn-outline-secondary">{{ _('Reset') }}</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ============================================
+   Compare Sidebar
+   ============================================ #}
+<div class="compare-sidebar" id="compareSidebar">
+    <div class="compare-sidebar-header">
+        <h3 class="compare-sidebar-title">{{ _('Compare Products') }}</h3>
+        <button class="compare-sidebar-close" id="closeCompareSidebar">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        </button>
+    </div>
+    
+    <div class="compare-sidebar-items" id="compareItems">
+        {% for product in compare_products %}
+        <div class="compare-sidebar-item" data-product-id="{{ product.id }}">
+            <button class="compare-sidebar-item-remove" onclick="compare.remove({{ product.id }})">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+            <a href="{{ product.get_absolute_url }}" class="compare-sidebar-item-link">
+                <div class="compare-sidebar-item-image">
+                    {% if product.thumbnail %}
+                    <img src="{{ product.thumbnail.url }}" alt="{{ product.name }}" loading="lazy">
+                    {% else %}
+                    <div class="placeholder-image"></div>
+                    {% endif %}
+                </div>
+                <div class="compare-sidebar-item-info">
+                    <div class="compare-sidebar-item-name">{{ product.name }}</div>
+                    <div class="compare-sidebar-item-price">{{ product.get_price|format_price }}</div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="compare-sidebar-footer">
+        <a href="{% url 'store:compare' %}" class="btn btn-primary">{{ _('View Full Compare') }}</a>
+    </div>
+</div>
+
+{# ============================================
+   Wishlist Sidebar
+   ============================================ #}
+<div class="wishlist-sidebar" id="wishlistSidebar">
+    <div class="wishlist-sidebar-header">
+        <h3 class="wishlist-sidebar-title">{{ _('Your Wishlist') }}</h3>
+        <button class="wishlist-sidebar-close" id="closeWishlistSidebar">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        </button>
+    </div>
+    
+    <div class="wishlist-sidebar-items" id="wishlistItems">
+        {% for product in wishlist_products %}
+        <div class="wishlist-sidebar-item" data-product-id="{{ product.id }}">
+            <button class="wishlist-sidebar-item-remove" onclick="wishlist.remove({{ product.id }})">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+            <a href="{{ product.get_absolute_url }}" class="wishlist-sidebar-item-link">
+                <div class="wishlist-sidebar-item-image">
+                    {% if product.thumbnail %}
+                    <img src="{{ product.thumbnail.url }}" alt="{{ product.name }}" loading="lazy">
+                    {% else %}
+                    <div class="placeholder-image"></div>
+                    {% endif %}
+                </div>
+                <div class="wishlist-sidebar-item-info">
+                    <div class="wishlist-sidebar-item-name">{{ product.name }}</div>
+                    <div class="wishlist-sidebar-item-price">{{ product.get_price|format_price }}</div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="wishlist-sidebar-footer">
+        <a href="{% url 'store:wishlist' %}" class="btn btn-primary">{{ _('View Full Wishlist') }}</a>
+    </div>
+</div>

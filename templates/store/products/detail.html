@@ -1,0 +1,471 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}{{ product.name }} - {% if site_settings.site_name %}{{ site_settings.site_name }}{% else %}فروشگاه{% endif %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/product-detail.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="{% url 'store:home' %}">خانه</a>
+            <span class="breadcrumb-separator">/</span>
+            {% if product.category %}
+            <a href="{% url 'store:category' product.category.slug %}">{{ product.category.name }}</a>
+            <span class="breadcrumb-separator">/</span>
+            {% endif %}
+            <span class="breadcrumb-current">{{ product.name }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="main-container">
+    <div class="container">
+        <div class="product-detail-layout">
+            <!-- Product Gallery -->
+            <div class="product-gallery">
+                <div class="gallery-main">
+                    {% if product.images.all %}
+                    <div class="gallery-slider">
+                        {% for image in product.images.all %}
+                        <div class="gallery-slide {% if forloop.first %}active{% endif %}">
+                            <img src="{{ image.image.url }}" alt="{{ product.name }} - تصویر {{ forloop.counter }}" class="gallery-image" loading="lazy">
+                            {% if forloop.first %}
+                            <div class="gallery-zoom">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="11" cy="11" r="8"/>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                                    <line x1="11" y1="8" x2="11" y2="14"/>
+                                    <line x1="8" y1="11" x2="14" y2="11"/>
+                                </svg>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="gallery-nav">
+                        {% for image in product.images.all %}
+                        <button class="gallery-nav-item {% if forloop.first %}active{% endif %}" data-slide="{{ forloop.counter0 }}" aria-label="تصویر {{ forloop.counter }}">
+                            <img src="{{ image.image.url }}" alt="{{ product.name }} - تصویر {{ forloop.counter }}" loading="lazy">
+                        </button>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="gallery-placeholder">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="3" y1="9" x2="21" y2="9"/>
+                            <line x1="9" y1="21" x2="9" y2="9"/>
+                        </svg>
+                        <p>تصویری برای این محصول ثبت نشده است</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Product Info -->
+            <div class="product-info">
+                {% if product.brand %}
+                <div class="product-brand">
+                    <span class="brand-label">برند:</span>
+                    <a href="{% url 'store:brand' product.brand.slug %}" class="brand-name">{{ product.brand.name }}</a>
+                </div>
+                {% endif %}
+
+                <h1 class="product-title">{{ product.name }}</h1>
+
+                <div class="product-meta">
+                    <div class="product-sku">کد محصول: <span>{{ product.sku|default:product.id }}</span></div>
+                    <div class="product-availability">
+                        {% if product.is_in_stock %}
+                        <span class="in-stock">موجود در انبار</span>
+                        {% else %}
+                        <span class="out-of-stock">ناموجود</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="product-rating">
+                    <div class="rating-stars">
+                        {% for i in "12345" %}
+                        {% if product.rating >= forloop.counter %}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                        </svg>
+                        {% else %}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                        </svg>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    <div class="rating-info">
+                        <span class="rating-value">{{ product.rating|floatformat:1 }}</span>
+                        <span class="rating-count">({{ product.review_count }} نظر)</span>
+                    </div>
+                </div>
+
+                <div class="product-price">
+                    {% if product.sale_price %}
+                    <div class="price-group">
+                        <span class="price-current">{{ product.sale_price|intcomma }} تومان</span>
+                        <span class="price-original">{{ product.price|intcomma }} تومان</span>
+                        <span class="price-discount">{{ product.discount_percent }}% تخفیف</span>
+                    </div>
+                    {% else %}
+                    <span class="price-current">{{ product.price|intcomma }} تومان</span>
+                    {% endif %}
+                </div>
+
+                {% if product.short_description %}
+                <div class="product-short-desc">
+                    <p>{{ product.short_description }}</p>
+                </div>
+                {% endif %}
+
+                <!-- Product Actions -->
+                <div class="product-actions">
+                    <div class="product-quantity">
+                        <label for="quantity">تعداد:</label>
+                        <div class="quantity-input">
+                            <button type="button" class="quantity-btn quantity-decrease" aria-label="کاهش">-</button>
+                            <input type="number" id="quantity" name="quantity" value="1" min="1" 
+                                   max="{{ product.stock_quantity }}" class="quantity-value">
+                            <button type="button" class="quantity-btn quantity-increase" aria-label="افزایش">+</button>
+                        </div>
+                        {% if product.stock_quantity %}
+                        <span class="stock-quantity">{{ product.stock_quantity }} عدد موجود</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="product-action-buttons">
+                        {% if product.is_in_stock %}
+                        <button class="btn btn-primary btn-lg btn-add-to-cart" 
+                                data-product-id="{{ product.id }}"
+                                data-product-name="{{ product.name }}"
+                                data-product-price="{{ product.sale_price|default:product.price }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                                <line x1="3" y1="6" x2="21" y2="6"/>
+                                <path d="M16 10a4 4 0 0 1-8 0"/>
+                            </svg>
+                            افزودن به سبد خرید
+                        </button>
+                        {% else %}
+                        <button class="btn btn-secondary btn-lg btn-notify-me" 
+                                data-product-id="{{ product.id }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                            </svg>
+                            اطلاع‌رسانی موجودی
+                        </button>
+                        {% endif %}
+
+                        <button class="btn btn-outline btn-lg wishlist-btn {% if product.in_wishlist %}active{% endif %}" 
+                                data-product-id="{{ product.id }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                            </svg>
+                            افزودن به علاقه‌مندی‌ها
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product Features -->
+                {% if product.attributes.all %}
+                <div class="product-features">
+                    <h4 class="features-title">ویژگی‌های محصول:</h4>
+                    <div class="features-grid">
+                        {% for attr_value in product.attributes.all %}
+                        <div class="feature-item">
+                            <span class="feature-name">{{ attr_value.attribute.name }}:</span>
+                            <span class="feature-value">{{ attr_value.value }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Shipping Info -->
+                <div class="product-shipping">
+                    <div class="shipping-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                            <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                        <span>ارسال به سراسر کشور</span>
+                    </div>
+                    <div class="shipping-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                        <span>ضمانت بازگشت کالا</span>
+                    </div>
+                    <div class="shipping-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                        <span>پشتیبانی 24 ساعته</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Description -->
+        <div class="product-description-section">
+            <div class="section-header">
+                <h2 class="section-title">توضیحات محصول</h2>
+            </div>
+            <div class="product-description">
+                {{ product.description|safe }}
+            </div>
+        </div>
+
+        <!-- Product Tabs -->
+        <div class="product-tabs">
+            <div class="tabs-header">
+                <button class="tab-btn active" data-tab="reviews">نظرات کاربران</button>
+                <button class="tab-btn" data-tab="questions">سوالات متداول</button>
+                <button class="tab-btn" data-tab="videos">ویدئوها</button>
+            </div>
+            <div class="tabs-content">
+                <!-- Reviews Tab -->
+                <div class="tab-pane active" id="reviews">
+                    <div class="reviews-section">
+                        {% if product.reviews.all %}
+                        <div class="reviews-list">
+                            {% for review in product.reviews.all %}
+                            <div class="review-item">
+                                <div class="review-header">
+                                    <div class="review-user">
+                                        <div class="user-avatar">{{ review.user.get_full_name|slice:":1"|upper }}</div>
+                                        <div class="user-info">
+                                            <span class="user-name">{{ review.user.get_full_name|default:review.user.phone_number }}</span>
+                                            <span class="review-date">{{ review.created_at|date:"Y/m/d" }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="review-rating">
+                                        <div class="rating-stars">
+                                            {% for i in "12345" %}
+                                            {% if review.rating >= forloop.counter %}
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                                            </svg>
+                                            {% else %}
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                                            </svg>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="review-content">
+                                    <h4 class="review-title">{{ review.title }}</h4>
+                                    <p class="review-comment">{{ review.comment }}</p>
+                                    {% if review.images.all %}
+                                    <div class="review-images">
+                                        {% for image in review.images.all %}
+                                        <img src="{{ image.image.url }}" alt="تصویر نظر" class="review-image" loading="lazy">
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    <div class="review-helpful">
+                                        <span>آیا این نظر مفید بود؟</span>
+                                        <button class="helpful-btn {% if review.is_helpful %}active{% endif %}" 
+                                                data-review-id="{{ review.id }}" data-helpful="1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.05zM7 20h5v-2a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3z"/>
+                                            </svg>
+                                            بله ({{ review.helpful_count }})
+                                        </button>
+                                        <button class="helpful-btn {% if not review.is_helpful %}active{% endif %}" 
+                                                data-review-id="{{ review.id }}" data-helpful="0">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M10 15l4-4m0 0l4-4m-4 4H4"/>
+                                            </svg>
+                                            خیر ({{ review.not_helpful_count }})
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="no-reviews">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                            </svg>
+                            <p>هنوز نظری برای این محصول ثبت نشده است.</p>
+                            <p>اولین نفری باشید که نظر می‌دهید!</p>
+                        </div>
+                        {% endif %}
+
+                        {% if user.is_authenticated and not user_has_reviewed %}
+                        <div class="add-review">
+                            <h4 class="add-review-title">نظر خود را ثبت کنید</h4>
+                            <form action="{% url 'reviews:create' product.id %}" method="post" class="review-form">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    <label for="rating">امتیاز دهید:</label>
+                                    <div class="rating-select">
+                                        {% for i in "54321" %}
+                                        <label class="rating-label">
+                                            <input type="radio" name="rating" value="{{ i }}" required>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                                            </svg>
+                                        </label>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="title">عنوان نظر:</label>
+                                    <input type="text" id="title" name="title" class="form-input" placeholder="مثال: محصول بسیار با کیفیتی است" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="comment">نظر خود را بنویسید:</label>
+                                    <textarea id="comment" name="comment" class="form-textarea" rows="5" placeholder="نظر خود را در مورد این محصول بنویسید..." required></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="is_recommended">آیا این محصول را توصیه می‌کنید؟</label>
+                                    <div class="recommend-select">
+                                        <label class="recommend-label">
+                                            <input type="radio" name="is_recommended" value="true" checked>
+                                            <span>بله</span>
+                                        </label>
+                                        <label class="recommend-label">
+                                            <input type="radio" name="is_recommended" value="false">
+                                            <span>خیر</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">ثبت نظر</button>
+                            </form>
+                        </div>
+                        {% elif not user.is_authenticated %}
+                        <div class="login-to-review">
+                            <p>برای ثبت نظر ابتدا <a href="{% url 'accounts:login' %}?next={{ request.path }}">وارد</a> شوید.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Questions Tab -->
+                <div class="tab-pane" id="questions">
+                    <div class="questions-section">
+                        {% if product.questions.all %}
+                        <div class="questions-list">
+                            {% for question in product.questions.all %}
+                            <div class="question-item">
+                                <div class="question-header">
+                                    <span class="question-user">{{ question.user.get_full_name|default:question.user.phone_number }}</span>
+                                    <span class="question-date">{{ question.created_at|date:"Y/m/d" }}</span>
+                                </div>
+                                <div class="question-content">
+                                    <p class="question-text">{{ question.text }}</p>
+                                    {% if question.answer %}
+                                    <div class="question-answer">
+                                        <span class="answer-label">پاسخ:</span>
+                                        <p>{{ question.answer }}</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="no-questions">
+                            <p>هنوز سوالی برای این محصول ثبت نشده است.</p>
+                        </div>
+                        {% endif %}
+
+                        {% if user.is_authenticated %}
+                        <div class="ask-question">
+                            <h4 class="ask-question-title">سوال خود را بپرسید</h4>
+                            <form action="{% url 'support:create_question' product.id %}" method="post" class="question-form">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    <label for="question_text">سوال خود را بنویسید:</label>
+                                    <textarea id="question_text" name="text" class="form-textarea" rows="4" placeholder="سوال خود را در مورد این محصول بنویسید..." required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">ارسال سوال</button>
+                            </form>
+                        </div>
+                        {% elif not user.is_authenticated %}
+                        <div class="login-to-ask">
+                            <p>برای پرسیدن سوال ابتدا <a href="{% url 'accounts:login' %}?next={{ request.path }}">وارد</a> شوید.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Videos Tab -->
+                <div class="tab-pane" id="videos">
+                    <div class="videos-section">
+                        {% if product.videos.all %}
+                        <div class="videos-grid">
+                            {% for video in product.videos.all %}
+                            <div class="video-item">
+                                <div class="video-thumbnail">
+                                    <iframe width="560" height="315" src="https://www.youtube.com/embed/{{ video.youtube_id }}" 
+                                            frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                            allowfullscreen></iframe>
+                                </div>
+                                <h4 class="video-title">{{ video.title }}</h4>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="no-videos">
+                            <p>هنوز ویدئویی برای این محصول آپلود نشده است.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Related Products -->
+        {% if related_products %}
+        <div class="related-products-section">
+            <div class="section-header">
+                <h2 class="section-title">محصولات مرتبط</h2>
+            </div>
+            <div class="products-grid">
+                {% for product in related_products %}
+                {% include 'store/partials/product_card.html' with product=product %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Recently Viewed Products -->
+        {% if recently_viewed %}
+        <div class="recently-viewed-section">
+            <div class="section-header">
+                <h2 class="section-title">محصولات مشاهده شده</h2>
+            </div>
+            <div class="products-grid">
+                {% for product in recently_viewed %}
+                {% include 'store/partials/product_card.html' with product=product %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/product-detail.js' %}"></script>
+{% endblock %}

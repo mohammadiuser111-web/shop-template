@@ -79,22 +79,6 @@ class Transaction(models.Model):
         blank=True,
         verbose_name='User'
     )
-    order = models.ForeignKey(
-        'orders.Order',
-        on_delete=models.SET_NULL,
-        related_name='transactions',
-        null=True,
-        blank=True,
-        verbose_name='Order'
-    )
-    refund = models.ForeignKey(
-        'orders.Refund',
-        on_delete=models.SET_NULL,
-        related_name='transactions',
-        null=True,
-        blank=True,
-        verbose_name='Refund'
-    )
     
     # Transaction details
     gateway = models.ForeignKey(
@@ -137,7 +121,6 @@ class Transaction(models.Model):
         indexes = [
             models.Index(fields=['transaction_id']),
             models.Index(fields=['user']),
-            models.Index(fields=['order']),
             models.Index(fields=['gateway']),
             models.Index(fields=['status']),
             models.Index(fields=['transaction_type']),

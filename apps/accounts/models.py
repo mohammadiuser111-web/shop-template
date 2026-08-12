@@ -58,7 +58,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         ('support', 'Support'),
     ]
     
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.AutoField(primary_key=True)
+    username = models.CharField(_('Username'), max_length=100, unique=True, blank=True)
     phone_regex = RegexValidator(
         regex=r'^\+?1?\d{9,15}$',
         message=_("Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.")
@@ -110,7 +111,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     objects = UserManager()
     
-    USERNAME_FIELD = 'phone_number'
+    USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = []
     
     class Meta:

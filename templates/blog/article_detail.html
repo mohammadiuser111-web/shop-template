@@ -1,355 +1,521 @@
-{% extends "base.html" %}
-{% load i18n static %}
+{% extends 'base.html' %}
 
-{% block title %}{{ article.title }}{% endblock %}
-{% block meta_title %}{{ meta_title }}{% endblock %}
-{% block meta_description %}{{ meta_description }}{% endblock %}
+{% load static %}
+
+{% block title %}{{ article.title }} - {% if site_settings.site_name %}{{ site_settings.site_name }}{% else %}فروشگاه{% endif %}{% endblock %}
+
+{% block meta_description %}{{ article.meta_description|default:article.excerpt }}{% endblock %}
+
+{% block meta_keywords %}{{ article.meta_keywords|default:article.tags.all|join:", " }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/blog.css' %}">
+{% endblock %}
 
 {% block content %}
-<!-- Breadcrumb -->
-<div class="breadcrumb-wrapper">
+<div class="page-header">
     <div class="container">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
-                <li class="breadcrumb-item"><a href="{% url 'blog:article_list' %}">{% trans "Blog" %}</a></li>
-                <li class="breadcrumb-item active" aria-current="page">{{ article.title }}</li>
-            </ol>
-        </nav>
+        <div class="breadcrumb">
+            <a href="{% url 'store:home' %}">خانه</a>
+            <span class="breadcrumb-separator">/</span>
+            <a href="{% url 'blog:article_list' %}">بلاگ</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">{{ article.title }}</span>
+        </div>
     </div>
 </div>
 
-<!-- Article Header -->
-<div class="py-5 bg-light">
+<div class="main-container">
     <div class="container">
-        <article>
-            <header class="text-center mb-4">
-                {% if article.featured_image %}
-                <img src="{{ article.featured_image.url }}" alt="{{ article.title }}" class="img-fluid rounded shadow mb-4 max-height-500 w-100 object-fit-cover">
-                {% endif %}
-                
-                <div class="d-flex align-items-center justify-content-center mb-3">
-                    {% for category in article.categories.all %}
-                    <span class="badge bg-primary me-2">{{ category.name }}</span>
-                    {% endfor %}
-                </div>
-                
-                <h1 class="display-4 fw-bold mb-3">{{ article.title }}</h1>
-                
-                <div class="d-flex align-items-center justify-content-center text-muted">
-                    <div class="d-flex align-items-center me-4">
-                        {% if article.author %}
-                        {% if article.author.profile_image %}
-                        <img src="{{ article.author.profile_image.url }}" alt="{{ article.author.get_full_name }}" class="rounded-circle me-2" width="40" height="40">
-                        {% else %}
-                        <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px;">
-                            {{ article.author.get_full_name|slice:":1"|upper }}
+        <div class="article-layout">
+            <!-- Article Content -->
+            <article class="article-detail">
+                <div class="article-detail-header">
+                    {% if article.category %}
+                    <span class="article-category-badge">{{ article.category.name }}</span>
+                    {% endif %}
+                    <h1 class="article-detail-title">{{ article.title }}</h1>
+                    <p class="article-detail-excerpt">{{ article.excerpt }}</p>
+                    <div class="article-detail-meta">
+                        <div class="article-author">
+                            <div class="author-avatar">{{ article.author.get_full_name|slice:":1"|upper }}</div>
+                            <div class="author-info">
+                                <span class="author-name">{{ article.author.get_full_name }}</span>
+                                {% if article.author.bio %}
+                                <span class="author-bio">{{ article.author.bio|truncatechars:50 }}</span>
+                                {% endif %}
+                            </div>
                         </div>
-                        {% endif %}
-                        <span>{{ article.get_author_name }}</span>
-                        {% else %}
-                        <span>{{ article.author_name }}</span>
-                        {% endif %}
-                    </div>
-                    <div class="me-4">
-                        <i class="bi bi-calendar me-1"></i>
-                        {{ article.published_at|date:"M d, Y" }}
-                    </div>
-                    <div class="me-4">
-                        <i class="bi bi-eye me-1"></i>
-                        {{ article.view_count }} {% trans "views" %}
-                    </div>
-                    <div>
-                        <i class="bi bi-chat me-1"></i>
-                        {{ comments.count }} {% trans "comments" %}
+                        <div class="article-stats">
+                            <span class="article-stat">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                    <line x1="16" y1="2" x2="16" y2="6"/>
+                                    <line x1="8" y1="2" x2="8" y2="6"/>
+                                    <line x1="3" y1="10" x2="21" y2="10"/>
+                                </svg>
+                                {{ article.published_at|date:"Y/m/d" }}
+                            </span>
+                            <span class="article-stat">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 14 14"/>
+                                </svg>
+                                {{ article.read_time }} دقیقه مطالعه
+                            </span>
+                            <span class="article-stat">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                                </svg>
+                                {{ article.views }} بازدید
+                            </span>
+                        </div>
+                        <div class="article-actions">
+                            <button type="button" class="article-action-btn {% if article in user_wishlist %}active{% endif %}" data-action="bookmark" data-article-id="{{ article.id }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                                </svg>
+                            </button>
+                            <button type="button" class="article-action-btn" data-action="share">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="18" cy="5" r="3"/>
+                                    <circle cx="6" cy="12" r="3"/>
+                                    <circle cx="18" cy="19" r="3"/>
+                                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                                </svg>
+                            </button>
+                            <button type="button" class="article-action-btn {% if article in user_liked_articles %}active{% endif %}" data-action="like" data-article-id="{{ article.id }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                                </svg>
+                                <span class="like-count">{{ article.likes }}</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </header>
-        </article>
-    </div>
-</div>
 
-<!-- Article Content -->
-<div class="container py-5">
-    <div class="row">
-        <!-- Main Content -->
-        <div class="col-lg-8">
-            <article class="prose max-w-none">
-                <!-- Excerpt -->
-                {% if article.excerpt %}
-                <div class="lead text-muted mb-4">{{ article.excerpt }}</div>
-                {% endif %}
+                <div class="article-detail-image">
+                    {% if article.image %}
+                    <img src="{{ article.image.url }}" alt="{{ article.title }}" loading="lazy">
+                    {% endif %}
+                    <span class="image-caption">{{ article.image_caption|default:""/strip }}</span>
+                </div>
 
-                <!-- Content -->
-                <div class="article-content mb-5">
+                <div class="article-detail-content">
                     {{ article.content|safe }}
                 </div>
 
-                <!-- Tags -->
-                {% if article.tags.exists %}
-                <div class="mb-4">
-                    <h4 class="h6 mb-3">{% trans "Tags" %}</h4>
-                    <div class="d-flex flex-wrap gap-2">
-                        {% for tag in article.tags.all %}
-                        <a href="{% url 'blog:tag_detail' slug=tag.slug %}" class="btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-tag me-1"></i> {{ tag.name }}
-                        </a>
-                        {% endfor %}
-                    </div>
+                {% if article.tags.all %}
+                <div class="article-detail-tags">
+                    <span class="tags-label">تگ‌ها:</span>
+                    {% for tag in article.tags.all %}
+                    <a href="{% url 'blog:tag' tag.slug %}" class="article-tag">{{ tag.name }}</a>
+                    {% endfor %}
                 </div>
                 {% endif %}
 
+                <!-- Share Section -->
+                <div class="share-section">
+                    <span class="share-label">اشتراک گذاری:</span>
+                    <div class="share-buttons">
+                        <button type="button" class="share-btn telegram" data-social="telegram">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="22" y1="2" x2="11" y2="13"/>
+                                <polyline points="22 2 15 22 11 13 2 9 22 2"/>
+                            </svg>
+                        </button>
+                        <button type="button" class="share-btn twitter" data-social="twitter">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/>
+                            </svg>
+                        </button>
+                        <button type="button" class="share-btn whatsapp" data-social="whatsapp">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-9-9 9 9 0 0 1 9-9c2.5 0 4.8.9 6.7 2.4"/>
+                                <path d="M16 8h-2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2v-4h-1"/>
+                            </svg>
+                        </button>
+                        <button type="button" class="share-btn copy" data-social="copy">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Author Bio -->
-                {% if article.author %}
-                <div class="author-bio card mb-5">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center mb-3">
-                            {% if article.author.profile_image %}
-                            <img src="{{ article.author.profile_image.url }}" alt="{{ article.author.get_full_name }}" class="rounded-circle me-3" width="80" height="80">
-                            {% else %}
-                            <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-3" style="width: 80px; height: 80px; font-size: 2rem;">
-                                {{ article.author.get_full_name|slice:":1"|upper }}
-                            </div>
-                            {% endif %}
-                            <div>
-                                <h5 class="mb-0">{{ article.get_author_name }}</h5>
-                                <small class="text-muted">{{ article.author.get_user_type_display }}</small>
-                            </div>
-                        </div>
+                <div class="author-bio-card">
+                    <div class="author-bio-avatar">{{ article.author.get_full_name|slice:":1"|upper }}</div>
+                    <div class="author-bio-content">
+                        <h3 class="author-bio-name">{{ article.author.get_full_name }}</h3>
                         {% if article.author.bio %}
-                        <p class="mb-0">{{ article.author.bio }}</p>
+                        <p class="author-bio-description">{{ article.author.bio }}</p>
+                        {% endif %}
+                        {% if article.author.article_count %}
+                        <p class="author-bio-stats">{{ article.author.article_count }} مقاله منتشر شده</p>
                         {% endif %}
                     </div>
                 </div>
-                {% endif %}
 
                 <!-- Related Articles -->
                 {% if related_articles %}
-                <div class="related-articles mb-5">
-                    <h3 class="section-title mb-4">{% trans "Related Articles" %}</h3>
-                    <div class="row">
+                <div class="related-articles">
+                    <h3 class="related-articles-title">مقالات مرتبط</h3>
+                    <div class="related-articles-grid">
                         {% for related in related_articles %}
-                        <div class="col-md-6 mb-4">
-                            <article class="card h-100 border-0 shadow-sm">
-                                {% if related.featured_image %}
-                                <img src="{{ related.featured_image.url }}" alt="{{ related.title }}" class="card-img-top">
-                                {% endif %}
-                                <div class="card-body">
-                                    <div class="d-flex align-items-center mb-2">
-                                        <small class="text-muted">{{ related.get_author_name }} &middot; {{ related.published_at|date:"M d, Y" }}</small>
+                        <article class="related-article">
+                            <a href="{% url 'blog:article_detail' related.slug %}">
+                                <div class="related-article-image">
+                                    {% if related.image %}
+                                    <img src="{{ related.image.url }}" alt="{{ related.title }}" loading="lazy">
+                                    {% else %}
+                                    <div class="article-placeholder">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                            <polyline points="14 2 14 8 20 8"/>
+                                            <line x1="16" y1="13" x2="8" y2="13"/>
+                                            <line x1="16" y1="17" x2="8" y2="17"/>
+                                        </svg>
                                     </div>
-                                    <h5 class="card-title"><a href="{% url 'blog:article_detail' slug=related.slug %}" class="text-decoration-none">{{ related.title }}</a></h5>
-                                    <p class="card-text text-muted">{{ related.excerpt|truncatewords:15 }}</p>
-                                    <a href="{% url 'blog:article_detail' slug=related.slug %}" class="btn btn-sm btn-outline-primary">{% trans "Read More" %}</a>
+                                    {% endif %}
                                 </div>
-                            </article>
-                        </div>
+                                <div class="related-article-content">
+                                    <h4 class="related-article-title">{{ related.title }}</h4>
+                                    <span class="related-article-date">{{ related.published_at|date:"Y/m/d" }}</span>
+                                </div>
+                            </a>
+                        </article>
                         {% endfor %}
                     </div>
                 </div>
                 {% endif %}
 
                 <!-- Comments Section -->
-                <div class="comments-section">
-                    <h3 class="section-title mb-4">{% trans "Comments" %} ({{ comments.count }})</h3>
-
+                <div class="comments-section" id="commentsSection">
+                    <h3 class="comments-section-title">دیدگاه‌ها ({{ comments_count }})</h3>
+                    
                     <!-- Comment Form -->
                     {% if user.is_authenticated %}
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <h5 class="card-title">{% trans "Leave a Comment" %}</h5>
-                            <form method="post" action="{% url 'blog:add_comment' article.slug %}">
-                                {% csrf_token %}
-                                <div class="mb-3">
-                                    <textarea name="content" class="form-control" rows="4" placeholder="{% trans 'Share your thoughts...' %}" required></textarea>
-                                </div>
-                                <button type="submit" class="btn btn-primary">{% trans "Post Comment" %}</button>
-                            </form>
-                        </div>
+                    <div class="comment-form">
+                        <h4 class="comment-form-title">دیدگاه خود را ثبت کنید</h4>
+                        <form action="{% url 'blog:add_comment' article.slug %}" method="post" class="comment-form-form">
+                            {% csrf_token %}
+                            <div class="comment-form-user">
+                                <div class="comment-user-avatar">{{ user.get_full_name|slice:":1"|upper }}</div>
+                                <span class="comment-user-name">{{ user.get_full_name|default:user.phone_number }}</span>
+                            </div>
+                            <textarea name="content" class="comment-form-textarea" placeholder="دیدگاه خود را بنویسید..." required></textarea>
+                            <div class="comment-form-actions">
+                                <button type="submit" class="btn btn-primary">ارسال دیدگاه</button>
+                            </div>
+                        </form>
                     </div>
                     {% else %}
-                    <div class="alert alert-info mb-4">
-                        <i class="bi bi-info-circle me-2"></i>
-                        {% trans "Please" %} <a href="{% url 'accounts:login' %}">{% trans "log in" %}</a> {% trans "to post a comment." %}
+                    <div class="comment-login-prompt">
+                        <p>برای ثبت دیدگاه، ابتدا <a href="{% url 'accounts:login' %}?next={{ request.path }}">وارد شوید</a> یا <a href="{% url 'accounts:register' %}?next={{ request.path }}">ثبت‌نام کنید</a>.</p>
                     </div>
                     {% endif %}
 
                     <!-- Comments List -->
-                    {% if comments %}
                     <div class="comments-list">
                         {% for comment in comments %}
-                        <div class="comment mb-4" id="comment-{{ comment.id }}">
-                            <div class="d-flex align-items-start">
-                                <div class="flex-shrink-0">
-                                    {% if comment.user %}
-                                    {% if comment.user.profile_image %}
-                                    <img src="{{ comment.user.profile_image.url }}" alt="{{ comment.get_author_name }}" class="rounded-circle" width="50" height="50">
-                                    {% else %}
-                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                                        {{ comment.get_author_name|slice:":1"|upper }}
+                        <div class="comment {% if comment.parent %}comment-reply{% endif %}" id="comment-{{ comment.id }}">
+                            <div class="comment-header">
+                                <div class="comment-user">
+                                    <div class="comment-user-avatar">{{ comment.user.get_full_name|slice:":1"|upper }}</div>
+                                    <div class="comment-user-info">
+                                        <span class="comment-user-name">{{ comment.user.get_full_name|default:comment.user_name }}</span>
+                                        <span class="comment-date">{{ comment.created_at|date:"Y/m/d" }} در {{ comment.created_at|time:"H:i" }}</span>
                                     </div>
-                                    {% endif %}
-                                    {% else %}
-                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                                        {{ comment.get_author_name|slice:":1"|upper }}
+                                </div>
+                                {% if comment.user == user %}
+                                <div class="comment-actions">
+                                    <button type="button" class="comment-action-btn" data-action="edit" data-comment-id="{{ comment.id }}">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </button>
+                                    <button type="button" class="comment-action-btn" data-action="delete" data-comment-id="{{ comment.id }}">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="comment-content">
+                                <p>{{ comment.content }}</p>
+                            </div>
+                            <div class="comment-footer">
+                                <button type="button" class="comment-reply-btn" data-comment-id="{{ comment.id }}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"/>
+                                    </svg>
+                                    پاسخ
+                                </button>
+                                <button type="button" class="comment-like-btn {% if comment in user_liked_comments %}active{% endif %}" data-comment-id="{{ comment.id }}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+                                    </svg>
+                                    <span class="like-count">{{ comment.likes }}</span>
+                                </button>
+                            </div>
+
+                            <!-- Reply Form (Hidden by default) -->
+                            <div class="comment-reply-form" id="reply-form-{{ comment.id }}">
+                                {% if user.is_authenticated %}
+                                <form action="{% url 'blog:add_comment' article.slug %}" method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="parent" value="{{ comment.id }}">
+                                    <textarea name="content" class="comment-reply-textarea" placeholder="پاسخ خود را بنویسید..." required></textarea>
+                                    <div class="comment-reply-actions">
+                                        <button type="submit" class="btn btn-primary">ارسال پاسخ</button>
+                                        <button type="button" class="btn btn-outline" data-cancel-reply="{{ comment.id }}">انصراف</button>
+                                    </div>
+                                </form>
+                                {% else %}
+                                <p>برای پاسخ به دیدگاه، ابتدا <a href="{% url 'accounts:login' %}?next={{ request.path }}">وارد شوید</a>.</p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Replies -->
+                            {% for reply in comment.replies.all %}
+                            <div class="comment-reply" id="comment-{{ reply.id }}">
+                                <div class="comment-header">
+                                    <div class="comment-user">
+                                        <div class="comment-user-avatar">{{ reply.user.get_full_name|slice:":1"|upper }}</div>
+                                        <div class="comment-user-info">
+                                            <span class="comment-user-name">{{ reply.user.get_full_name|default:reply.user_name }}</span>
+                                            <span class="comment-date">{{ reply.created_at|date:"Y/m/d" }} در {{ reply.created_at|time:"H:i" }}</span>
+                                        </div>
+                                    </div>
+                                    {% if reply.user == user %}
+                                    <div class="comment-actions">
+                                        <button type="button" class="comment-action-btn" data-action="edit" data-comment-id="{{ reply.id }}">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                            </svg>
+                                        </button>
+                                        <button type="button" class="comment-action-btn" data-action="delete" data-comment-id="{{ reply.id }}">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="3 6 5 6 21 6"/>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                            </svg>
+                                        </button>
                                     </div>
                                     {% endif %}
                                 </div>
-                                <div class="flex-grow-1 ms-3">
-                                    <div class="comment-header d-flex align-items-center justify-content-between mb-2">
-                                        <div>
-                                            <h6 class="mb-0">{{ comment.get_author_name }}</h6>
-                                            <small class="text-muted">{{ comment.created_at|timesince }} {% trans "ago" %}</small>
-                                        </div>
-                                        <div class="d-flex gap-2">
-                                            <button class="btn btn-sm btn-outline-secondary helpful-btn" data-comment-id="{{ comment.id }}" data-rating="1">
-                                                <i class="bi bi-hand-thumbs-up"></i> <span>{{ comment.helpful_count }}</span>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-secondary helpful-btn" data-comment-id="{{ comment.id }}" data-rating="-1">
-                                                <i class="bi bi-hand-thumbs-down"></i> <span>{{ comment.not_helpful_count }}</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="comment-body mb-2">
-                                        <p class="mb-0">{{ comment.content }}</p>
-                                    </div>
-                                    
-                                    <!-- Replies -->
-                                    {% if comment.replies.exists %}
-                                    <div class="replies ms-4 mt-3">
-                                        {% for reply in comment.replies.all %}
-                                        <div class="reply mb-3">
-                                            <div class="d-flex align-items-start">
-                                                <div class="flex-shrink-0">
-                                                    {% if reply.user %}
-                                                    {% if reply.user.profile_image %}
-                                                    <img src="{{ reply.user.profile_image.url }}" alt="{{ reply.get_author_name }}" class="rounded-circle" width="40" height="40">
-                                                    {% else %}
-                                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; font-size: 0.8rem;">
-                                                        {{ reply.get_author_name|slice:":1"|upper }}
-                                                    </div>
-                                                    {% endif %}
-                                                    {% else %}
-                                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; font-size: 0.8rem;">
-                                                        {{ reply.get_author_name|slice:":1"|upper }}
-                                                    </div>
-                                                    {% endif %}
-                                                </div>
-                                                <div class="flex-grow-1 ms-2">
-                                                    <div class="reply-header mb-1">
-                                                        <h6 class="mb-0 small">{{ reply.get_author_name }}</h6>
-                                                        <small class="text-muted extra-small">{{ reply.created_at|timesince }} {% trans "ago" %}</small>
-                                                    </div>
-                                                    <p class="mb-0 small">{{ reply.content }}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        {% endfor %}
-                                    </div>
-                                    {% endif %}
+                                <div class="comment-content">
+                                    <p>{{ reply.content }}</p>
+                                </div>
+                                <div class="comment-footer">
+                                    <button type="button" class="comment-like-btn {% if reply in user_liked_comments %}active{% endif %}" data-comment-id="{{ reply.id }}">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+                                        </svg>
+                                        <span class="like-count">{{ reply.likes }}</span>
+                                    </button>
                                 </div>
                             </div>
+                            {% endfor %}
                         </div>
                         {% endfor %}
                     </div>
-                    {% else %}
-                    <div class="alert alert-info">{% trans "No comments yet. Be the first to comment!" %}</div>
+
+                    <!-- Load More Comments -->
+                    {% if has_more_comments %}
+                    <div class="load-more-comments">
+                        <button type="button" class="btn btn-outline" data-load-more-comments data-page="2">
+                            بارگذاری دیدگاه‌های بیشتر
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"/>
+                            </svg>
+                        </button>
+                    </div>
                     {% endif %}
                 </div>
             </article>
-        </div>
 
-        <!-- Sidebar -->
-        <aside class="col-lg-4">
-            <!-- Categories -->
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h3 class="h5 mb-0">{% trans "Categories" %}</h3>
-                </div>
-                <div class="card-body">
-                    <ul class="list-unstyled mb-0">
+            <!-- Blog Sidebar -->
+            <aside class="blog-sidebar">
+                <!-- Categories -->
+                <div class="sidebar-card">
+                    <h3 class="sidebar-card-title">دسته‌بندی‌ها</h3>
+                    <ul class="sidebar-categories">
                         {% for category in categories %}
-                        <li class="mb-2">
-                            <a href="{% url 'blog:category_detail' slug=category.slug %}" class="text-decoration-none d-flex justify-content-between align-items-center {% if category == article.categories.first %}fw-bold{% endif %}">
-                                <span>{{ category.name }}</span>
-                                <span class="badge bg-light text-dark">{{ category.articles.count }}</span>
+                        <li class="sidebar-category {% if article.category == category %}active{% endif %}">
+                            <a href="{% url 'blog:category' category.slug %}">
+                                <span class="category-name">{{ category.name }}</span>
+                                <span class="category-count">{{ category.article_count }}</span>
                             </a>
                         </li>
                         {% endfor %}
                     </ul>
                 </div>
-            </div>
 
-            <!-- Tags -->
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h3 class="h5 mb-0">{% trans "Tags" %}</h3>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex flex-wrap gap-2">
+                <!-- Tags -->
+                {% if tags %}
+                <div class="sidebar-card">
+                    <h3 class="sidebar-card-title">تگ‌ها</h3>
+                    <div class="sidebar-tags">
                         {% for tag in tags %}
-                        <a href="{% url 'blog:tag_detail' slug=tag.slug %}" class="btn btn-sm btn-outline-secondary {% if tag in article.tags.all %}active{% endif %}">
-                            {{ tag.name }}
-                        </a>
+                        <a href="{% url 'blog:tag' tag.slug %}" class="sidebar-tag {% if tag in article.tags.all %}active{% endif %}">{{ tag.name }}</a>
                         {% endfor %}
                     </div>
                 </div>
-            </div>
+                {% endif %}
 
-            <!-- Share -->
-            <div class="card">
-                <div class="card-header bg-white">
-                    <h3 class="h5 mb-0">{% trans "Share" %}</h3>
+                <!-- Recent Articles -->
+                <div class="sidebar-card">
+                    <h3 class="sidebar-card-title">مقالات اخیر</h3>
+                    <ul class="sidebar-articles">
+                        {% for recent in recent_articles %}
+                        <li class="sidebar-article {% if recent == article %}active{% endif %}">
+                            <a href="{% url 'blog:article_detail' recent.slug %}">
+                                <h4 class="sidebar-article-title">{{ recent.title }}</h4>
+                                <span class="sidebar-article-date">{{ recent.published_at|date:"Y/m/d" }}</span>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
                 </div>
-                <div class="card-body">
-                    <div class="d-flex gap-2">
-                        <a href="#" class="btn btn-outline-primary flex-grow-1">
-                            <i class="bi bi-facebook me-1"></i> Facebook
-                        </a>
-                        <a href="#" class="btn btn-outline-info flex-grow-1">
-                            <i class="bi bi-twitter me-1"></i> Twitter
-                        </a>
-                    </div>
-                    <div class="d-flex gap-2 mt-2">
-                        <a href="#" class="btn btn-outline-danger flex-grow-1">
-                            <i class="bi bi-google me-1"></i> Google+
-                        </a>
-                        <a href="#" class="btn btn-outline-secondary flex-grow-1">
-                            <i class="bi bi-envelope me-1"></i> Email
-                        </a>
-                    </div>
+
+                <!-- Newsletter -->
+                <div class="sidebar-card newsletter-card">
+                    <h3 class="sidebar-card-title">عضویت در خبرنامه</h3>
+                    <p class="newsletter-description">با عضویت در خبرنامه، از جدیدترین مقالات مطلع شوید.</p>
+                    <form action="{% url 'core:newsletter_subscribe' %}" method="post" class="newsletter-form">
+                        {% csrf_token %}
+                        <div class="newsletter-input">
+                            <input type="email" name="email" placeholder="ایمیل خود را وارد کنید" required>
+                            <button type="submit">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"/>
+                                    <polyline points="12 5 19 12 12 19"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </form>
                 </div>
-            </div>
-        </aside>
+
+                <!-- Ads -->
+                {% if sidebar_ads %}
+                {% for ad in sidebar_ads %}
+                <div class="sidebar-ad">
+                    <a href="{{ ad.url }}" target="_blank">
+                        <img src="{{ ad.image.url }}" alt="{{ ad.title }}" loading="lazy">
+                    </a>
+                </div>
+                {% endfor %}
+                {% endif %}
+            </aside>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Comment Modal -->
+<div class="modal" id="deleteCommentModal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">حذف دیدگاه</h3>
+            <button type="button" class="modal-close" data-close-modal="deleteCommentModal">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p>آیا مطمئن هستید که می‌خواهید این دیدگاه را حذف کنید؟</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline" data-close-modal="deleteCommentModal">انصراف</button>
+            <form id="deleteCommentForm" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="comment_id" id="deleteCommentId">
+                <button type="submit" class="btn btn-danger">حذف دیدگاه</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Comment Modal -->
+<div class="modal" id="editCommentModal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">ویرایش دیدگاه</h3>
+            <button type="button" class="modal-close" data-close-modal="editCommentModal">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="editCommentForm" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="comment_id" id="editCommentId">
+                <textarea name="content" id="editCommentContent" class="form-textarea" rows="4" required></textarea>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline" data-close-modal="editCommentModal">انصراف</button>
+            <button type="submit" class="btn btn-primary" form="editCommentForm">ذخیره تغییرات</button>
+        </div>
     </div>
 </div>
 {% endblock %}
 
-{% block scripts %}
+{% block extra_js %}
+<script src="{% static 'js/blog.js' %}"></script>
 <script>
-// Handle helpful/not helpful buttons
-$(document).on('click', '.helpful-btn', function() {
-    const commentId = $(this).data('comment-id');
-    const rating = $(this).data('rating');
-    const btn = $(this);
+// Copy to clipboard functionality
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function() {
+        alert('لینک مقاله با موفقیت کپی شد!');
+    });
+}
+
+// Social share functionality
+function shareToSocial(social, url, title) {
+    const shareUrl = encodeURIComponent(url);
+    const shareTitle = encodeURIComponent(title);
     
-    $.post('{% url "blog:rate_comment" %}', {
-        comment_id: commentId,
-        rating: rating,
-        csrfmiddlewaretoken: '{{ csrf_token }}'
-    }, function(response) {
-        if (response.success) {
-            // Update counts
-            const container = btn.closest('.comment-header').find('.d-flex.gap-2');
-            container.find('.helpful-btn').each(function() {
-                const r = $(this).data('rating');
-                if (r === 1) {
-                    $(this).find('span').text(response.helpful_count);
-                } else {
-                    $(this).find('span').text(response.not_helpful_count);
-                }
-            });
-        }
+    switch(social) {
+        case 'telegram':
+            window.open(`https://t.me/share/url?url=${shareUrl}&text=${shareTitle}`, '_blank');
+            break;
+        case 'twitter':
+            window.open(`https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareTitle}`, '_blank');
+            break;
+        case 'whatsapp':
+            window.open(`https://wa.me/?text=${shareTitle} ${shareUrl}`, '_blank');
+            break;
+        case 'copy':
+            copyToClipboard(url);
+            break;
+    }
+}
+
+// Initialize share buttons
+document.addEventListener('DOMContentLoaded', function() {
+    const shareButtons = document.querySelectorAll('.share-btn');
+    const articleUrl = window.location.href;
+    const articleTitle = document.querySelector('.article-detail-title').textContent;
+    
+    shareButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const social = this.dataset.social;
+            shareToSocial(social, articleUrl, articleTitle);
+        });
     });
 });
 </script>

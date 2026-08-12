@@ -1,0 +1,273 @@
+# ============================================
+# Docker Compose Production Configuration for Shop Template
+# ============================================
+
+version: '3.8'
+
+services:
+  # ============================================
+  # Web Application (Production)
+  # ============================================
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shop-template-web-prod
+    restart: unless-stopped
+    command: web
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+      - logs_volume:/app/logs
+    environment:
+      - DEBUG=0
+      - DJANGO_SETTINGS_MODULE=shop_template.settings.production
+      - DATABASE_URL=${DATABASE_URL:-postgres://postgres:postgres@db:5432/postgres}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/1}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/2}
+      - SECRET_KEY=${SECRET_KEY}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-.localhost,127.0.0.1}
+      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-1}
+      - CSRF_COOKIE_SECURE=${CSRF_COOKIE_SECURE:-1}
+      - SECURE_SSL_REDIRECT=${SECURE_SSL_REDIRECT:-1}
+      - SECURE_HSTS_SECONDS=${SECURE_HSTS_SECONDS:-31536000}
+      - SECURE_HSTS_INCLUDE_SUBDOMAINS=${SECURE_HSTS_INCLUDE_SUBDOMAINS:-1}
+      - SECURE_HSTS_PRELOAD=${SECURE_HSTS_PRELOAD:-1}
+      - SECURE_CONTENT_TYPE_NOSNIFF=${SECURE_CONTENT_TYPE_NOSNIFF:-1}
+      - SECURE_BROWSER_XSS_FILTER=${SECURE_BROWSER_XSS_FILTER:-1}
+      - X_FRAME_OPTIONS=${X_FRAME_OPTIONS:-DENY}
+      - REFERRER_POLICY=${REFERRER_POLICY:-same-origin}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - shop-template-network-prod
+    healthcheck:
+      test: ["CMD", "python", "/app/scripts/wait_for_db.py", "--timeout=5"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # ============================================
+  # Database Migration Service
+  # ============================================
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shop-template-migrate
+    restart: on-failure
+    command: sh -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py compress --force"
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    environment:
+      - DEBUG=0
+      - DJANGO_SETTINGS_MODULE=shop_template.settings.production
+      - DATABASE_URL=${DATABASE_URL:-postgres://postgres:postgres@db:5432/postgres}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - SECRET_KEY=${SECRET_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - shop-template-network-prod
+
+  # ============================================
+  # Database (PostgreSQL)
+  # ============================================
+  db:
+    image: postgres:15-alpine
+    container_name: shop-template-db-prod
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-postgres}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_INITDB_ARGS=--encoding=UTF8 --data-checksums
+    ports:
+      - "5432:5432"
+    networks:
+      - shop-template-network-prod
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # ============================================
+  # Redis (Cache & Message Broker)
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: shop-template-redis-prod
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - shop-template-network-prod
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # ============================================
+  # Celery Worker
+  # ============================================
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shop-template-celery-prod
+    restart: unless-stopped
+    command: celery
+    volumes:
+      - .:/app
+    environment:
+      - DEBUG=0
+      - DJANGO_SETTINGS_MODULE=shop_template.settings.production
+      - DATABASE_URL=${DATABASE_URL:-postgres://postgres:postgres@db:5432/postgres}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/1}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/2}
+      - SECRET_KEY=${SECRET_KEY}
+    depends_on:
+      - web
+      - redis
+      - db
+    networks:
+      - shop-template-network-prod
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+
+  # ============================================
+  # Celery Beat (Periodic Tasks)
+  # ============================================
+  celery-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shop-template-celery-beat-prod
+    restart: unless-stopped
+    command: celery-beat
+    volumes:
+      - .:/app
+    environment:
+      - DEBUG=0
+      - DJANGO_SETTINGS_MODULE=shop_template.settings.production
+      - DATABASE_URL=${DATABASE_URL:-postgres://postgres:postgres@db:5432/postgres}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - SECRET_KEY=${SECRET_KEY}
+    depends_on:
+      - web
+      - redis
+      - db
+    networks:
+      - shop-template-network-prod
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # ============================================
+  # Nginx (Reverse Proxy & SSL Termination)
+  # ============================================
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: shop-template-nginx-prod
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/ssl:/etc/nginx/ssl:ro
+      - static_volume:/app/staticfiles:ro
+      - media_volume:/app/media:ro
+    depends_on:
+      - web
+    networks:
+      - shop-template-network-prod
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # ============================================
+  # Flower (Celery Monitoring - Optional)
+  # ============================================
+  flower:
+    image: mher/flower:latest
+    container_name: shop-template-flower-prod
+    restart: unless-stopped
+    command: celery flower --broker=${CELERY_BROKER_URL:-redis://redis:6379/1} --port=5555
+    ports:
+      - "5555:5555"
+    environment:
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/1}
+    depends_on:
+      - redis
+    networks:
+      - shop-template-network-prod
+    profiles:
+      - monitoring
+
+# ============================================
+# Volumes
+# ============================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  static_volume:
+    driver: local
+  media_volume:
+    driver: local
+  logs_volume:
+    driver: local
+
+# ============================================
+# Networks
+# ============================================
+networks:
+  shop-template-network-prod:
+    driver: bridge

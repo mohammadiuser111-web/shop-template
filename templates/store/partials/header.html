@@ -1,0 +1,534 @@
+<header class="site-header">
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="container">
+            <div class="top-bar-left">
+                <div class="welcome-message">
+                    به {% if site_settings.site_name %}{{ site_settings.site_name }}{% else %}فروشگاه{% endif %} خوش آمدید!
+                </div>
+            </div>
+            <div class="top-bar-right">
+                <ul class="top-bar-links">
+                    {% if user.is_authenticated %}
+                    <li class="top-bar-link">
+                        <a href="{% url 'accounts:profile' %}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            حساب کاربری
+                        </a>
+                    </li>
+                    <li class="top-bar-link">
+                        <a href="{% url 'orders:order_history' %}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                            </svg>
+                            سفارش‌ها
+                        </a>
+                    </li>
+                    <li class="top-bar-link">
+                        <a href="{% url 'accounts:wishlist' %}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                            </svg>
+                            لیست علاقه‌مندی‌ها
+                        </a>
+                    </li>
+                    <li class="top-bar-link">
+                        <a href="{% url 'accounts:logout' %}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                                <polyline points="16 17 21 12 16 7"/>
+                                <line x1="21" y1="12" x2="9" y2="12"/>
+                            </svg>
+                            خروج
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="top-bar-link">
+                        <a href="{% url 'accounts:login' %}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                                <polyline points="10 17 15 12 10 7"/>
+                                <line x1="15" y1="12" x2="3" y2="12"/>
+                            </svg>
+                            ورود / ثبت‌نام
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Header -->
+    <div class="main-header">
+        <div class="container">
+            <div class="header-layout">
+                <!-- Logo -->
+                <div class="header-logo">
+                    <a href="{% url 'store:home' %}">
+                        {% if site_settings.logo %}
+                        <img src="{{ site_settings.logo.url }}" alt="{% if site_settings.site_name %}{{ site_settings.site_name }}{% else %}فروشگاه{% endif %}" class="site-logo">
+                        {% else %}
+                        <span class="site-logo-text">{% if site_settings.site_name %}{{ site_settings.site_name }}{% else %}فروشگاه{% endif %}</span>
+                        {% endif %}
+                    </a>
+                </div>
+
+                <!-- Search -->
+                <div class="header-search">
+                    <form action="{% url 'store:search' %}" method="get" class="search-form">
+                        <div class="search-categories">
+                            <select name="category" class="search-category-select">
+                                <option value="">تمام دسته‌ها</option>
+                                {% for category in categories %}
+                                <option value="{{ category.slug }}" {% if request.GET.category == category.slug %}selected{% endif %}>{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="search-input">
+                            <input type="text" name="q" placeholder="جستجوی محصولات..." value="{{ request.GET.q|default:'' }}" autocomplete="off">
+                            <button type="submit">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="11" cy="11" r="8"/>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </form>
+                    <div class="search-suggestions" id="searchSuggestions">
+                        <div class="search-suggestions-content">
+                            <div class="search-suggestions-section">
+                                <h4>جستجوهای محبوب</h4>
+                                <ul class="search-suggestions-list">
+                                    {% for suggestion in popular_searches %}
+                                    <li><a href="{% url 'store:search' %}?q={{ suggestion }}">{{ suggestion }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="header-actions">
+                    <!-- Compare -->
+                    <button type="button" class="header-action-btn" data-toggle-compare>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 3v18"/>
+                            <path d="M19 12H5"/>
+                            <path d="M12 5l7 7-7 7"/>
+                        </svg>
+                        <span class="action-count compare-count">{{ compare_count|default:0 }}</span>
+                    </button>
+
+                    <!-- Wishlist -->
+                    <button type="button" class="header-action-btn" data-toggle-wishlist>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                        </svg>
+                        <span class="action-count wishlist-count">{{ wishlist_count|default:0 }}</span>
+                    </button>
+
+                    <!-- Cart -->
+                    <button type="button" class="header-action-btn header-cart-btn" data-toggle-cart>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                            <line x1="3" y1="6" x2="21" y2="6"/>
+                            <path d="M16 10a4 4 0 0 1-8 0"/>
+                        </svg>
+                        <span class="action-count cart-count">{{ cart_count|default:0 }}</span>
+                        <span class="cart-total">{{ cart_total|default:0|intcomma }} تومان</span>
+                    </button>
+
+                    <!-- Mobile Menu Toggle -->
+                    <button type="button" class="header-mobile-menu-toggle" id="headerMobileMenuToggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"/>
+                            <line x1="3" y1="6" x2="21" y2="6"/>
+                            <line x1="3" y1="18" x2="21" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <div class="mobile-menu-overlay"></div>
+        <div class="mobile-menu-content">
+            <div class="mobile-menu-header">
+                <div class="mobile-menu-logo">
+                    {% if site_settings.logo %}
+                    <img src="{{ site_settings.logo.url }}" alt="{% if site_settings.site_name %}{{ site_settings.site_name }}{% else %}فروشگاه{% endif %}">
+                    {% else %}
+                    <span class="site-logo-text">{% if site_settings.site_name %}{{ site_settings.site_name }}{% else %}فروشگاه{% endif %}</span>
+                    {% endif %}
+                </div>
+                <button type="button" class="mobile-menu-close" id="mobileMenuClose">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <nav class="mobile-menu-nav">
+                <ul class="mobile-nav-list">
+                    <li class="mobile-nav-item">
+                        <a href="{% url 'store:home' %}">خانه</a>
+                    </li>
+                    <li class="mobile-nav-item">
+                        <a href="{% url 'store:products' %}">محصولات</a>
+                    </li>
+                    {% for category in main_categories %}
+                    <li class="mobile-nav-item">
+                        <a href="{% url 'store:category' category.slug %}">{{ category.name }}</a>
+                    </li>
+                    {% endfor %}
+                    <li class="mobile-nav-item">
+                        <a href="{% url 'blog:article_list' %}">بلاگ</a>
+                    </li>
+                    <li class="mobile-nav-item">
+                        <a href="{% url 'store:about' %}">درباره ما</a>
+                    </li>
+                    <li class="mobile-nav-item">
+                        <a href="{% url 'store:contact' %}">تماس با ما</a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="mobile-menu-footer">
+                {% if user.is_authenticated %}
+                <div class="mobile-user-info">
+                    <div class="mobile-user-avatar">
+                        {% if user.avatar %}
+                        <img src="{{ user.avatar.url }}" alt="{{ user.get_full_name }}">
+                        {% else %}
+                        <span>{{ user.get_full_name|slice:":1"|upper }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="mobile-user-details">
+                        <span class="mobile-user-name">{{ user.get_full_name|default:user.phone_number }}</span>
+                        <span class="mobile-user-email">{{ user.email }}</span>
+                    </div>
+                </div>
+                <div class="mobile-user-actions">
+                    <a href="{% url 'accounts:profile' %}">حساب کاربری</a>
+                    <a href="{% url 'orders:order_history' %}">سفارش‌ها</a>
+                    <a href="{% url 'accounts:wishlist' %}">لیست علاقه‌مندی‌ها</a>
+                    <a href="{% url 'accounts:logout' %}">خروج</a>
+                </div>
+                {% else %}
+                <div class="mobile-auth-actions">
+                    <a href="{% url 'accounts:login' %}" class="btn btn-outline">ورود</a>
+                    <a href="{% url 'accounts:register' %}" class="btn btn-primary">ثبت‌نام</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Cart Sidebar -->
+    <aside class="cart-sidebar" id="cartSidebar">
+        <div class="cart-sidebar-overlay"></div>
+        <div class="cart-sidebar-content">
+            <div class="cart-sidebar-header">
+                <h3 class="cart-sidebar-title">سبد خرید</h3>
+                <button type="button" class="cart-sidebar-close" id="cartSidebarClose">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="cart-sidebar-body">
+                {% if cart and cart.items.count > 0 %}
+                <div class="cart-sidebar-items">
+                    {% for item in cart.items.all %}
+                    <div class="cart-sidebar-item" data-item-id="{{ item.id }}">
+                        <div class="cart-sidebar-item-image">
+                            {% if item.product.get_thumbnail %}
+                            <img src="{{ item.product.get_thumbnail.url }}" alt="{{ item.product.name }}" loading="lazy">
+                            {% else %}
+                            <div class="product-placeholder">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                                    <line x1="7" y1="7" x2="7.01" y2="7"/>
+                                </svg>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="cart-sidebar-item-info">
+                            <h4 class="cart-sidebar-item-name">{{ item.product.name }}</h4>
+                            {% if item.variation %}
+                            <p class="cart-sidebar-item-variation">{{ item.variation }}</p>
+                            {% endif %}
+                            <span class="cart-sidebar-item-price">{{ item.unit_price|intcomma }} تومان</span>
+                        </div>
+                        <div class="cart-sidebar-item-actions">
+                            <div class="cart-sidebar-item-quantity">
+                                <button type="button" class="quantity-btn minus" data-action="decrease" data-item-id="{{ item.id }}">-</button>
+                                <span class="quantity-value">{{ item.quantity }}</span>
+                                <button type="button" class="quantity-btn plus" data-action="increase" data-item-id="{{ item.id }}">+</button>
+                            </div>
+                            <button type="button" class="cart-sidebar-item-remove" data-action="remove" data-item-id="{{ item.id }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="cart-sidebar-empty">
+                    <div class="cart-sidebar-empty-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                            <line x1="3" y1="6" x2="21" y2="6"/>
+                            <path d="M16 10a4 4 0 0 1-8 0"/>
+                        </svg>
+                    </div>
+                    <h4>سبد خرید شما خالی است!</h4>
+                    <p>برای افزودن محصول به سبد خرید، به صفحه محصولات بروید.</p>
+                </div>
+                {% endif %}
+            </div>
+            <div class="cart-sidebar-footer">
+                {% if cart and cart.items.count > 0 %}
+                <div class="cart-sidebar-summary">
+                    <div class="cart-sidebar-summary-row">
+                        <span>جمع سبد خرید:</span>
+                        <span>{{ cart.subtotal|intcomma }} تومان</span>
+                    </div>
+                    {% if cart.discount %}
+                    <div class="cart-sidebar-summary-row discount">
+                        <span>تخفیف:</span>
+                        <span>-{{ cart.discount|intcomma }} تومان</span>
+                    </div>
+                    {% endif %}
+                    <div class="cart-sidebar-summary-row total">
+                        <span>مبلغ قابل پرداخت:</span>
+                        <span>{{ cart.total|intcomma }} تومان</span>
+                    </div>
+                </div>
+                <div class="cart-sidebar-actions">
+                    <a href="{% url 'store:cart_detail' %}" class="btn btn-outline">مشاهده سبد خرید</a>
+                    <a href="{% url 'store:checkout' %}" class="btn btn-primary">تسویه حساب</a>
+                </div>
+                {% else %}
+                <a href="{% url 'store:products' %}" class="btn btn-primary btn-block">مشاهده محصولات</a>
+                {% endif %}
+            </div>
+        </div>
+    </aside>
+
+    <!-- Wishlist Sidebar -->
+    <aside class="wishlist-sidebar" id="wishlistSidebar">
+        <div class="wishlist-sidebar-overlay"></div>
+        <div class="wishlist-sidebar-content">
+            <div class="wishlist-sidebar-header">
+                <h3 class="wishlist-sidebar-title">لیست علاقه‌مندی‌ها</h3>
+                <button type="button" class="wishlist-sidebar-close" id="wishlistSidebarClose">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="wishlist-sidebar-body">
+                {% if wishlist and wishlist.items.count > 0 %}
+                <div class="wishlist-sidebar-items">
+                    {% for item in wishlist.items.all %}
+                    <div class="wishlist-sidebar-item" data-item-id="{{ item.id }}">
+                        <div class="wishlist-sidebar-item-image">
+                            {% if item.product.get_thumbnail %}
+                            <img src="{{ item.product.get_thumbnail.url }}" alt="{{ item.product.name }}" loading="lazy">
+                            {% else %}
+                            <div class="product-placeholder">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                                    <line x1="7" y1="7" x2="7.01" y2="7"/>
+                                </svg>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="wishlist-sidebar-item-info">
+                            <h4 class="wishlist-sidebar-item-name">{{ item.product.name }}</h4>
+                            <span class="wishlist-sidebar-item-price">{{ item.product.price|intcomma }} تومان</span>
+                        </div>
+                        <div class="wishlist-sidebar-item-actions">
+                            <button type="button" class="wishlist-sidebar-item-add" data-action="add_to_cart" data-product-id="{{ item.product.id }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                                    <line x1="3" y1="6" x2="21" y2="6"/>
+                                    <path d="M16 10a4 4 0 0 1-8 0"/>
+                                </svg>
+                            </button>
+                            <button type="button" class="wishlist-sidebar-item-remove" data-action="remove" data-item-id="{{ item.id }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="wishlist-sidebar-empty">
+                    <div class="wishlist-sidebar-empty-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                        </svg>
+                    </div>
+                    <h4>لیست علاقه‌مندی‌های شما خالی است!</h4>
+                    <p>برای افزودن محصول به لیست علاقه‌مندی‌ها، روی آیکون قلب در صفحه محصول کلیک کنید.</p>
+                </div>
+                {% endif %}
+            </div>
+            <div class="wishlist-sidebar-footer">
+                {% if wishlist and wishlist.items.count > 0 %}
+                <a href="{% url 'accounts:wishlist' %}" class="btn btn-outline btn-block">مشاهده لیست کامل</a>
+                {% else %}
+                <a href="{% url 'store:products' %}" class="btn btn-primary btn-block">مشاهده محصولات</a>
+                {% endif %}
+            </div>
+        </div>
+    </aside>
+
+    <!-- Compare Sidebar -->
+    <aside class="compare-sidebar" id="compareSidebar">
+        <div class="compare-sidebar-overlay"></div>
+        <div class="compare-sidebar-content">
+            <div class="compare-sidebar-header">
+                <h3 class="compare-sidebar-title">مقایسه محصولات</h3>
+                <button type="button" class="compare-sidebar-close" id="compareSidebarClose">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="compare-sidebar-body">
+                {% if compare and compare.items.count > 0 %}
+                <div class="compare-sidebar-table">
+                    <table class="compare-table">
+                        <thead>
+                            <tr>
+                                <th>ویژگی</th>
+                                {% for item in compare.items.all %}
+                                <th>
+                                    <div class="compare-product">
+                                        <div class="compare-product-image">
+                                            {% if item.product.get_thumbnail %}
+                                            <img src="{{ item.product.get_thumbnail.url }}" alt="{{ item.product.name }}" loading="lazy">
+                                            {% else %}
+                                            <div class="product-placeholder">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                                                    <line x1="7" y1="7" x2="7.01" y2="7"/>
+                                                </svg>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        <span class="compare-product-name">{{ item.product.name }}</span>
+                                        <button type="button" class="compare-product-remove" data-action="remove" data-item-id="{{ item.id }}">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                                <line x1="6" y1="6" x2="18" y2="18"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>قیمت</td>
+                                {% for item in compare.items.all %}
+                                <td>{{ item.product.price|intcomma }} تومان</td>
+                                {% endfor %}
+                            </tr>
+                            <tr>
+                                <td>دسته‌بندی</td>
+                                {% for item in compare.items.all %}
+                                <td>{{ item.product.category.name }}</td>
+                                {% endfor %}
+                            </tr>
+                            <tr>
+                                <td>برند</td>
+                                {% for item in compare.items.all %}
+                                <td>{{ item.product.brand.name|default:"--" }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% for attribute in compare_attributes %}
+                            <tr>
+                                <td>{{ attribute.name }}</td>
+                                {% for item in compare.items.all %}
+                                <td>
+                                    {% with product_attributes=item.product.attributes.all %}
+                                    {% for pa in product_attributes %}
+                                    {% if pa.attribute.id == attribute.id %}
+                                    {{ pa.value }}
+                                    {% endif %}
+                                    {% endfor %}
+                                    {% endwith %}
+                                </td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                            <tr>
+                                <td>امتیاز</td>
+                                {% for item in compare.items.all %}
+                                <td>
+                                    <div class="product-rating">
+                                        <div class="rating-stars">
+                                            {% for i in "12345" %}
+                                            {% if item.product.rating >= forloop.counter %}
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                            </svg>
+                                            {% else %}
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                            </svg>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                        <span class="rating-count">({{ item.product.review_count }})</span>
+                                    </div>
+                                </td>
+                                {% endfor %}
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="compare-sidebar-empty">
+                    <div class="compare-sidebar-empty-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                            <path d="M12 3v18"/>
+                            <path d="M19 12H5"/>
+                            <path d="M12 5l7 7-7 7"/>
+                        </svg>
+                    </div>
+                    <h4>هیچ محصولی برای مقایسه انتخاب نشده!</h4>
+                    <p>برای مقایسه محصولات، روی آیکون مقایسه در صفحه محصول کلیک کنید.</p>
+                </div>
+                {% endif %}
+            </div>
+            <div class="compare-sidebar-footer">
+                {% if compare and compare.items.count > 0 %}
+                <a href="{% url 'store:compare' %}" class="btn btn-outline btn-block">مشاهده صفحه مقایسه</a>
+                {% else %}
+                <a href="{% url 'store:products' %}" class="btn btn-primary btn-block">مشاهده محصولات</a>
+                {% endif %}
+            </div>
+        </div>
+    </aside>
+</header>

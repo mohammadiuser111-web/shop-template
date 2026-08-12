@@ -5,7 +5,6 @@ Track admin activities and automatic logging.
 from django.db.models.signals import post_save, post_delete, pre_save
 from django.dispatch import receiver
 from django.contrib.auth.signals import user_logged_in, user_logged_out
-from django.contrib.admin.signals import log_addition, log_change, log_deletion
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 
@@ -199,73 +198,13 @@ def track_user_logout(sender, request, user, **kwargs):
         )
 
 
-@receiver(log_addition)
-def track_admin_log_addition(sender, **kwargs):
-    """Track admin log additions."""
-    log_entry = kwargs.get('log_entry')
-    if log_entry and log_entry.user and log_entry.user.is_staff:
-        content_type = log_entry.content_type
-        model_string = f'{content_type.app_label}.{content_type.model}'
-        
-        AdminActivity.objects.create(
-            user=log_entry.user,
-            action='create',
-            model_name=model_string,
-            object_id=log_entry.object_id,
-            object_repr=log_entry.object_repr,
-            description=f'ایجاد {content_type.model} از طریق پنل مدیریت',
-            ip_address=log_entry.ip if hasattr(log_entry, 'ip') else '',
-            user_agent=''
-        )
-
-
-@receiver(log_change)
-def track_admin_log_change(sender, **kwargs):
-    """Track admin log changes."""
-    log_entry = kwargs.get('log_entry')
-    if log_entry and log_entry.user and log_entry.user.is_staff:
-        content_type = log_entry.content_type
-        model_string = f'{content_type.app_label}.{content_type.model}'
-        
-        AdminActivity.objects.create(
-            user=log_entry.user,
-            action='update',
-            model_name=model_string,
-            object_id=log_entry.object_id,
-            object_repr=log_entry.object_repr,
-            description=f'بروزرسانی {content_type.model} از طریق پنل مدیریت',
-            changes={'admin_change': True},
-            ip_address=log_entry.ip if hasattr(log_entry, 'ip') else '',
-            user_agent=''
-        )
-
-
-@receiver(log_deletion)
-def track_admin_log_deletion(sender, **kwargs):
-    """Track admin log deletions."""
-    log_entry = kwargs.get('log_entry')
-    if log_entry and log_entry.user and log_entry.user.is_staff:
-        content_type = log_entry.content_type
-        model_string = f'{content_type.app_label}.{content_type.model}'
-        
-        AdminActivity.objects.create(
-            user=log_entry.user,
-            action='delete',
-            model_name=model_string,
-            object_id=log_entry.object_id,
-            object_repr=log_entry.object_repr,
-            description=f'حذف {content_type.model} از طریق پنل مدیریت',
-            ip_address=log_entry.ip if hasattr(log_entry, 'ip') else '',
-            user_agent=''
-        )
-
-
 @receiver(pre_save, sender=AdminUserSettings)
 def update_user_settings(sender, instance, **kwargs):
     """Update user settings before save."""
     if not instance.pk:
         # New instance - set default dashboard if not set
         if not instance.dashboard:
+            from .models import AdminDashboard
             default_dashboard = AdminDashboard.objects.filter(is_default=True).first()
             if default_dashboard:
                 instance.dashboard = default_dashboard
@@ -276,6 +215,7 @@ def update_global_settings(sender, instance, created, **kwargs):
     """Update global settings."""
     if created:
         # First settings instance - create default dashboard
+        from .models import AdminDashboard
         if not AdminDashboard.objects.exists():
             AdminDashboard.objects.create(
                 name='داشبورد پیش‌فرض',

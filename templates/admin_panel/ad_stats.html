@@ -1,0 +1,318 @@
+{% extends "admin_panel/base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ page_title|default:_("آمار تبلیغ") }}{% endblock %}
+
+{% block page_header %}
+<div class="page-header d-print-none">
+    <div class="container-xl">
+        <div class="row g-2 align-items-center">
+            <div class="col">
+                <h2 class="page-title">
+                    {{ page_title|default:_("آمار تبلیغ") }}
+                </h2>
+            </div>
+            <div class="col-auto ms-auto d-print-none">
+                <div class="btn-list">
+                    <a href="{% url 'ads:ad_list' %}" class="btn btn-secondary">
+                        <i class="fa fa-arrow-left"></i> {{ _("بازگشت") }}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-body">
+    <div class="container-xl">
+        <!-- Ad Information -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <h3 class="mb-0">{{ ad.name }}</h3>
+                        <p class="text-muted mb-0">{{ ad.title }}</p>
+                    </div>
+                    <div class="col-md-9 text-end">
+                        <div class="btn-list">
+                            <span class="badge bg-{{ ad.ad_type|lower }}">
+                                {{ ad.get_ad_type_display }}
+                            </span>
+                            <span class="badge bg-{{ ad.is_active|yesno:'success,warning' }}">
+                                {{ ad.is_active|yesno:_("فعال,غیرفعال") }}
+                            </span>
+                            <span class="badge bg-info">{{ _("اولویت") }}: {{ ad.priority }}</span>
+                            {% if ad.slot %}
+                            <span class="badge bg-secondary">{{ _("Slot") }}: {{ ad.slot.name }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <p>{{ ad.description }}</p>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <strong>{{ _("تاریخ ایجاد") }}:</strong> {{ ad.created_at|jdate:"Y/m/d H:i" }}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>{{ _("تاریخ شروع") }}:</strong> 
+                        {% if ad.start_date %}{{ ad.start_date|jdate:"Y/m/d H:i" }}{% else %}{{ _("فوراً") }}{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>{{ _("تاریخ پایان") }}:</strong> 
+                        {% if ad.end_date %}{{ ad.end_date|jdate:"Y/m/d H:i" }}{% else %}{{ _("بدون تاریخ") }}{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>{{ _("ایجاد کننده") }}:</strong> 
+                        {% if ad.created_by %}{{ ad.created_by.get_full_name|default:ad.created_by.username }}{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Overview -->
+        <div class="row row-deck row-cards mb-3">
+            <div class="col-sm-6 col-lg-3">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="subheader">{{ _("نمایش‌ها") }}</div>
+                        </div>
+                        <div class="h1 mb-3">{{ stats.impressions|default:0 }}</div>
+                        <div class="mb-3">
+                            <span class="badge bg-blue-lt">{{ _("کل") }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="subheader">{{ _("کلیک‌ها") }}</div>
+                        </div>
+                        <div class="h1 mb-3">{{ stats.clicks|default:0 }}</div>
+                        <div class="mb-3">
+                            <span class="badge bg-green-lt">{{ _("کل") }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="subheader">{{ _("CTR") }}</div>
+                        </div>
+                        <div class="h1 mb-3">{{ stats.ctr|floatformat:2 }}%</div>
+                        <div class="mb-3">
+                            <span class="badge bg-purple-lt">{{ _("نسبت کلیک به نمایش") }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="subheader">{{ _("تبلیغ") }}</div>
+                        </div>
+                        <div class="h1 mb-3">{{ ad.get_ad_type_display }}</div>
+                        <div class="mb-3">
+                            <span class="badge bg-{{ ad.ad_type|lower }}">{{ _("نوع") }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ _("نمایش‌ها در ۳۰ روز گذشته") }}</h3>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="impressionsChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ _("کلیک‌ها در ۳۰ روز گذشته") }}</h3>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="clicksChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ _("آخرین نمایش‌ها") }}</h3>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-vcenter">
+                            <thead>
+                                <tr>
+                                    <th>{{ _("تاریخ") }}</th>
+                                    <th>{{ _("IP") }}</th>
+                                    <th>{{ _("مرورگر") }}</th>
+                                    <th>{{ _("ارجاع") }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for impression in recent_impressions %}
+                                <tr>
+                                    <td>{{ impression.created_at|jdate:"Y/m/d H:i" }}</td>
+                                    <td><code>{{ impression.ip_address|default:"-" }}</code></td>
+                                    <td><small>{{ impression.user_agent|truncatechars:30 }}</small></td>
+                                    <td><small>{{ impression.referrer|truncatechars:30|default:"-" }}</small></td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">
+                                        {{ _("هیچ نمایشی یافت نشد.") }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ _("آخرین کلیک‌ها") }}</h3>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-vcenter">
+                            <thead>
+                                <tr>
+                                    <th>{{ _("تاریخ") }}</th>
+                                    <th>{{ _("IP") }}</th>
+                                    <th>{{ _("مرورگر") }}</th>
+                                    <th>{{ _("ارجاع") }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for click in recent_clicks %}
+                                <tr>
+                                    <td>{{ click.created_at|jdate:"Y/m/d H:i" }}</td>
+                                    <td><code>{{ click.ip_address|default:"-" }}</code></td>
+                                    <td><small>{{ click.user_agent|truncatechars:30 }}</small></td>
+                                    <td><small>{{ click.referrer|truncatechars:30|default:"-" }}</small></td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">
+                                        {{ _("هیچ کلیکی یافت نشد.") }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.card-body {
+    min-height: 100px;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// Prepare chart data
+var impressionsData = {{ daily_impressions|safe }};
+var clicksData = {{ daily_clicks|safe }};
+
+// Format data for charts
+function formatChartData(data, label) {
+    var dates = data.map(function(item) {
+        return item.date;
+    });
+    var counts = data.map(function(item) {
+        return item.count;
+    });
+    
+    return {
+        labels: dates,
+        datasets: [{
+            label: label,
+            data: counts,
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    };
+}
+
+// Create charts
+var impressionsCtx = document.getElementById('impressionsChart');
+var clicksCtx = document.getElementById('clicksChart');
+
+if (impressionsCtx) {
+    new Chart(impressionsCtx, {
+        type: 'line',
+        data: formatChartData(impressionsData, '{{ _("نمایش‌ها") }}'),
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+if (clicksCtx) {
+    new Chart(clicksCtx, {
+        type: 'line',
+        data: formatChartData(clicksData, '{{ _("کلیک‌ها") }}'),
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+</script>
+{% endblock %}

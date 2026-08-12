@@ -125,8 +125,8 @@ class AdminMenu(models.Model):
     name = models.CharField(max_length=200, verbose_name='Name')
     menu_type = models.CharField(max_length=20, choices=MENU_TYPES, verbose_name='Menu Type')
     
-    # Menu items
-    items = models.JSONField(
+    # Menu items (stored as JSON, not as related objects)
+    items_json = models.JSONField(
         verbose_name='Menu Items',
         default=list,
         help_text='JSON array of menu items with their properties'
@@ -162,7 +162,7 @@ class AdminMenuItem(models.Model):
     menu = models.ForeignKey(
         AdminMenu,
         on_delete=models.CASCADE,
-        related_name='items',
+        related_name='menu_items',
         verbose_name='Admin Menu'
     )
     parent = models.ForeignKey(

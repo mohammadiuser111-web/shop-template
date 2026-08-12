@@ -1,0 +1,632 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}تسویه حساب - {% if site_settings.site_name %}{{ site_settings.site_name }}{% else %}فروشگاه{% endif %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/checkout.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="{% url 'store:home' %}">خانه</a>
+            <span class="breadcrumb-separator">/</span>
+            <a href="{% url 'cart:cart_detail' %}">سبد خرید</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">تسویه حساب</span>
+        </div>
+        <h1 class="page-title">تسویه حساب</h1>
+    </div>
+</div>
+
+<div class="main-container">
+    <div class="container">
+        <form action="{% url 'cart:checkout_confirm' %}" method="post" class="checkout-form">
+            {% csrf_token %}
+            
+            <!-- Checkout Steps -->
+            <div class="checkout-steps">
+                <div class="step active" data-step="1">
+                    <div class="step-number">1</div>
+                    <span class="step-label">اطلاعات ارسال</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step {% if form_step >= 2 %}active{% endif %}" data-step="2">
+                    <div class="step-number">2</div>
+                    <span class="step-label">روش ارسال</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step {% if form_step >= 3 %}active{% endif %}" data-step="3">
+                    <div class="step-number">3</div>
+                    <span class="step-label">روش پرداخت</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step {% if form_step >= 4 %}active{% endif %}" data-step="4">
+                    <div class="step-number">4</div>
+                    <span class="step-label">تایید نهایی</span>
+                </div>
+            </div>
+
+            <div class="checkout-layout">
+                <!-- Checkout Content -->
+                <div class="checkout-content">
+                    {% if form_step == 1 %}
+                    <!-- Step 1: Shipping Information -->
+                    <div class="checkout-step active" id="step-1">
+                        <h3 class="checkout-step-title">اطلاعات ارسال</h3>
+                        
+                        <!-- Existing Addresses -->
+                        {% if user.addresses.all %}
+                        <div class="address-select">
+                            <h4 class="address-select-title">انتخاب آدرس از لیست</h4>
+                            <div class="address-list">
+                                {% for address in user.addresses.all %}
+                                <label class="address-card">
+                                    <input type="radio" name="shipping_address" value="{{ address.id }}" 
+                                           {% if address.is_default %}checked{% endif %}>
+                                    <div class="address-card-content">
+                                        <div class="address-card-header">
+                                            <span class="address-card-type">{{ address.address_type|default:'منزل' }}</span>
+                                            {% if address.is_default %}
+                                            <span class="address-card-badge">پیش‌فرض</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="address-card-body">
+                                            <p class="address-card-name">{{ address.first_name }} {{ address.last_name }}</p>
+                                            <p class="address-card-phone">{{ address.phone }}</p>
+                                            <p class="address-card-address">{{ address.address_line_1 }} {{ address.address_line_2 }}</p>
+                                            <p class="address-card-location">{{ address.city }}, {{ address.state }}, {{ address.postal_code }}</p>
+                                        </div>
+                                    </div>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- New Address Form -->
+                        <div class="new-address-form">
+                            <h4 class="new-address-title">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                    <line x1="5" y1="12" x2="19" y2="12"/>
+                                </svg>
+                                افزودن آدرس جدید
+                            </h4>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="first_name">نام *</label>
+                                    <input type="text" id="first_name" name="first_name" class="form-input" 
+                                           value="{{ form.first_name.value|default:'' }}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="last_name">نام خانوادگی *</label>
+                                    <input type="text" id="last_name" name="last_name" class="form-input" 
+                                           value="{{ form.last_name.value|default:'' }}" required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="phone">تلفن همراه *</label>
+                                    <input type="tel" id="phone" name="phone" class="form-input" 
+                                           value="{{ form.phone.value|default:user.phone_number }}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="address_type">نوع آدرس</label>
+                                    <select id="address_type" name="address_type" class="form-input">
+                                        <option value="home" {% if form.address_type.value == 'home' %}selected{% endif %}>منزل</option>
+                                        <option value="work" {% if form.address_type.value == 'work' %}selected{% endif %}>محل کار</option>
+                                        <option value="other" {% if form.address_type.value == 'other' %}selected{% endif %}>سایر</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="address_line_1">آدرس خط 1 *</label>
+                                <input type="text" id="address_line_1" name="address_line_1" class="form-input" 
+                                       value="{{ form.address_line_1.value|default:'' }}" placeholder=" خیابان، کوچه، پلاک" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="address_line_2">آدرس خط 2</label>
+                                <input type="text" id="address_line_2" name="address_line_2" class="form-input" 
+                                       value="{{ form.address_line_2.value|default:'' }}" placeholder=" واحد، طبقه">
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="city">شهر *</label>
+                                    <input type="text" id="city" name="city" class="form-input" 
+                                           value="{{ form.city.value|default:'' }}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="state">استان *</label>
+                                    <select id="state" name="state" class="form-input" required>
+                                        <option value="">انتخاب استان</option>
+                                        {% for state in states %}
+                                        <option value="{{ state.name }}" {% if form.state.value == state.name %}selected{% endif %}>{{ state.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="postal_code">کد پستی *</label>
+                                    <input type="text" id="postal_code" name="postal_code" class="form-input" 
+                                           value="{{ form.postal_code.value|default:'' }}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="country">کشور *</label>
+                                    <select id="country" name="country" class="form-input" required>
+                                        <option value="Iran" {% if form.country.value == 'Iran' %}selected{% endif %}>ایران</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="notes">یادداشت‌های آدرس</label>
+                                <textarea id="notes" name="notes" class="form-textarea" rows="3" 
+                                          placeholder="یادداشت‌های اضافی برای تحویل...">{{ form.notes.value|default:'' }}</textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="is_default" {% if form.is_default.value %}checked{% endif %}>
+                                    <span class="checkbox-custom"></span>
+                                    <span>ذخیره به عنوان آدرس پیش‌فرض</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="step-actions">
+                            <a href="{% url 'cart:cart_detail' %}" class="btn btn-outline">
+                                بازگشت به سبد خرید
+                            </a>
+                            <button type="button" class="btn btn-primary btn-next-step" data-next-step="2">
+                                ادامه به روش ارسال
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"/>
+                                    <polyline points="12 5 19 12 12 19"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    {% elif form_step == 2 %}
+                    <!-- Step 2: Shipping Method -->
+                    <div class="checkout-step active" id="step-2">
+                        <h3 class="checkout-step-title">روش ارسال</h3>
+                        
+                        {% if shipping_zones %}
+                        <div class="shipping-zones">
+                            {% for zone in shipping_zones %}
+                            <div class="shipping-zone">
+                                <h4 class="shipping-zone-title">{{ zone.name }}</h4>
+                                <p class="shipping-zone-description">{{ zone.description }}</p>
+                                
+                                {% if zone.methods.all %}
+                                <div class="shipping-methods">
+                                    {% for method in zone.methods.all %}
+                                    <label class="shipping-method-card">
+                                        <input type="radio" name="shipping_method" value="{{ method.id }}" 
+                                               {% if method.is_default %}checked{% endif %}>
+                                        <div class="shipping-method-content">
+                                            <div class="shipping-method-header">
+                                                <span class="shipping-method-name">{{ method.name }}</span>
+                                                <span class="shipping-method-price">{{ method.base_price|intcomma }} تومان</span>
+                                            </div>
+                                            <p class="shipping-method-description">{{ method.description }}</p>
+                                            <div class="shipping-method-meta">
+                                                <span class="shipping-method-time">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <circle cx="12" cy="12" r="10"/>
+                                                        <polyline points="12 6 12 12 16 14"/>
+                                                    </svg>
+                                                    تخمین زمان تحویل: {{ method.estimated_delivery_min }} تا {{ method.estimated_delivery_max }} روز
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="no-shipping-methods">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                                <circle cx="12" cy="10" r="3"/>
+                            </svg>
+                            <p>برای آدرس انتخابی شما روش ارسالی یافت نشد.</p>
+                        </div>
+                        {% endif %}
+
+                        <!-- Pickup Locations -->
+                        {% if pickup_locations %}
+                        <div class="pickup-locations">
+                            <h4 class="pickup-locations-title">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                                    <circle cx="12" cy="10" r="3"/>
+                                </svg>
+                                تحویل از شعبه
+                            </h4>
+                            <div class="pickup-locations-list">
+                                {% for location in pickup_locations %}
+                                <label class="pickup-location-card">
+                                    <input type="radio" name="pickup_location" value="{{ location.id }}">
+                                    <div class="pickup-location-content">
+                                        <h5 class="pickup-location-name">{{ location.name }}</h5>
+                                        <p class="pickup-location-address">{{ location.address }}, {{ location.city }}</p>
+                                        <p class="pickup-location-phone">{{ location.phone }}</p>
+                                        {% if location.working_hours %}
+                                        <p class="pickup-location-hours">{{ location.working_hours }}</p>
+                                        {% endif %}
+                                    </div>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="step-actions">
+                            <button type="button" class="btn btn-outline btn-prev-step" data-prev-step="1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="19" y1="12" x2="5" y2="12"/>
+                                    <polyline points="12 19 5 12 12 5"/>
+                                </svg>
+                                بازگشت به اطلاعات ارسال
+                            </button>
+                            <button type="button" class="btn btn-primary btn-next-step" data-next-step="3">
+                                ادامه به روش پرداخت
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"/>
+                                    <polyline points="12 5 19 12 12 19"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    {% elif form_step == 3 %}
+                    <!-- Step 3: Payment Method -->
+                    <div class="checkout-step active" id="step-3">
+                        <h3 class="checkout-step-title">روش پرداخت</h3>
+                        
+                        <!-- Payment Methods -->
+                        <div class="payment-methods">
+                            <h4 class="payment-methods-title">روش‌های پرداخت آنلاین</h4>
+                            <div class="payment-methods-list">
+                                {% for gateway in payment_gateways %}
+                                {% if gateway.is_active %}
+                                <label class="payment-method-card">
+                                    <input type="radio" name="payment_method" value="{{ gateway.gateway_type }}" 
+                                           {% if gateway.is_default %}checked{% endif %}>
+                                    <div class="payment-method-content">
+                                        <div class="payment-method-header">
+                                            {% if gateway.name == 'Zarinpal' %}
+                                            <img src="{% static 'images/payment/zarinpal.png' %}" alt="زرین‌پال" class="payment-method-logo">
+                                            {% elif gateway.name == 'IDPay' %}
+                                            <img src="{% static 'images/payment/idpay.png' %}" alt="آی‌دی‌پی" class="payment-method-logo">
+                                            {% elif gateway.name == 'PayIR' %}
+                                            <img src="{% static 'images/payment/payir.png' %}" alt="پی.یر" class="payment-method-logo">
+                                            {% elif gateway.name == 'NextPay' %}
+                                            <img src="{% static 'images/payment/nextpay.png' %}" alt="نکست‌پی" class="payment-method-logo">
+                                            {% endif %}
+                                            <span class="payment-method-name">{{ gateway.title }}</span>
+                                        </div>
+                                        <p class="payment-method-description">{{ gateway.description }}</p>
+                                    </div>
+                                </label>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Wallet Payment -->
+                        {% if user.wallet.balance > 0 %}
+                        <div class="wallet-payment">
+                            <label class="wallet-payment-card">
+                                <input type="radio" name="payment_method" value="wallet">
+                                <div class="wallet-payment-content">
+                                    <div class="wallet-payment-header">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                                            <line x1="1" y1="10" x2="23" y2="10"/>
+                                        </svg>
+                                        <span class="wallet-payment-name">کیف پول</span>
+                                    </div>
+                                    <p class="wallet-payment-balance">موجودی: {{ user.wallet.balance|intcomma }} تومان</p>
+                                </div>
+                            </label>
+                        </div>
+                        {% endif %}
+
+                        <!-- Cash on Delivery -->
+                        {% if cash_on_delivery_enabled %}
+                        <div class="cod-payment">
+                            <label class="cod-payment-card">
+                                <input type="radio" name="payment_method" value="cash_on_delivery">
+                                <div class="cod-payment-content">
+                                    <div class="cod-payment-header">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                        </svg>
+                                        <span class="cod-payment-name">پرداخت در محل</span>
+                                    </div>
+                                    <p class="cod-payment-description">پرداخت وجه کالا هنگام تحویل</p>
+                                </div>
+                            </label>
+                        </div>
+                        {% endif %}
+
+                        <div class="step-actions">
+                            <button type="button" class="btn btn-outline btn-prev-step" data-prev-step="2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="19" y1="12" x2="5" y2="12"/>
+                                    <polyline points="12 19 5 12 12 5"/>
+                                </svg>
+                                بازگشت به روش ارسال
+                            </button>
+                            <button type="button" class="btn btn-primary btn-next-step" data-next-step="4">
+                                ادامه به تایید نهایی
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"/>
+                                    <polyline points="12 5 19 12 12 19"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    {% elif form_step == 4 %}
+                    <!-- Step 4: Order Review -->
+                    <div class="checkout-step active" id="step-4">
+                        <h3 class="checkout-step-title">تایید نهایی سفارش</h3>
+                        
+                        <!-- Order Summary -->
+                        <div class="order-review">
+                            <!-- Shipping Info -->
+                            <div class="review-section">
+                                <h4 class="review-section-title">اطلاعات ارسال</h4>
+                                <div class="review-content">
+                                    <div class="review-address">
+                                        <div class="review-address-header">
+                                            <span class="review-address-type">{{ shipping_address.address_type|default:'منزل'|title }}</span>
+                                            {% if shipping_address.is_default %}
+                                            <span class="review-address-badge">پیش‌فرض</span>
+                                            {% endif %}
+                                        </div>
+                                        <p class="review-address-name">{{ shipping_address.first_name }} {{ shipping_address.last_name }}</p>
+                                        <p class="review-address-phone">{{ shipping_address.phone }}</p>
+                                        <p class="review-address-location">{{ shipping_address.address_line_1 }} {{ shipping_address.address_line_2 }}</p>
+                                        <p class="review-address-location">{{ shipping_address.city }}, {{ shipping_address.state }}, {{ shipping_address.postal_code }}</p>
+                                        <a href="#" class="review-address-edit" data-edit-step="1">ویرایش</a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Shipping Method -->
+                            <div class="review-section">
+                                <h4 class="review-section-title">روش ارسال</h4>
+                                <div class="review-content">
+                                    <div class="review-shipping">
+                                        <span class="review-shipping-name">{{ shipping_method.name }}</span>
+                                        <span class="review-shipping-price">{{ shipping_method.base_price|intcomma }} تومان</span>
+                                        <span class="review-shipping-time">{{ shipping_method.estimated_delivery_min }} تا {{ shipping_method.estimated_delivery_max }} روز کاری</span>
+                                        <a href="#" class="review-shipping-edit" data-edit-step="2">ویرایش</a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Payment Method -->
+                            <div class="review-section">
+                                <h4 class="review-section-title">روش پرداخت</h4>
+                                <div class="review-content">
+                                    <div class="review-payment">
+                                        {% if payment_method == 'wallet' %}
+                                        <span class="review-payment-name">کیف پول</span>
+                                        {% elif payment_method == 'cash_on_delivery' %}
+                                        <span class="review-payment-name">پرداخت در محل</span>
+                                        {% else %}
+                                        {% for gateway in payment_gateways %}
+                                        {% if gateway.gateway_type == payment_method %}
+                                        <span class="review-payment-name">{{ gateway.title }}</span>
+                                        {% endif %}
+                                        {% endfor %}
+                                        {% endif %}
+                                        <a href="#" class="review-payment-edit" data-edit-step="3">ویرایش</a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Order Items -->
+                            <div class="review-section">
+                                <h4 class="review-section-title">محصولات سفارش</h4>
+                                <div class="review-content">
+                                    <div class="review-items">
+                                        {% for item in cart.items.all %}
+                                        <div class="review-item">
+                                            <div class="review-item-image">
+                                                {% if item.product.main_image %}
+                                                <img src="{{ item.product.main_image.url }}" alt="{{ item.product.name }}" loading="lazy">
+                                                {% else %}
+                                                <div class="product-placeholder">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                                        <line x1="3" y1="9" x2="21" y2="9"/>
+                                                        <line x1="9" y1="21" x2="9" y2="9"/>
+                                                    </svg>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="review-item-info">
+                                                <h5 class="review-item-name">{{ item.product.name }}</h5>
+                                                {% if item.variation %}
+                                                <p class="review-item-variation">{{ item.variation.name }}</p>
+                                                {% endif %}
+                                                <span class="review-item-quantity">تعداد: {{ item.quantity }}</span>
+                                            </div>
+                                            <div class="review-item-price">{{ item.total|intcomma }} تومان</div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Order Totals -->
+                            <div class="review-section">
+                                <h4 class="review-section-title">مجموع سفارش</h4>
+                                <div class="review-content">
+                                    <div class="review-totals">
+                                        <div class="review-total">
+                                            <span>مجموع قیمت محصولات:</span>
+                                            <span>{{ cart.subtotal|intcomma }} تومان</span>
+                                        </div>
+                                        {% if cart.discount %}
+                                        <div class="review-total">
+                                            <span>تخفیف:</span>
+                                            <span class="discount">-{{ cart.discount|intcomma }} تومان</span>
+                                        </div>
+                                        {% endif %}
+                                        <div class="review-total">
+                                            <span>هزینه ارسال:</span>
+                                            <span>{{ cart.shipping_cost|default:0|intcomma }} تومان</span>
+                                        </div>
+                                        {% if cart.tax %}
+                                        <div class="review-total">
+                                            <span>مالیات:</span>
+                                            <span>{{ cart.tax|intcomma }} تومان</span>
+                                        </div>
+                                        {% endif %}
+                                        <div class="review-total grand-total">
+                                            <span>مبلغ قابل پرداخت:</span>
+                                            <span>{{ cart.total|intcomma }} تومان</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Notes -->
+                            <div class="review-section">
+                                <h4 class="review-section-title">یادداشت سفارش</h4>
+                                <div class="review-content">
+                                    <textarea name="notes" class="form-textarea" rows="3" 
+                                              placeholder="یادداشت‌های اضافی برای سفارش...">{{ form.notes.value|default:'' }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="step-actions">
+                            <button type="button" class="btn btn-outline btn-prev-step" data-prev-step="3">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="19" y1="12" x2="5" y2="12"/>
+                                    <polyline points="12 19 5 12 12 5"/>
+                                </svg>
+                                بازگشت به روش پرداخت
+                            </button>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                                ثبت سفارش
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Checkout Sidebar -->
+                <aside class="checkout-sidebar">
+                    <h3 class="checkout-sidebar-title">خلاصه سفارش</h3>
+                    
+                    <div class="checkout-sidebar-content">
+                        <div class="sidebar-order-items">
+                            {% for item in cart.items.all %}
+                            <div class="sidebar-order-item">
+                                <div class="sidebar-item-image">
+                                    {% if item.product.main_image %}
+                                    <img src="{{ item.product.main_image.url }}" alt="{{ item.product.name }}" loading="lazy">
+                                    {% else %}
+                                    <div class="product-placeholder">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                            <line x1="3" y1="9" x2="21" y2="9"/>
+                                            <line x1="9" y1="21" x2="9" y2="9"/>
+                                        </svg>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="sidebar-item-info">
+                                    <h5 class="sidebar-item-name">{{ item.product.name }} × {{ item.quantity }}</h5>
+                                    <span class="sidebar-item-price">{{ item.total|intcomma }} تومان</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="sidebar-order-totals">
+                            <div class="sidebar-total">
+                                <span>مجموع قیمت:</span>
+                                <span>{{ cart.subtotal|intcomma }} تومان</span>
+                            </div>
+                            {% if cart.discount %}
+                            <div class="sidebar-total">
+                                <span>تخفیف:</span>
+                                <span class="discount">-{{ cart.discount|intcomma }} تومان</span>
+                            </div>
+                            {% endif %}
+                            <div class="sidebar-total">
+                                <span>هزینه ارسال:</span>
+                                <span>{{ cart.shipping_cost|default:0|intcomma }} تومان</span>
+                            </div>
+                            {% if cart.tax %}
+                            <div class="sidebar-total">
+                                <span>مالیات:</span>
+                                <span>{{ cart.tax|intcomma }} تومان</span>
+                            </div>
+                            {% endif %}
+                            <div class="sidebar-total grand-total">
+                                <span>مبلغ قابل پرداخت:</span>
+                                <span>{{ cart.total|intcomma }} تومان</span>
+                            </div>
+                        </div>
+
+                        <!-- Trust Badges -->
+                        <div class="sidebar-trust-badges">
+                            <div class="trust-badge">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                </svg>
+                                <span>ضمانت بازگشت</span>
+                            </div>
+                            <div class="trust-badge">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                </svg>
+                                <span>پشتیبانی 24 ساعته</span>
+                            </div>
+                            <div class="trust-badge">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                </svg>
+                                <span>ارسال سریع</span>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/checkout.js' %}"></script>
+{% endblock %}

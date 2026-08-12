@@ -1,0 +1,42 @@
+{# Image ad template #}
+{% if ad.url %}
+<a href="{{ ad.url }}" target="{{ ad.target|default:'_blank' }}" 
+   onclick="trackAdClick('{{ ad.id }}')" 
+   style="display: inline-block; text-decoration: none;">
+{% endif %}
+    {% if ad.image %}
+    <img src="{{ ad.image.url }}" 
+         alt="{{ ad.image_alt|default:ad.name }}" 
+         title="{{ ad.title }}"
+         style="max-width: 100%; height: auto; display: block;"
+         onerror="this.style.display='none'">
+    {% endif %}
+    {% if ad.title %}
+    <div style="text-align: center; margin-top: 8px; font-size: 14px; color: #333;">
+        {{ ad.title }}
+    </div>
+    {% endif %}
+    {% if ad.description %}
+    <div style="text-align: center; margin-top: 4px; font-size: 12px; color: #666;">
+        {{ ad.description }}
+    </div>
+    {% endif %}
+{% if ad.url %}
+</a>
+{% endif %}
+
+<script>
+function trackAdClick(adId) {
+    // Track click via AJAX
+    fetch('/ads/track/click/' + adId + '/', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        credentials: 'same-origin'
+    }).catch(function(error) {
+        console.log('Ad click tracking failed:', error);
+    });
+}
+</script>

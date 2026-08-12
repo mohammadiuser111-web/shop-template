@@ -1,0 +1,455 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}تاریخچه سفارش‌ها - {% if site_settings.site_name %}{{ site_settings.site_name }}{% else %}فروشگاه{% endif %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/orders.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="{% url 'store:home' %}">خانه</a>
+            <span class="breadcrumb-separator">/</span>
+            <a href="{% url 'accounts:profile' %}">حساب کاربری</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">تاریخچه سفارش‌ها</span>
+        </div>
+        <h1 class="page-title">تاریخچه سفارش‌ها</h1>
+        <p class="page-subtitle">تمام سفارش‌های شما در این صفحه قابل مشاهده است</p>
+    </div>
+</div>
+
+<div class="main-container">
+    <div class="container">
+        <div class="profile-layout">
+            <!-- Profile Sidebar -->
+            <aside class="profile-sidebar">
+                <div class="profile-user">
+                    <div class="user-avatar">
+                        {% if user.avatar %}
+                        <img src="{{ user.avatar.url }}" alt="{{ user.get_full_name|default:user.phone_number }}">
+                        {% else %}
+                        <span>{{ user.get_full_name|slice:":1"|upper }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="user-info">
+                        <h3 class="user-name">{{ user.get_full_name|default:user.phone_number }}</h3>
+                        <p class="user-email">{{ user.email }}</p>
+                    </div>
+                </div>
+
+                <nav class="profile-nav">
+                    <ul class="profile-nav-list">
+                        <li class="profile-nav-item">
+                            <a href="{% url 'accounts:profile' %}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                پروفایل من
+                            </a>
+                        </li>
+                        <li class="profile-nav-item active">
+                            <a href="{% url 'orders:order_history' %}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                </svg>
+                                سفارش‌ها
+                            </a>
+                        </li>
+                        <li class="profile-nav-item">
+                            <a href="{% url 'accounts:addresses' %}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                                    <circle cx="12" cy="10" r="3"/>
+                                </svg>
+                                آدرس‌ها
+                            </a>
+                        </li>
+                        <li class="profile-nav-item">
+                            <a href="{% url 'accounts:wishlist' %}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                                </svg>
+                                لیست علاقه‌مندی‌ها
+                            </a>
+                        </li>
+                        <li class="profile-nav-item">
+                            <a href="{% url 'accounts:wallet' %}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                                    <line x1="1" y1="10" x2="23" y2="10"/>
+                                </svg>
+                                کیف پول
+                            </a>
+                        </li>
+                        <li class="profile-nav-item">
+                            <a href="{% url 'notifications:list' %}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                                </svg>
+                                اعلان‌ها
+                                {% if unread_notifications %}
+                                <span class="notification-badge">{{ unread_notifications }}</span>
+                                {% endif %}
+                            </a>
+                        </li>
+                        <li class="profile-nav-item">
+                            <a href="{% url 'support:my_tickets' %}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                </svg>
+                                تیکت‌های پشتیبانی
+                            </a>
+                        </li>
+                        <li class="profile-nav-item">
+                            <a href="{% url 'accounts:change_password' %}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                                </svg>
+                                تغییر رمز عبور
+                            </a>
+                        </li>
+                        <li class="profile-nav-item">
+                            <a href="{% url 'accounts:logout' %}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                                    <polyline points="16 17 21 12 16 7"/>
+                                    <line x1="21" y1="12" x2="9" y2="12"/>
+                                </svg>
+                                خروج
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <!-- Orders Content -->
+            <div class="profile-content">
+                <div class="profile-content-header">
+                    <h2 class="profile-content-title">تاریخچه سفارش‌ها</h2>
+                    <p class="profile-content-subtitle">تمام سفارش‌های شما را در این صفحه مدیریت کنید.</p>
+                </div>
+
+                <!-- Order Stats -->
+                <div class="order-stats">
+                    <div class="order-stat-card">
+                        <div class="order-stat-icon total">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                            </svg>
+                        </div>
+                        <div class="order-stat-info">
+                            <span class="order-stat-value">{{ total_orders }}</span>
+                            <span class="order-stat-label">کل سفارش‌ها</span>
+                        </div>
+                    </div>
+                    <div class="order-stat-card">
+                        <div class="order-stat-icon pending">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 14 14"/>
+                            </svg>
+                        </div>
+                        <div class="order-stat-info">
+                            <span class="order-stat-value">{{ pending_orders }}</span>
+                            <span class="order-stat-label">در انتظار پردازش</span>
+                        </div>
+                    </div>
+                    <div class="order-stat-card">
+                        <div class="order-stat-icon processing">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                <polyline points="22 4 12 14.01 9 11.01"/>
+                            </svg>
+                        </div>
+                        <div class="order-stat-info">
+                            <span class="order-stat-value">{{ processing_orders }}</span>
+                            <span class="order-stat-label">در حال پردازش</span>
+                        </div>
+                    </div>
+                    <div class="order-stat-card">
+                        <div class="order-stat-icon shipped">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="1" y="3" width="15" height="13"/>
+                                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+                                <circle cx="5.5" cy="18.5" r="2.5"/>
+                                <circle cx="18.5" cy="18.5" r="2.5"/>
+                            </svg>
+                        </div>
+                        <div class="order-stat-info">
+                            <span class="order-stat-value">{{ shipped_orders }}</span>
+                            <span class="order-stat-label">ارسال شده</span>
+                        </div>
+                    </div>
+                    <div class="order-stat-card">
+                        <div class="order-stat-icon delivered">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                <polyline points="22 4 12 14.01 9 11.01"/>
+                            </svg>
+                        </div>
+                        <div class="order-stat-info">
+                            <span class="order-stat-value">{{ delivered_orders }}</span>
+                            <span class="order-stat-label">تحویل شده</span>
+                        </div>
+                    </div>
+                    <div class="order-stat-card">
+                        <div class="order-stat-icon total-amount">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="1" x2="12" y2="23"/>
+                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                            </svg>
+                        </div>
+                        <div class="order-stat-info">
+                            <span class="order-stat-value">{{ total_spent|intcomma }} تومان</span>
+                            <span class="order-stat-label">مبلغ کل</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Tabs -->
+                <div class="order-tabs">
+                    <nav class="order-tabs-nav">
+                        <a href="{% url 'orders:order_history' %}" class="order-tab {% if not status %}active{% endif %}">
+                            تمام سفارش‌ها
+                        </a>
+                        <a href="?status=pending" class="order-tab {% if status == 'pending' %}active{% endif %}">
+                            در انتظار پردازش
+                        </a>
+                        <a href="?status=processing" class="order-tab {% if status == 'processing' %}active{% endif %}">
+                            در حال پردازش
+                        </a>
+                        <a href="?status=shipped" class="order-tab {% if status == 'shipped' %}active{% endif %}">
+                            ارسال شده
+                        </a>
+                        <a href="?status=delivered" class="order-tab {% if status == 'delivered' %}active{% endif %}">
+                            تحویل شده
+                        </a>
+                        <a href="?status=cancelled" class="order-tab {% if status == 'cancelled' %}active{% endif %}">
+                            لغو شده
+                        </a>
+                    </nav>
+                </div>
+
+                <!-- Orders List -->
+                <div class="orders-list">
+                    {% for order in orders %}
+                    <div class="order-card">
+                        <div class="order-card-header">
+                            <div class="order-info">
+                                <span class="order-number">سفارش #{{ order.code }}</span>
+                                <span class="order-date">{{ order.created_at|date:"Y/m/d" }} - {{ order.created_at|time:"H:i" }}</span>
+                            </div>
+                            <div class="order-status">
+                                <span class="status-badge {% if order.status == 'pending' %}pending{% elif order.status == 'processing' %}processing{% elif order.status == 'shipped' %}shipped{% elif order.status == 'delivered' %}delivered{% else %}cancelled{% endif %}">
+                                    {% if order.status == 'pending' %}در انتظار پردازش{% elif order.status == 'processing' %}در حال پردازش{% elif order.status == 'shipped' %}ارسال شده{% elif order.status == 'delivered' %}تحویل شده{% else %}لغو شده{% endif %}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="order-card-body">
+                            <div class="order-items-preview">
+                                {% for item in order.items.all|slice:":3" %}
+                                <div class="order-item-preview">
+                                    <div class="order-item-image">
+                                        {% if item.product.get_thumbnail %}
+                                        <img src="{{ item.product.get_thumbnail.url }}" alt="{{ item.product.name }}" loading="lazy">
+                                        {% else %}
+                                        <div class="product-placeholder">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                                                <line x1="7" y1="7" x2="7.01" y2="7"/>
+                                            </svg>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <span class="order-item-name">{{ item.product.name }}</span>
+                                </div>
+                                {% endfor %}
+                                {% if order.items.count > 3 %}
+                                <div class="order-item-more">
+                                    +{{ order.items.count|add:"-3" }} محصول دیگر
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="order-summary">
+                                <span class="order-total">{{ order.total_price|intcomma }} تومان</span>
+                                <span class="order-count">{{ order.items.count }} محصول</span>
+                            </div>
+                        </div>
+
+                        <div class="order-card-footer">
+                            <div class="order-payment-method">
+                                <span class="payment-method-label">روش پرداخت:</span>
+                                <span class="payment-method-value">{{ order.get_payment_method_display }}</span>
+                            </div>
+                            <div class="order-actions">
+                                <a href="{% url 'orders:order_detail' order.code %}" class="btn btn-outline">
+                                    جزئیات سفارش
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="5" y1="12" x2="19" y2="12"/>
+                                        <polyline points="12 5 19 12 12 19"/>
+                                    </svg>
+                                </a>
+                                {% if order.status == 'delivered' and order.can_review %}
+                                <a href="{% url 'orders:order_review' order.code %}" class="btn btn-primary">
+                                    ثبت امتیاز
+                                </a>
+                                {% endif %}
+                                {% if order.can_cancel %}
+                                <button type="button" class="btn btn-danger" data-toggle-modal="cancelOrderModal" data-order-id="{{ order.id }}">
+                                    لغو سفارش
+                                </button>
+                                {% endif %}
+                                {% if order.status == 'delivered' and order.can_return %}
+                                <a href="{% url 'orders:return_request' order.code %}" class="btn btn-outline">
+                                    درخواست مرجوعی
+                                </a>
+                                {% endif %}
+                                {% if order.status == 'shipped' %}
+                                <a href="{% url 'orders:order_tracking' order.code %}" class="btn btn-primary">
+                                    پیگیری سفارش
+                                </a>
+                                {% endif %}
+                                {% if order.invoice %}
+                                <a href="{{ order.invoice.url }}" class="btn btn-outline" download>
+                                    دانلود فاکتور
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                            </svg>
+                        </div>
+                        <h3 class="empty-state-title">سفارشی یافت نشد!</h3>
+                        <p class="empty-state-description">شما هنوز سفارشی ثبت نکرده‌اید.</p>
+                        <a href="{% url 'store:products' %}" class="btn btn-primary">
+                            مشاهده محصولات
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Pagination -->
+                {% if orders.has_other_pages %}
+                <nav class="pagination" aria-label="صفحه‌بندی">
+                    <ul class="pagination-list">
+                        {% if orders.has_previous %}
+                        <li class="pagination-item">
+                            <a href="?page=1{% if status %}&status={{ status }}{% endif %}" class="pagination-link" aria-label="اولین صفحه">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="19 20 9 12 19 4"/>
+                                    <line x1="12" y1="19" x2="12" y2="5"/>
+                                </svg>
+                            </a>
+                        </li>
+                        <li class="pagination-item">
+                            <a href="?page={{ orders.previous_page_number }}{% if status %}&status={{ status }}{% endif %}" class="pagination-link" aria-label="صفحه قبلی">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="15 18 9 12 15 6"/>
+                                </svg>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for num in orders.paginator.page_range %}
+                            {% if orders.number == num %}
+                            <li class="pagination-item active">
+                                <span class="pagination-link">{{ num }}</span>
+                            </li>
+                            {% elif num > orders.number|add:"-3" and num < orders.number|add:"3" %}
+                            <li class="pagination-item">
+                                <a href="?page={{ num }}{% if status %}&status={{ status }}{% endif %}" class="pagination-link">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if orders.has_next %}
+                        <li class="pagination-item">
+                            <a href="?page={{ orders.next_page_number }}{% if status %}&status={{ status }}{% endif %}" class="pagination-link" aria-label="صفحه بعدی">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="9 18 15 12 9 6"/>
+                                </svg>
+                            </a>
+                        </li>
+                        <li class="pagination-item">
+                            <a href="?page={{ orders.paginator.num_pages }}{% if status %}&status={{ status }}{% endif %}" class="pagination-link" aria-label="آخرین صفحه">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="5 4 15 12 5 20"/>
+                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                </svg>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Order Modal -->
+<div class="modal" id="cancelOrderModal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">لغو سفارش</h3>
+            <button type="button" class="modal-close" data-close-modal="cancelOrderModal">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-icon warning">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+            </div>
+            <p>آیا مطمئن هستید که می‌خواهید این سفارش را لغو کنید؟</p>
+            <p class="modal-text-secondary">دلیل لغو سفارش خود را انتخاب کنید:</p>
+            <form id="cancelOrderForm" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="order_id" id="cancelOrderId">
+                <div class="form-group">
+                    <select name="cancel_reason" class="form-input" required>
+                        <option value="" selected disabled>دلیل لغو را انتخاب کنید</option>
+                        <option value="change_mind">تغییر نظر دادم</option>
+                        <option value="wrong_product">محصول اشتباهی سفارش دادم</option>
+                        <option value="high_price">قیمت بالا بود</option>
+                        <option value="delivery_time">زمان تحویل طولانی است</option>
+                        <option value="other">سایر دلایل</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <textarea name="cancel_note" class="form-textarea" placeholder="توضیحات اضافی (اختیاری)" rows="3"></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline" data-close-modal="cancelOrderModal">انصراف</button>
+            <button type="submit" class="btn btn-danger" form="cancelOrderForm">تایید لغو سفارش</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/orders.js' %}"></script>
+{% endblock %}

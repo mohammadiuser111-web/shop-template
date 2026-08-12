@@ -1,7 +1,16 @@
+"""
+Ads app configuration.
+"""
 from django.apps import AppConfig
 
 
 class AdsConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
+    """Configuration for ads app."""
+    
     name = 'apps.ads'
-    verbose_name = 'Ads'
+    verbose_name = 'Advertisements'
+    
+    def ready(self):
+        """Called when the app is ready."""
+        # Import signals
+        import apps.ads.signals
