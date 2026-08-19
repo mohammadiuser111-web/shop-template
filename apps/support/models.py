@@ -206,6 +206,17 @@ class Ticket(models.Model):
     # SLA
     sla_deadline = models.DateTimeField(verbose_name='SLA Deadline', null=True, blank=True)
     
+    # Tracking
+    user_read_at = models.DateTimeField(verbose_name='User Read At', null=True, blank=True)
+    closed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='closed_tickets',
+        null=True,
+        blank=True,
+        verbose_name='Closed By'
+    )
+    
     class Meta:
         verbose_name = 'Ticket'
         verbose_name_plural = 'Tickets'
@@ -300,6 +311,14 @@ class TicketMessage(models.Model):
         blank=True,
         verbose_name='User'
     )
+    admin_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='admin_ticket_messages',
+        null=True,
+        blank=True,
+        verbose_name='Admin User'
+    )
     
     # Attachments
     attachments = models.ManyToManyField(
@@ -329,6 +348,16 @@ class TicketMessage(models.Model):
         """Get author display name."""
         if self.created_by:
             return self.created_by.get_full_name() or self.created_by.phone_number or self.created_by.email
+        return 'System'
+    
+    def get_sender_name(self):
+        """Get sender display name."""
+        if self.admin_user:
+            return self.admin_user.get_full_name() or self.admin_user.username
+        elif self.user:
+            return self.user.get_full_name() or self.user.username
+        elif self.created_by:
+            return self.created_by.get_full_name() or self.created_by.username
         return 'System'
 
 
