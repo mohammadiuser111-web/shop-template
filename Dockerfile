@@ -114,6 +114,9 @@ ENV POETRY_VERSION=1.7.1 \
     POETRY_NO_INTERACTION=1
 RUN curl -sSL https://install.python-poetry.org | python3 -
 
+# Add Poetry to PATH
+ENV PATH="/opt/poetry/bin:${PATH}"
+
 # Set working directory
 WORKDIR /app
 
