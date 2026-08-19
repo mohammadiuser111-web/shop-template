@@ -9,13 +9,14 @@ from django.http import JsonResponse, Http404
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q, Count
 from django.core.mail import send_mail
 from django.conf import settings
 
 from .models import (
-    Ticket, TicketMessage, TicketCategory, FAQ, FAQCategory,
+    Ticket, TicketMessage, SupportCategory, FAQ, FAQCategory,
     ContactMessage, LiveChatSession, LiveChatMessage
 )
 from .forms import (
@@ -64,7 +65,7 @@ def ticket_list(request):
     except EmptyPage:
         tickets_page = paginator.page(paginator.num_pages)
     
-    categories = TicketCategory.objects.filter(is_active=True)
+    categories = SupportCategory.objects.filter(is_active=True)
     
     context = {
         'tickets': tickets_page,
@@ -81,7 +82,7 @@ def ticket_list(request):
 @require_http_methods(["GET", "POST"])
 def create_ticket(request):
     """Create a new support ticket."""
-    categories = TicketCategory.objects.filter(is_active=True)
+    categories = SupportCategory.objects.filter(is_active=True)
     
     if request.method == 'POST':
         form = TicketForm(data=request.POST, files=request.FILES)

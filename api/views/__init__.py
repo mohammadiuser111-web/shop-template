@@ -137,7 +137,7 @@ from .reviews_views import (
 
 # Support views
 from .support_views import (
-    TicketCategoryViewSet,
+    SupportCategoryViewSet,
     FAQCategoryViewSet,
     FAQViewSet,
     TicketViewSet,
@@ -222,7 +222,7 @@ __all__ = [
     'ReviewStatsAPIView',
     
     # Support
-    'TicketCategoryViewSet', 'FAQCategoryViewSet', 'FAQViewSet',
+    'SupportCategoryViewSet', 'FAQCategoryViewSet', 'FAQViewSet',
     'TicketViewSet', 'TicketMessageViewSet', 'TicketCreateAPIView',
     'TicketStatusUpdateAPIView', 'SupportStatsAPIView',
     

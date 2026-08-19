@@ -154,7 +154,7 @@ from api.views.reviews_views import (
 )
 
 from api.views.support_views import (
-    TicketCategoryViewSet,
+    SupportCategoryViewSet,
     FAQCategoryViewSet,
     FAQViewSet,
     TicketViewSet,
@@ -254,7 +254,7 @@ main_router.register(r'reviews/images', ReviewImageViewSet, basename='review-ima
 main_router.register(r'reviews/helpfulness', ReviewHelpfulnessViewSet, basename='review-helpfulness')
 
 # Support URLs
-main_router.register(r'support/ticket-categories', TicketCategoryViewSet, basename='ticket-category')
+main_router.register(r'support/ticket-categories', SupportCategoryViewSet, basename='ticket-category')
 main_router.register(r'support/faq-categories', FAQCategoryViewSet, basename='faq-category')
 main_router.register(r'support/faqs', FAQViewSet, basename='faq')
 main_router.register(r'support/tickets', TicketViewSet, basename='ticket')

@@ -1,18 +1,18 @@
 """
 Support Serializers
-Serializers for support models: Ticket, TicketMessage, TicketCategory, FAQ, FAQCategory
+Serializers for support models: Ticket, TicketMessage, SupportCategory, FAQ, FAQCategory
 """
 
 from rest_framework import serializers
-from apps.support.models import Ticket, TicketMessage, TicketCategory, FAQ, FAQCategory
+from apps.support.models import Ticket, TicketMessage, SupportCategory, FAQ, FAQCategory
 from .accounts_serializers import UserPublicSerializer
 
 
-class TicketCategorySerializer(serializers.ModelSerializer):
-    """Serializer for TicketCategory model"""
+class SupportCategorySerializer(serializers.ModelSerializer):
+    """Serializer for SupportCategory model"""
     
     class Meta:
-        model = TicketCategory
+        model = SupportCategory
         fields = '__all__'
         read_only_fields = ('id', 'created_at', 'updated_at', 'slug')
 
@@ -88,7 +88,7 @@ class TicketSerializer(serializers.ModelSerializer):
     """Comprehensive serializer for Ticket model"""
     
     user = UserPublicSerializer(read_only=True)
-    category = TicketCategorySerializer(read_only=True)
+    category = SupportCategorySerializer(read_only=True)
     category_id = serializers.IntegerField(write_only=True, required=True)
     assigned_to = UserPublicSerializer(read_only=True)
     assigned_to_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)

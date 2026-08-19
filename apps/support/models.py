@@ -92,7 +92,18 @@ class Ticket(models.Model):
     Model for support tickets.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    ticket_id = models.CharField(max_length=20, unique=True, verbose_name='Ticket ID')
     ticket_number = models.CharField(max_length=20, unique=True, verbose_name='Ticket Number')
+    
+    @classmethod
+    def generate_ticket_id(cls):
+        """Generate a unique ticket ID."""
+        import random
+        import string
+        while True:
+            ticket_id = 'TKT-' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+            if not cls.objects.filter(ticket_id=ticket_id).exists():
+                return ticket_id
     
     # Subject and content
     subject = models.CharField(max_length=300, verbose_name='Subject')
@@ -625,3 +636,144 @@ class CustomerSatisfaction(models.Model):
         if not ratings:
             return 0
         return sum(ratings) / len(ratings)
+
+
+class ContactMessage(models.Model):
+    """
+    Model for contact form messages.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # Contact information
+    name = models.CharField(max_length=200, verbose_name='Name')
+    email = models.EmailField(verbose_name='Email')
+    phone = models.CharField(max_length=20, verbose_name='Phone', blank=True)
+    
+    # Message content
+    subject = models.CharField(max_length=300, verbose_name='Subject')
+    message = models.TextField(verbose_name='Message')
+    department = models.CharField(max_length=100, verbose_name='Department', blank=True)
+    
+    # User association
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='contact_messages',
+        null=True,
+        blank=True,
+        verbose_name='User'
+    )
+    
+    # Tracking
+    ip_address = models.GenericIPAddressField(verbose_name='IP Address', null=True, blank=True)
+    is_read = models.BooleanField(default=False, verbose_name='Is Read')
+    is_archived = models.BooleanField(default=False, verbose_name='Is Archived')
+    
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Created At')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Updated At')
+    
+    class Meta:
+        verbose_name = 'Contact Message'
+        verbose_name_plural = 'Contact Messages'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.subject} - {self.name}"
+
+
+class LiveChatSession(models.Model):
+    """
+    Model for live chat sessions.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # Session information
+    session_id = models.CharField(max_length=100, unique=True, verbose_name='Session ID')
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='live_chat_sessions',
+        verbose_name='User'
+    )
+    
+    # Status
+    is_active = models.BooleanField(default=True, verbose_name='Is Active')
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Created At')
+    last_activity = models.DateTimeField(auto_now=True, verbose_name='Last Activity')
+    ended_at = models.DateTimeField(verbose_name='Ended At', null=True, blank=True)
+    
+    class Meta:
+        verbose_name = 'Live Chat Session'
+        verbose_name_plural = 'Live Chat Sessions'
+        ordering = ['-last_activity']
+    
+    def __str__(self):
+        return f"Session {self.session_id}"
+    
+    def get_message_count(self):
+        """Get total number of messages in this session."""
+        return self.messages.count()
+    
+    def get_unread_count(self, user):
+        """Get number of unread messages for a user."""
+        return self.messages.filter(is_read=False).exclude(user=user).count()
+
+
+class LiveChatMessage(models.Model):
+    """
+    Model for live chat messages.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # Session
+    session = models.ForeignKey(
+        LiveChatSession,
+        on_delete=models.CASCADE,
+        related_name='messages',
+        verbose_name='Session'
+    )
+    
+    # Content
+    content = models.TextField(verbose_name='Content')
+    
+    # Senders
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='live_chat_messages',
+        null=True,
+        blank=True,
+        verbose_name='User'
+    )
+    admin_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='admin_chat_messages',
+        null=True,
+        blank=True,
+        verbose_name='Admin User'
+    )
+    
+    # Flags
+    is_admin = models.BooleanField(default=False, verbose_name='Is Admin')
+    is_read = models.BooleanField(default=False, verbose_name='Is Read')
+    
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Created At')
+    
+    class Meta:
+        verbose_name = 'Live Chat Message'
+        verbose_name_plural = 'Live Chat Messages'
+        ordering = ['created_at']
+    
+    def __str__(self):
+        return f"Message in {self.session.session_id}"
+    
+    def get_sender_name(self):
+        """Get sender display name."""
+        if self.is_admin and self.admin_user:
+            return self.admin_user.get_full_name() or self.admin_user.username
+        elif self.user:
+            return self.user.get_full_name() or self.user.username
+        return 'Unknown'

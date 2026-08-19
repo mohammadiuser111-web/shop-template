@@ -11,9 +11,9 @@ from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
-from apps.support.models import Ticket, TicketMessage, TicketCategory, FAQ, FAQCategory
+from apps.support.models import Ticket, TicketMessage, SupportCategory, FAQ, FAQCategory
 from api.serializers.support_serializers import (
-    TicketCategorySerializer,
+    SupportCategorySerializer,
     FAQCategorySerializer,
     FAQSerializer,
     FAQListSerializer,
@@ -29,11 +29,11 @@ from api.serializers.support_serializers import (
 from api.pagination import CustomPageNumberPagination
 
 
-class TicketCategoryViewSet(viewsets.ModelViewSet):
-    """ViewSet for TicketCategory model"""
+class SupportCategoryViewSet(viewsets.ModelViewSet):
+    """ViewSet for SupportCategory model"""
     
-    serializer_class = TicketCategorySerializer
-    queryset = TicketCategory.objects.filter(is_active=True).order_by('position')
+    serializer_class = SupportCategorySerializer
+    queryset = SupportCategory.objects.filter(is_active=True).order_by('position')
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['is_active']
     search_fields = ['name', 'description']
@@ -176,8 +176,8 @@ class TicketCreateAPIView(APIView):
             
             # Get category
             try:
-                category = TicketCategory.objects.get(id=category_id)
-            except TicketCategory.DoesNotExist:
+                category = SupportCategory.objects.get(id=category_id)
+            except SupportCategory.DoesNotExist:
                 return Response({'error': 'Category not found'}, status=status.HTTP_404_NOT_FOUND)
             
             # Create ticket
