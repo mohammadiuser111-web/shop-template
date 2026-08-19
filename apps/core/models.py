@@ -535,3 +535,109 @@ class ContactMessage(models.Model):
     
     def __str__(self):
         return f"{self.subject} - {self.name}"
+
+
+class AdminNote(models.Model):
+    """
+    Model for admin notes and internal communications.
+    """
+    NOTE_TYPES = [
+        ('general', 'General'),
+        ('task', 'Task'),
+        ('reminder', 'Reminder'),
+        ('bug', 'Bug Report'),
+        ('feature', 'Feature Request'),
+        ('security', 'Security Note'),
+    ]
+    
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('critical', 'Critical'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=200, verbose_name='Title')
+    content = models.TextField(verbose_name='Content')
+    note_type = models.CharField(max_length=20, choices=NOTE_TYPES, default='general', verbose_name='Note Type')
+    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium', verbose_name='Priority')
+    
+    # User references
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='created_notes',
+        null=True,
+        blank=True,
+        verbose_name='Created By'
+    )
+    assigned_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='assigned_notes',
+        null=True,
+        blank=True,
+        verbose_name='Assigned To'
+    )
+    
+    # Status
+    is_completed = models.BooleanField(default=False, verbose_name='Is Completed')
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Created At')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Updated At')
+    
+    class Meta:
+        verbose_name = 'Admin Note'
+        verbose_name_plural = 'Admin Notes'
+        ordering = ['-priority', '-created_at']
+    
+    def __str__(self):
+        return f"{self.title} ({self.get_priority_display()})"
+
+
+class SystemLog(models.Model):
+    """
+    Model for system logs and activity tracking.
+    """
+    LOG_TYPES = [
+        ('info', 'Information'),
+        ('warning', 'Warning'),
+        ('error', 'Error'),
+        ('security', 'Security'),
+        ('debug', 'Debug'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    log_type = models.CharField(max_length=20, choices=LOG_TYPES, default='info', verbose_name='Log Type')
+    message = models.TextField(verbose_name='Message')
+    data = models.JSONField(verbose_name='Additional Data', default=dict, blank=True)
+    
+    # User and request info
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='system_logs',
+        null=True,
+        blank=True,
+        verbose_name='User'
+    )
+    ip_address = models.GenericIPAddressField(verbose_name='IP Address', null=True, blank=True)
+    user_agent = models.TextField(verbose_name='User Agent', blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Created At')
+    
+    class Meta:
+        verbose_name = 'System Log'
+        verbose_name_plural = 'System Logs'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['log_type']),
+            models.Index(fields=['user']),
+            models.Index(fields=['created_at']),
+        ]
+    
+    def __str__(self):
+        return f"[{self.get_log_type_display()}] {self.message[:50]}"
