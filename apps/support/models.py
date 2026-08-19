@@ -667,49 +667,6 @@ class CustomerSatisfaction(models.Model):
         return sum(ratings) / len(ratings)
 
 
-class ContactMessage(models.Model):
-    """
-    Model for contact form messages.
-    """
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    
-    # Contact information
-    name = models.CharField(max_length=200, verbose_name='Name')
-    email = models.EmailField(verbose_name='Email')
-    phone = models.CharField(max_length=20, verbose_name='Phone', blank=True)
-    
-    # Message content
-    subject = models.CharField(max_length=300, verbose_name='Subject')
-    message = models.TextField(verbose_name='Message')
-    department = models.CharField(max_length=100, verbose_name='Department', blank=True)
-    
-    # User association
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        related_name='contact_messages',
-        null=True,
-        blank=True,
-        verbose_name='User'
-    )
-    
-    # Tracking
-    ip_address = models.GenericIPAddressField(verbose_name='IP Address', null=True, blank=True)
-    is_read = models.BooleanField(default=False, verbose_name='Is Read')
-    is_archived = models.BooleanField(default=False, verbose_name='Is Archived')
-    
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Created At')
-    updated_at = models.DateTimeField(auto_now=True, verbose_name='Updated At')
-    
-    class Meta:
-        verbose_name = 'Contact Message'
-        verbose_name_plural = 'Contact Messages'
-        ordering = ['-created_at']
-    
-    def __str__(self):
-        return f"{self.subject} - {self.name}"
-
-
 class LiveChatSession(models.Model):
     """
     Model for live chat sessions.

@@ -17,8 +17,9 @@ from django.conf import settings
 
 from .models import (
     Ticket, TicketMessage, SupportCategory, FAQ, FAQCategory,
-    ContactMessage, LiveChatSession, LiveChatMessage
+    LiveChatSession, LiveChatMessage
 )
+from apps.core.models import ContactMessage
 from .forms import (
     TicketForm, TicketMessageForm, FAQForm, ContactForm,
     TicketSearchForm
