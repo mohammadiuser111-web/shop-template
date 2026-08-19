@@ -26,20 +26,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     postgresql-client \
     git \
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Poetry
-RUN curl -sSL https://install.python-poetry.org | python3 -
-
-# Copy only requirements to cache them in docker layer
+# Install Python dependencies
 WORKDIR /app
 COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Install dependencies in a virtual environment
-RUN poetry config virtualenvs.in-project true && \
-    poetry config experimental.new-installer false && \
-    poetry install --no-dev --no-interaction --no-ansi
+# Create virtual environment and install dependencies
+RUN python -m venv /app/.venv
+RUN /app/.venv/bin/pip install --no-cache-dir --upgrade pip && \
+    /app/.venv/bin/pip install --no-cache-dir -r requirements.txt
 
 # ============================================
 # Stage 2: Production stage
@@ -48,8 +46,7 @@ FROM python:3.11-slim
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PATH="/app/venv/bin:$PATH"
+    PYTHONUNBUFFERED=1
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -62,7 +59,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # Copy virtual environment from builder
-COPY --from=builder /app/.venv /app/venv
+COPY --from=builder /app/.venv /app/.venv
+ENV PATH="/app/.venv/bin:${PATH}"
 
 # Copy project files
 COPY . .
@@ -105,17 +103,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     postgresql-client \
     git \
-    curl \
     && rm -rf /var/lib/apt/lists/*
-
-# Install Poetry
-ENV POETRY_VERSION=1.7.1 \
-    POETRY_HOME=/opt/poetry \
-    POETRY_NO_INTERACTION=1
-RUN curl -sSL https://install.python-poetry.org | python3 -
-
-# Add Poetry to PATH
-ENV PATH="/opt/poetry/bin:${PATH}"
 
 # Set working directory
 WORKDIR /app
@@ -123,9 +111,11 @@ WORKDIR /app
 # Copy project files
 COPY . .
 
-# Install all dependencies (including dev)
-RUN poetry config virtualenvs.in-project true && \
-    poetry install --no-interaction --no-ansi
+# Create virtual environment and install all dependencies (including dev)
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:${PATH}"
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Create directories
 RUN mkdir -p /app/staticfiles /app/media /app/logs /app/tmp
