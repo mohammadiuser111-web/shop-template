@@ -125,7 +125,6 @@ COPY . .
 
 # Install all dependencies (including dev)
 RUN poetry config virtualenvs.in-project true && \
-    poetry config experimental.new-installer false && \
     poetry install --no-interaction --no-ansi
 
 # Create directories
