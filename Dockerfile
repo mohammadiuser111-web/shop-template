@@ -6,7 +6,7 @@
 # ============================================
 # Stage 1: Build stage (for production)
 # ============================================
-FROM python:3.11-slim as builder
+FROM python:3.11-bookworm as builder
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -21,7 +21,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     POETRY_VIRTUALENVS_IN_PROJECT=true
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Use retry and fix-missing for reliability
+RUN apt-get update -y && \
+    apt-get install -y --no-install-recommends --fix-missing \
     build-essential \
     libpq-dev \
     postgresql-client \
@@ -42,14 +44,15 @@ RUN /app/.venv/bin/pip install --no-cache-dir --upgrade pip && \
 # ============================================
 # Stage 2: Production stage
 # ============================================
-FROM python:3.11-slim
+FROM python:3.11-bookworm
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update -y && \
+    apt-get install -y --no-install-recommends --fix-missing \
     libpq5 \
     postgresql-client \
     netcat \
@@ -89,7 +92,7 @@ CMD ["web"]
 # ============================================
 # Stage 3: Development stage (optional)
 # ============================================
-FROM python:3.11 as development
+FROM python:3.11-bookworm as development
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -98,7 +101,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     DJANGO_SETTINGS_MODULE=shop_template.settings.development
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update -y && \
+    apt-get install -y --no-install-recommends --fix-missing \
     build-essential \
     libpq-dev \
     postgresql-client \
