@@ -85,6 +85,13 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD python /app/scripts/wait_for_db.py --timeout=5 || exit 1
 
+# Set entrypoint to directly run start scripts
+COPY docker/web/start.sh /app/docker/web/start.sh
+COPY docker/celery/worker/start.sh /app/docker/celery/worker/start.sh
+COPY docker/celery/beat/start.sh /app/docker/celery/beat/start.sh
+COPY docker/entrypoint.sh /app/docker/entrypoint.sh
+RUN chmod +x /app/docker/entrypoint.sh /app/docker/web/start.sh /app/docker/celery/worker/start.sh /app/docker/celery/beat/start.sh
+
 # Set entrypoint
 ENTRYPOINT ["/app/docker/entrypoint.sh"]
 CMD ["web"]
@@ -123,6 +130,13 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Create directories
 RUN mkdir -p /app/staticfiles /app/media /app/logs /app/tmp
+
+# Copy and set permissions for entrypoint and start scripts
+COPY docker/web/start.sh /app/docker/web/start.sh
+COPY docker/celery/worker/start.sh /app/docker/celery/worker/start.sh
+COPY docker/celery/beat/start.sh /app/docker/celery/beat/start.sh
+COPY docker/entrypoint.sh /app/docker/entrypoint.sh
+RUN chmod +x /app/docker/entrypoint.sh /app/docker/web/start.sh /app/docker/celery/worker/start.sh /app/docker/celery/beat/start.sh
 
 # Expose port
 EXPOSE 8000
