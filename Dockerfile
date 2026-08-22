@@ -22,8 +22,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     POETRY_VIRTUALENVS_IN_PROJECT=true
 
 # Install system dependencies
-# Use retry and fix-missing for reliability
-RUN apt-get update -y && \
+# Use USTC mirror for Debian (works in Iran/China)
+RUN echo "deb https://mirrors.ustc.edu.cn/debian bookworm main contrib non-free" > /etc/apt/sources.list && \
+    echo "deb https://mirrors.ustc.edu.cn/debian bookworm-updates main contrib non-free" >> /etc/apt/sources.list && \
+    echo "deb https://mirrors.ustc.edu.cn/debian-security bookworm-security main contrib non-free" >> /etc/apt/sources.list && \
+    apt-get update -y && \
     apt-get install -y --no-install-recommends --fix-missing \
     build-essential \
     libpq-dev \
@@ -53,7 +56,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_INDEX_URL=https://pypi.mirrors.ustc.edu.cn/simple
 
 # Install system dependencies
-RUN apt-get update -y && \
+# Use USTC mirror for Debian (works in Iran/China)
+RUN echo "deb https://mirrors.ustc.edu.cn/debian bookworm main contrib non-free" > /etc/apt/sources.list && \
+    echo "deb https://mirrors.ustc.edu.cn/debian bookworm-updates main contrib non-free" >> /etc/apt/sources.list && \
+    echo "deb https://mirrors.ustc.edu.cn/debian-security bookworm-security main contrib non-free" >> /etc/apt/sources.list && \
+    apt-get update -y && \
     apt-get install -y --no-install-recommends --fix-missing \
     libpq5 \
     postgresql-client \
@@ -111,7 +118,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_INDEX_URL=https://pypi.mirrors.ustc.edu.cn/simple
 
 # Install system dependencies
-RUN apt-get update -y && \
+# Use USTC mirror for Debian (works in Iran/China)
+RUN echo "deb https://mirrors.ustc.edu.cn/debian bookworm main contrib non-free" > /etc/apt/sources.list && \
+    echo "deb https://mirrors.ustc.edu.cn/debian bookworm-updates main contrib non-free" >> /etc/apt/sources.list && \
+    echo "deb https://mirrors.ustc.edu.cn/debian-security bookworm-security main contrib non-free" >> /etc/apt/sources.list && \
+    apt-get update -y && \
     apt-get install -y --no-install-recommends --fix-missing \
     build-essential \
     libpq-dev \
