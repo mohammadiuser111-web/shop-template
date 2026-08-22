@@ -17,6 +17,7 @@ services:
     command: web
     volumes:
       - .:/app
+      - /app/docker  # Prevent host docker folder from overriding container's /app/docker
       - static_volume:/app/staticfiles
       - media_volume:/app/media
       - logs_volume:/app/logs
@@ -103,6 +104,7 @@ services:
     command: celery
     volumes:
       - .:/app
+      - /app/docker  # Prevent host docker folder from overriding container's /app/docker
     environment:
       - DEBUG=1
       - DJANGO_SETTINGS_MODULE=shop_template.settings.development
@@ -131,6 +133,7 @@ services:
     command: celery-beat
     volumes:
       - .:/app
+      - /app/docker  # Prevent host docker folder from overriding container's /app/docker
     environment:
       - DEBUG=1
       - DJANGO_SETTINGS_MODULE=shop_template.settings.development

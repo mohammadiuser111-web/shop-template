@@ -6,14 +6,15 @@
 # ============================================
 # Stage 1: Build stage (for production)
 # ============================================
-FROM python:3.11-bookworm as builder
+FROM --platform=linux/amd64 python:3.11-slim-bookworm AS builder
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PIP_DEFAULT_TIMEOUT=100 \
+    PIP_DEFAULT_TIMEOUT=300 \
+    PIP_INDEX_URL=https://pypi.mirrors.ustc.edu.cn/simple \
     POETRY_VERSION=1.7.1 \
     POETRY_HOME=/opt/poetry \
     POETRY_NO_INTERACTION=1 \
@@ -34,21 +35,22 @@ RUN apt-get update -y && \
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir --default-timeout=300 -r requirements.txt
 
 # Create virtual environment and install dependencies
 RUN python -m venv /app/.venv
 RUN /app/.venv/bin/pip install --no-cache-dir --upgrade pip && \
-    /app/.venv/bin/pip install --no-cache-dir -r requirements.txt
+    /app/.venv/bin/pip install --no-cache-dir --default-timeout=300 -r requirements.txt
 
 # ============================================
 # Stage 2: Production stage
 # ============================================
-FROM python:3.11-bookworm
+FROM --platform=linux/amd64 python:3.11-slim-bookworm
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PIP_INDEX_URL=https://pypi.mirrors.ustc.edu.cn/simple
 
 # Install system dependencies
 RUN apt-get update -y && \
@@ -99,13 +101,14 @@ CMD ["web"]
 # ============================================
 # Stage 3: Development stage (optional)
 # ============================================
-FROM python:3.11-bookworm as development
+FROM --platform=linux/amd64 python:3.11-slim-bookworm AS development
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DEBUG=1 \
-    DJANGO_SETTINGS_MODULE=shop_template.settings.development
+    DJANGO_SETTINGS_MODULE=shop_template.settings.development \
+    PIP_INDEX_URL=https://pypi.mirrors.ustc.edu.cn/simple
 
 # Install system dependencies
 RUN apt-get update -y && \
@@ -126,7 +129,7 @@ COPY . .
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:${PATH}"
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir --default-timeout=300 -r requirements.txt
 
 # Create directories
 RUN mkdir -p /app/staticfiles /app/media /app/logs /app/tmp
