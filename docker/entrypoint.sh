@@ -16,15 +16,15 @@ SERVICE=${1:-web}
 case "$SERVICE" in
     web)
         echo "Starting web service..."
-        exec /docker/web/start.sh
+        exec /app/docker/web/start.sh
         ;;
     celery)
         echo "Starting Celery worker..."
-        exec /docker/celery/worker/start.sh
+        exec /app/docker/celery/worker/start.sh
         ;;
     celery-beat)
         echo "Starting Celery beat..."
-        exec /docker/celery/beat/start.sh
+        exec /app/docker/celery/beat/start.sh
         ;;
     *)
         echo "Unknown service: $SERVICE"
