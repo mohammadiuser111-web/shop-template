@@ -1,10 +1,10 @@
 # ============================================
 # Dockerfile for Shop Template
-# Multi-stage build for production and development
+# Multi-stage build with inline scripts
 # ============================================
 
 # ============================================
-# Stage 1: Build stage (for production)
+# Stage 1: Builder stage (for production)
 # ============================================
 FROM --platform=linux/amd64 python:3.11-slim-bookworm AS builder
 
@@ -14,15 +14,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_DEFAULT_TIMEOUT=300 \
-    PIP_INDEX_URL=https://pypi.mirrors.ustc.edu.cn/simple \
-    POETRY_VERSION=1.7.1 \
-    POETRY_HOME=/opt/poetry \
-    POETRY_NO_INTERACTION=1 \
-    POETRY_VIRTUALENVS_CREATE=true \
-    POETRY_VIRTUALENVS_IN_PROJECT=true
+    PIP_INDEX_URL=https://pypi.mirrors.ustc.edu.cn/simple
 
-# Install system dependencies
-# Use USTC mirror for Debian (works in Iran/China)
+# Install system dependencies - USTC mirror for Debian
 RUN echo "deb https://mirrors.ustc.edu.cn/debian bookworm main contrib non-free" > /etc/apt/sources.list && \
     echo "deb https://mirrors.ustc.edu.cn/debian bookworm-updates main contrib non-free" >> /etc/apt/sources.list && \
     echo "deb https://mirrors.ustc.edu.cn/debian-security bookworm-security main contrib non-free" >> /etc/apt/sources.list && \
@@ -55,8 +49,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_INDEX_URL=https://pypi.mirrors.ustc.edu.cn/simple
 
-# Install system dependencies
-# Use USTC mirror for Debian (works in Iran/China)
+# Install system dependencies - USTC mirror for Debian
 RUN echo "deb https://mirrors.ustc.edu.cn/debian bookworm main contrib non-free" > /etc/apt/sources.list && \
     echo "deb https://mirrors.ustc.edu.cn/debian bookworm-updates main contrib non-free" >> /etc/apt/sources.list && \
     echo "deb https://mirrors.ustc.edu.cn/debian-security bookworm-security main contrib non-free" >> /etc/apt/sources.list && \
@@ -80,30 +73,150 @@ COPY . .
 # Create directories
 RUN mkdir -p /app/staticfiles /app/media /app/logs /app/tmp
 
-# Collect static files (will be done at runtime)
-# RUN python manage.py collectstatic --noinput
-
 # Set permissions
 RUN chmod -R 755 /app && \
     chown -R www-data:www-data /app/staticfiles /app/media /app/logs /app/tmp
 
-# Expose port
-EXPOSE 8000
+# Create docker scripts directory
+RUN mkdir -p /app/docker/web /app/docker/celery/worker /app/docker/celery/beat
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD python /app/scripts/wait_for_db.py --timeout=5 || exit 1
+# Create entrypoint.sh
+RUN cat << 'EOF' > /app/docker/entrypoint.sh
+#!/bin/bash
+set -e
 
-# Set entrypoint to directly run start scripts
-COPY docker/web/start.sh /app/docker/web/start.sh
-COPY docker/celery/worker/start.sh /app/docker/celery/worker/start.sh
-COPY docker/celery/beat/start.sh /app/docker/celery/beat/start.sh
-COPY docker/entrypoint.sh /app/docker/entrypoint.sh
-RUN chmod +x /app/docker/entrypoint.sh /app/docker/web/start.sh /app/docker/celery/worker/start.sh /app/docker/celery/beat/start.sh
+export PYTHONUNBUFFERED=1
+export PYTHONDONTWRITEBYTECODE=1
+
+SERVICE=${1:-web}
+
+case "$SERVICE" in
+    web)
+        echo "Starting web service..."
+        exec /app/docker/web/start.sh
+        ;;
+    celery)
+        echo "Starting Celery worker..."
+        exec /app/docker/celery/worker/start.sh
+        ;;
+    celery-beat)
+        echo "Starting Celery beat..."
+        exec /app/docker/celery/beat/start.sh
+        ;;
+    *)
+        echo "Unknown service: $SERVICE"
+        echo "Available services: web, celery, celery-beat"
+        exit 1
+        ;;
+esac
+EOF
+
+RUN chmod +x /app/docker/entrypoint.sh
+
+# Create web/start.sh
+RUN cat << 'EOF' > /app/docker/web/start.sh
+#!/bin/bash
+set -e
+
+export DJANGO_SETTINGS_MODULE=shop_template.settings.production
+export PYTHONUNBUFFERED=1
+export PYTHONDONTWRITEBYTECODE=1
+
+if [ -f "/app/.venv/bin/activate" ]; then
+    source /app/.venv/bin/activate
+fi
+
+cd /app
+
+echo "Waiting for PostgreSQL..."
+while ! nc -z db 5432; do sleep 1; done
+echo "PostgreSQL is up!"
+
+echo "Waiting for Redis..."
+while ! nc -z redis 6379; do sleep 1; done
+echo "Redis is up!"
+
+echo "Running migrations..."
+python manage.py migrate --noinput
+
+echo "Collecting static files..."
+python manage.py collectstatic --noinput
+
+if python -c "import compressor" 2>/dev/null; then
+    echo "Compressing static files..."
+    python manage.py compress --force
+fi
+
+echo "Starting Gunicorn..."
+exec gunicorn --bind 0.0.0.0:8000 --workers 4 --threads 2 --timeout 300 --graceful-timeout 30 --keepalive 2 shop_template.wsgi:application
+EOF
+
+RUN chmod +x /app/docker/web/start.sh
+
+# Create celery/worker/start.sh
+RUN cat << 'EOF' > /app/docker/celery/worker/start.sh
+#!/bin/bash
+set -e
+
+export DJANGO_SETTINGS_MODULE=shop_template.settings.production
+export PYTHONUNBUFFERED=1
+export PYTHONDONTWRITEBYTECODE=1
+
+if [ -f "/app/.venv/bin/activate" ]; then
+    source /app/.venv/bin/activate
+fi
+
+cd /app
+
+echo "Waiting for Redis..."
+while ! nc -z redis 6379; do sleep 1; done
+echo "Redis is up!"
+
+echo "Waiting for PostgreSQL..."
+while ! nc -z db 5432; do sleep 1; done
+echo "PostgreSQL is up!"
+
+echo "Starting Celery worker..."
+exec celery -A shop_template worker -l info --concurrency=4 --max-tasks-per-child=1000 --max-memory-per-child=300000
+EOF
+
+RUN chmod +x /app/docker/celery/worker/start.sh
+
+# Create celery/beat/start.sh
+RUN cat << 'EOF' > /app/docker/celery/beat/start.sh
+#!/bin/bash
+set -e
+
+export DJANGO_SETTINGS_MODULE=shop_template.settings.production
+export PYTHONUNBUFFERED=1
+export PYTHONDONTWRITEBYTECODE=1
+
+if [ -f "/app/.venv/bin/activate" ]; then
+    source /app/.venv/bin/activate
+fi
+
+cd /app
+
+echo "Waiting for Redis..."
+while ! nc -z redis 6379; do sleep 1; done
+echo "Redis is up!"
+
+echo "Starting Celery beat..."
+exec celery -A shop_template beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+EOF
+
+RUN chmod +x /app/docker/celery/beat/start.sh
 
 # Set entrypoint
 ENTRYPOINT ["/app/docker/entrypoint.sh"]
 CMD ["web"]
+
+# Expose port
+EXPOSE 8000
+
+# Health check - FIXED: removed colon from --retries
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD python /app/scripts/wait_for_db.py --timeout=5 || exit 1
 
 # ============================================
 # Stage 3: Development stage (optional)
@@ -117,8 +230,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     DJANGO_SETTINGS_MODULE=shop_template.settings.development \
     PIP_INDEX_URL=https://pypi.mirrors.ustc.edu.cn/simple
 
-# Install system dependencies
-# Use USTC mirror for Debian (works in Iran/China)
+# Install system dependencies - USTC mirror for Debian
 RUN echo "deb https://mirrors.ustc.edu.cn/debian bookworm main contrib non-free" > /etc/apt/sources.list && \
     echo "deb https://mirrors.ustc.edu.cn/debian bookworm-updates main contrib non-free" >> /etc/apt/sources.list && \
     echo "deb https://mirrors.ustc.edu.cn/debian-security bookworm-security main contrib non-free" >> /etc/apt/sources.list && \
@@ -136,7 +248,7 @@ WORKDIR /app
 # Copy project files
 COPY . .
 
-# Create virtual environment and install all dependencies (including dev)
+# Create virtual environment and install all dependencies
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:${PATH}"
 RUN pip install --no-cache-dir --upgrade pip && \
@@ -145,16 +257,139 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Create directories
 RUN mkdir -p /app/staticfiles /app/media /app/logs /app/tmp
 
-# Copy and set permissions for entrypoint and start scripts
-COPY docker/web/start.sh /app/docker/web/start.sh
-COPY docker/celery/worker/start.sh /app/docker/celery/worker/start.sh
-COPY docker/celery/beat/start.sh /app/docker/celery/beat/start.sh
-COPY docker/entrypoint.sh /app/docker/entrypoint.sh
-RUN chmod +x /app/docker/entrypoint.sh /app/docker/web/start.sh /app/docker/celery/worker/start.sh /app/docker/celery/beat/start.sh
+# Create docker scripts directory
+RUN mkdir -p /app/docker/web /app/docker/celery/worker /app/docker/celery/beat
 
-# Expose port
-EXPOSE 8000
+# Create entrypoint.sh
+RUN cat << 'EOF' > /app/docker/entrypoint.sh
+#!/bin/bash
+set -e
+
+export PYTHONUNBUFFERED=1
+export PYTHONDONTWRITEBYTECODE=1
+
+SERVICE=${1:-web}
+
+case "$SERVICE" in
+    web)
+        echo "Starting web service..."
+        exec /app/docker/web/start.sh
+        ;;
+    celery)
+        echo "Starting Celery worker..."
+        exec /app/docker/celery/worker/start.sh
+        ;;
+    celery-beat)
+        echo "Starting Celery beat..."
+        exec /app/docker/celery/beat/start.sh
+        ;;
+    *)
+        echo "Unknown service: $SERVICE"
+        echo "Available services: web, celery, celery-beat"
+        exit 1
+        ;;
+esac
+EOF
+
+RUN chmod +x /app/docker/entrypoint.sh
+
+# Create web/start.sh
+RUN cat << 'EOF' > /app/docker/web/start.sh
+#!/bin/bash
+set -e
+
+export DJANGO_SETTINGS_MODULE=shop_template.settings.development
+export PYTHONUNBUFFERED=1
+export PYTHONDONTWRITEBYTECODE=1
+
+if [ -f "/opt/venv/bin/activate" ]; then
+    source /opt/venv/bin/activate
+fi
+
+cd /app
+
+echo "Waiting for PostgreSQL..."
+while ! nc -z db 5432; do sleep 1; done
+echo "PostgreSQL is up!"
+
+echo "Waiting for Redis..."
+while ! nc -z redis 6379; do sleep 1; done
+echo "Redis is up!"
+
+echo "Running migrations..."
+python manage.py migrate --noinput
+
+echo "Collecting static files..."
+python manage.py collectstatic --noinput
+
+if python -c "import compressor" 2>/dev/null; then
+    echo "Compressing static files..."
+    python manage.py compress --force
+fi
+
+echo "Starting Gunicorn..."
+exec gunicorn --bind 0.0.0.0:8000 --workers 4 --threads 2 --timeout 300 --graceful-timeout 30 --keepalive 2 shop_template.wsgi:application
+EOF
+
+RUN chmod +x /app/docker/web/start.sh
+
+# Create celery/worker/start.sh
+RUN cat << 'EOF' > /app/docker/celery/worker/start.sh
+#!/bin/bash
+set -e
+
+export DJANGO_SETTINGS_MODULE=shop_template.settings.development
+export PYTHONUNBUFFERED=1
+export PYTHONDONTWRITEBYTECODE=1
+
+if [ -f "/opt/venv/bin/activate" ]; then
+    source /opt/venv/bin/activate
+fi
+
+cd /app
+
+echo "Waiting for Redis..."
+while ! nc -z redis 6379; do sleep 1; done
+echo "Redis is up!"
+
+echo "Waiting for PostgreSQL..."
+while ! nc -z db 5432; do sleep 1; done
+echo "PostgreSQL is up!"
+
+echo "Starting Celery worker..."
+exec celery -A shop_template worker -l info --concurrency=4 --max-tasks-per-child=1000 --max-memory-per-child=300000
+EOF
+
+RUN chmod +x /app/docker/celery/worker/start.sh
+
+# Create celery/beat/start.sh
+RUN cat << 'EOF' > /app/docker/celery/beat/start.sh
+#!/bin/bash
+set -e
+
+export DJANGO_SETTINGS_MODULE=shop_template.settings.development
+export PYTHONUNBUFFERED=1
+export PYTHONDONTWRITEBYTECODE=1
+
+if [ -f "/opt/venv/bin/activate" ]; then
+    source /opt/venv/bin/activate
+fi
+
+cd /app
+
+echo "Waiting for Redis..."
+while ! nc -z redis 6379; do sleep 1; done
+echo "Redis is up!"
+
+echo "Starting Celery beat..."
+exec celery -A shop_template beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+EOF
+
+RUN chmod +x /app/docker/celery/beat/start.sh
 
 # Set entrypoint
 ENTRYPOINT ["/app/docker/entrypoint.sh"]
 CMD ["web"]
+
+# Expose port
+EXPOSE 8000
