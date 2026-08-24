@@ -18,7 +18,6 @@ services:
     restart: unless-stopped
     command: web
     volumes:
-      - .:/app
       - static_volume:/app/staticfiles
       - media_volume:/app/media
       - logs_volume:/app/logs
@@ -103,8 +102,6 @@ services:
     container_name: shop-template-celery
     restart: unless-stopped
     command: celery
-    volumes:
-      - .:/app
     environment:
       - DEBUG=1
       - DJANGO_SETTINGS_MODULE=shop_template.settings.development
@@ -131,8 +128,6 @@ services:
     container_name: shop-template-celery-beat
     restart: unless-stopped
     command: celery-beat
-    volumes:
-      - .:/app
     environment:
       - DEBUG=1
       - DJANGO_SETTINGS_MODULE=shop_template.settings.development
