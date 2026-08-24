@@ -3,6 +3,8 @@
 # Development environment
 # ============================================
 
+version: '3.8'
+
 services:
   # ============================================
   # Web Application
@@ -17,7 +19,7 @@ services:
     command: web
     volumes:
       - .:/app
-      - /app/docker  # Prevent host docker folder from overriding container's /app/docker
+      - /opt/docker  # 🔥 Prevent host docker folder from overriding container's /opt/docker
       - static_volume:/app/staticfiles
       - media_volume:/app/media
       - logs_volume:/app/logs
@@ -104,7 +106,7 @@ services:
     command: celery
     volumes:
       - .:/app
-      - /app/docker  # Prevent host docker folder from overriding container's /app/docker
+      - /opt/docker  # 🔥 Prevent host docker folder from overriding container's /opt/docker
     environment:
       - DEBUG=1
       - DJANGO_SETTINGS_MODULE=shop_template.settings.development
@@ -133,7 +135,7 @@ services:
     command: celery-beat
     volumes:
       - .:/app
-      - /app/docker  # Prevent host docker folder from overriding container's /app/docker
+      - /opt/docker  # 🔥 Prevent host docker folder from overriding container's /opt/docker
     environment:
       - DEBUG=1
       - DJANGO_SETTINGS_MODULE=shop_template.settings.development
@@ -146,55 +148,6 @@ services:
       - db
     networks:
       - shop-template-network
-
-  # ============================================
-  # Nginx (Reverse Proxy - Optional for development)
-  # ============================================
-  # nginx:
-  #   image: nginx:1.25-alpine
-  #   container_name: shop-template-nginx
-  #   restart: unless-stopped
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #   volumes:
-  #     - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
-  #     - static_volume:/app/staticfiles:ro
-  #     - media_volume:/app/media:ro
-  #   depends_on:
-  #     - web
-  #   networks:
-  #     - shop-template-network
-
-  # ============================================
-  # Mailhog (Email Testing - Optional)
-  # ============================================
-  # mailhog:
-  #   image: mailhog/mailhog:latest
-  #   container_name: shop-template-mailhog
-  #   restart: unless-stopped
-  #   ports:
-  #     - "1025:1025"  # SMTP
-  #     - "8025:8025"  # Web UI
-  #   networks:
-  #     - shop-template-network
-
-  # ============================================
-  # pgAdmin (Database Admin - Optional)
-  # ============================================
-  # pgadmin:
-  #   image: dpage/pgadmin4:latest
-  #   container_name: shop-template-pgadmin
-  #   restart: unless-stopped
-  #   environment:
-  #     - PGADMIN_DEFAULT_EMAIL=admin@admin.com
-  #     - PGADMIN_DEFAULT_PASSWORD=admin
-  #   ports:
-  #     - "5050:80"
-  #   depends_on:
-  #     - db
-  #   networks:
-  #     - shop-template-network
 
 # ============================================
 # Volumes

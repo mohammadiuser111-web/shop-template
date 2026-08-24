@@ -1,6 +1,6 @@
 # ============================================
 # Dockerfile for Shop Template
-# Multi-stage build with inline scripts
+# Multi-stage build with inline scripts in /opt/docker
 # ============================================
 
 # ============================================
@@ -77,11 +77,11 @@ RUN mkdir -p /app/staticfiles /app/media /app/logs /app/tmp
 RUN chmod -R 755 /app && \
     chown -R www-data:www-data /app/staticfiles /app/media /app/logs /app/tmp
 
-# Create docker scripts directory
-RUN mkdir -p /app/docker/web /app/docker/celery/worker /app/docker/celery/beat
+# Create docker scripts directory in /opt/docker
+RUN mkdir -p /opt/docker/web /opt/docker/celery/worker /opt/docker/celery/beat
 
-# Create entrypoint.sh
-RUN cat << 'EOF' > /app/docker/entrypoint.sh
+# Create entrypoint.sh in /opt/docker
+RUN cat << 'EOF' > /opt/docker/entrypoint.sh
 #!/bin/bash
 set -e
 
@@ -93,15 +93,15 @@ SERVICE=${1:-web}
 case "$SERVICE" in
     web)
         echo "Starting web service..."
-        exec /app/docker/web/start.sh
+        exec /opt/docker/web/start.sh
         ;;
     celery)
         echo "Starting Celery worker..."
-        exec /app/docker/celery/worker/start.sh
+        exec /opt/docker/celery/worker/start.sh
         ;;
     celery-beat)
         echo "Starting Celery beat..."
-        exec /app/docker/celery/beat/start.sh
+        exec /opt/docker/celery/beat/start.sh
         ;;
     *)
         echo "Unknown service: $SERVICE"
@@ -111,10 +111,10 @@ case "$SERVICE" in
 esac
 EOF
 
-RUN chmod +x /app/docker/entrypoint.sh
+RUN chmod +x /opt/docker/entrypoint.sh
 
-# Create web/start.sh
-RUN cat << 'EOF' > /app/docker/web/start.sh
+# Create web/start.sh in /opt/docker
+RUN cat << 'EOF' > /opt/docker/web/start.sh
 #!/bin/bash
 set -e
 
@@ -151,10 +151,10 @@ echo "Starting Gunicorn..."
 exec gunicorn --bind 0.0.0.0:8000 --workers 4 --threads 2 --timeout 300 --graceful-timeout 30 --keepalive 2 shop_template.wsgi:application
 EOF
 
-RUN chmod +x /app/docker/web/start.sh
+RUN chmod +x /opt/docker/web/start.sh
 
-# Create celery/worker/start.sh
-RUN cat << 'EOF' > /app/docker/celery/worker/start.sh
+# Create celery/worker/start.sh in /opt/docker
+RUN cat << 'EOF' > /opt/docker/celery/worker/start.sh
 #!/bin/bash
 set -e
 
@@ -180,10 +180,10 @@ echo "Starting Celery worker..."
 exec celery -A shop_template worker -l info --concurrency=4 --max-tasks-per-child=1000 --max-memory-per-child=300000
 EOF
 
-RUN chmod +x /app/docker/celery/worker/start.sh
+RUN chmod +x /opt/docker/celery/worker/start.sh
 
-# Create celery/beat/start.sh
-RUN cat << 'EOF' > /app/docker/celery/beat/start.sh
+# Create celery/beat/start.sh in /opt/docker
+RUN cat << 'EOF' > /opt/docker/celery/beat/start.sh
 #!/bin/bash
 set -e
 
@@ -205,16 +205,16 @@ echo "Starting Celery beat..."
 exec celery -A shop_template beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
 EOF
 
-RUN chmod +x /app/docker/celery/beat/start.sh
+RUN chmod +x /opt/docker/celery/beat/start.sh
 
 # Set entrypoint
-ENTRYPOINT ["/app/docker/entrypoint.sh"]
+ENTRYPOINT ["/opt/docker/entrypoint.sh"]
 CMD ["web"]
 
 # Expose port
 EXPOSE 8000
 
-# Health check - FIXED: removed colon from --retries
+# Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD python /app/scripts/wait_for_db.py --timeout=5 || exit 1
 
@@ -257,11 +257,11 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Create directories
 RUN mkdir -p /app/staticfiles /app/media /app/logs /app/tmp
 
-# Create docker scripts directory
-RUN mkdir -p /app/docker/web /app/docker/celery/worker /app/docker/celery/beat
+# Create docker scripts directory in /opt/docker
+RUN mkdir -p /opt/docker/web /opt/docker/celery/worker /opt/docker/celery/beat
 
-# Create entrypoint.sh
-RUN cat << 'EOF' > /app/docker/entrypoint.sh
+# Create entrypoint.sh in /opt/docker
+RUN cat << 'EOF' > /opt/docker/entrypoint.sh
 #!/bin/bash
 set -e
 
@@ -273,15 +273,15 @@ SERVICE=${1:-web}
 case "$SERVICE" in
     web)
         echo "Starting web service..."
-        exec /app/docker/web/start.sh
+        exec /opt/docker/web/start.sh
         ;;
     celery)
         echo "Starting Celery worker..."
-        exec /app/docker/celery/worker/start.sh
+        exec /opt/docker/celery/worker/start.sh
         ;;
     celery-beat)
         echo "Starting Celery beat..."
-        exec /app/docker/celery/beat/start.sh
+        exec /opt/docker/celery/beat/start.sh
         ;;
     *)
         echo "Unknown service: $SERVICE"
@@ -291,10 +291,10 @@ case "$SERVICE" in
 esac
 EOF
 
-RUN chmod +x /app/docker/entrypoint.sh
+RUN chmod +x /opt/docker/entrypoint.sh
 
-# Create web/start.sh
-RUN cat << 'EOF' > /app/docker/web/start.sh
+# Create web/start.sh in /opt/docker
+RUN cat << 'EOF' > /opt/docker/web/start.sh
 #!/bin/bash
 set -e
 
@@ -331,10 +331,10 @@ echo "Starting Gunicorn..."
 exec gunicorn --bind 0.0.0.0:8000 --workers 4 --threads 2 --timeout 300 --graceful-timeout 30 --keepalive 2 shop_template.wsgi:application
 EOF
 
-RUN chmod +x /app/docker/web/start.sh
+RUN chmod +x /opt/docker/web/start.sh
 
-# Create celery/worker/start.sh
-RUN cat << 'EOF' > /app/docker/celery/worker/start.sh
+# Create celery/worker/start.sh in /opt/docker
+RUN cat << 'EOF' > /opt/docker/celery/worker/start.sh
 #!/bin/bash
 set -e
 
@@ -360,10 +360,10 @@ echo "Starting Celery worker..."
 exec celery -A shop_template worker -l info --concurrency=4 --max-tasks-per-child=1000 --max-memory-per-child=300000
 EOF
 
-RUN chmod +x /app/docker/celery/worker/start.sh
+RUN chmod +x /opt/docker/celery/worker/start.sh
 
-# Create celery/beat/start.sh
-RUN cat << 'EOF' > /app/docker/celery/beat/start.sh
+# Create celery/beat/start.sh in /opt/docker
+RUN cat << 'EOF' > /opt/docker/celery/beat/start.sh
 #!/bin/bash
 set -e
 
@@ -385,10 +385,10 @@ echo "Starting Celery beat..."
 exec celery -A shop_template beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
 EOF
 
-RUN chmod +x /app/docker/celery/beat/start.sh
+RUN chmod +x /opt/docker/celery/beat/start.sh
 
 # Set entrypoint
-ENTRYPOINT ["/app/docker/entrypoint.sh"]
+ENTRYPOINT ["/opt/docker/entrypoint.sh"]
 CMD ["web"]
 
 # Expose port
