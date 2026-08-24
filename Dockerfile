@@ -1,6 +1,6 @@
 # ============================================
 # Dockerfile for Shop Template
-# Multi-stage build with scripts in /opt/docker
+# Multi-stage build with physical script files
 # ============================================
 
 # ============================================
@@ -63,19 +63,14 @@ RUN echo "deb https://mirrors.ustc.edu.cn/debian bookworm main contrib non-free"
 # Create app directory
 WORKDIR /app
 
-# Create /opt/docker directory and copy scripts from local
-RUN mkdir -p /opt/docker/web /opt/docker/celery/worker /opt/docker/celery/beat
-COPY docker/entrypoint.sh /opt/docker/entrypoint.sh
-COPY docker/web/start.sh /opt/docker/web/start.sh
-COPY docker/celery/worker/start.sh /opt/docker/celery/worker/start.sh
-COPY docker/celery/beat/start.sh /opt/docker/celery/beat/start.sh
-RUN chmod +x /opt/docker/entrypoint.sh /opt/docker/web/start.sh /opt/docker/celery/worker/start.sh /opt/docker/celery/beat/start.sh
+# Copy script files to /opt/docker/ BEFORE COPY . .
+COPY docker/ /opt/docker/
+RUN chmod -R +x /opt/docker/
 
-# Copy virtual environment from builder
+# Copy project files AFTER scripts
 COPY --from=builder /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:${PATH}"
 
-# Copy project files
 COPY . .
 
 # Create directories
@@ -123,15 +118,11 @@ RUN echo "deb https://mirrors.ustc.edu.cn/debian bookworm main contrib non-free"
 # Set working directory
 WORKDIR /app
 
-# Create /opt/docker directory and copy scripts from local
-RUN mkdir -p /opt/docker/web /opt/docker/celery/worker /opt/docker/celery/beat
-COPY docker/entrypoint.sh /opt/docker/entrypoint.sh
-COPY docker/web/start.sh /opt/docker/web/start.sh
-COPY docker/celery/worker/start.sh /opt/docker/celery/worker/start.sh
-COPY docker/celery/beat/start.sh /opt/docker/celery/beat/start.sh
-RUN chmod +x /opt/docker/entrypoint.sh /opt/docker/web/start.sh /opt/docker/celery/worker/start.sh /opt/docker/celery/beat/start.sh
+# Copy development script files to /opt/docker/ BEFORE COPY . .
+COPY docker-dev/ /opt/docker/
+RUN chmod -R +x /opt/docker/
 
-# Copy project files
+# Now copy project files AFTER creating scripts
 COPY . .
 
 # Create virtual environment and install all dependencies

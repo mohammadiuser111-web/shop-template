@@ -1,12 +1,12 @@
 #!/bin/bash
 set -e
 
-export DJANGO_SETTINGS_MODULE=shop_template.settings.production
+export DJANGO_SETTINGS_MODULE=shop_template.settings.development
 export PYTHONUNBUFFERED=1
 export PYTHONDONTWRITEBYTECODE=1
 
-if [ -f "/app/.venv/bin/activate" ]; then
-    source /app/.venv/bin/activate
+if [ -f "/opt/venv/bin/activate" ]; then
+    source /opt/venv/bin/activate
 fi
 
 cd /app

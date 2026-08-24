@@ -1,12 +1,12 @@
 #!/bin/bash
 set -e
 
-export DJANGO_SETTINGS_MODULE=shop_template.settings.production
+export DJANGO_SETTINGS_MODULE=shop_template.settings.development
 export PYTHONUNBUFFERED=1
 export PYTHONDONTWRITEBYTECODE=1
 
-if [ -f "/app/.venv/bin/activate" ]; then
-    source /app/.venv/bin/activate
+if [ -f "/opt/venv/bin/activate" ]; then
+    source /opt/venv/bin/activate
 fi
 
 cd /app
@@ -31,4 +31,4 @@ if python -c "import compressor" 2>/dev/null; then
 fi
 
 echo "Starting Gunicorn..."
-exec gunicorn --bind 0.0.0.0:8000 --workers 4 --threads 2 --timeout 300 --graceful-timeout 30 --keepalive 2 shop_template.wsgi:application
+exec gunicorn --bind 0.0.0.0:8000 --workers 4 --threads 2 --timeout 300 --graceful-timeout 30 --keepalive 2 --reload shop_template.wsgi:application
