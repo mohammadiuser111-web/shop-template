@@ -1,7 +1,7 @@
 # ============================================
 # Dockerfile for Shop Template
 # Multi-stage build with physical script files
-# Using reliable mirrors for better connectivity
+# Using Iranian mirrors for better connectivity in Iran
 # ============================================
 
 # ============================================
@@ -16,12 +16,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_DEFAULT_TIMEOUT=300
 
-# Install system dependencies - Using mirrors.kernel.org for better reliability
-RUN echo "deb http://mirrors.kernel.org/debian bookworm main contrib non-free" > /etc/apt/sources.list && \
-    echo "deb http://mirrors.kernel.org/debian bookworm-updates main contrib non-free" >> /etc/apt/sources.list && \
+# Install system dependencies - Using Iranian mirrors for better connectivity
+RUN echo "deb http://mirror.iranserver.net/debian bookworm main contrib non-free" > /etc/apt/sources.list && \
+    echo "deb http://mirror.iranserver.net/debian bookworm-updates main contrib non-free" >> /etc/apt/sources.list && \
     echo "deb http://security.debian.org/debian-security bookworm-security main contrib non-free" >> /etc/apt/sources.list && \
     apt-get update -y && \
-    apt-get install -y --no-install-recommends --fix-missing \
+    apt-get install -y --no-install-recommends --fix-missing --allow-downgrades \
     build-essential \
     libpq-dev \
     postgresql-client \
@@ -48,12 +48,12 @@ FROM --platform=linux/amd64 python:3.11-slim-bookworm
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-# Install system dependencies - Using mirrors.kernel.org for better reliability
-RUN echo "deb http://mirrors.kernel.org/debian bookworm main contrib non-free" > /etc/apt/sources.list && \
-    echo "deb http://mirrors.kernel.org/debian bookworm-updates main contrib non-free" >> /etc/apt/sources.list && \
+# Install system dependencies - Using Iranian mirrors for better connectivity
+RUN echo "deb http://mirror.iranserver.net/debian bookworm main contrib non-free" > /etc/apt/sources.list && \
+    echo "deb http://mirror.iranserver.net/debian bookworm-updates main contrib non-free" >> /etc/apt/sources.list && \
     echo "deb http://security.debian.org/debian-security bookworm-security main contrib non-free" >> /etc/apt/sources.list && \
     apt-get update -y && \
-    apt-get install -y --no-install-recommends --fix-missing \
+    apt-get install -y --no-install-recommends --fix-missing --allow-downgrades \
     libpq5 \
     postgresql-client \
     netcat \
@@ -101,12 +101,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     DEBUG=1 \
     DJANGO_SETTINGS_MODULE=shop_template.settings.development
 
-# Install system dependencies - Using mirrors.kernel.org for better reliability
-RUN echo "deb http://mirrors.kernel.org/debian bookworm main contrib non-free" > /etc/apt/sources.list && \
-    echo "deb http://mirrors.kernel.org/debian bookworm-updates main contrib non-free" >> /etc/apt/sources.list && \
+# Install system dependencies - Using Iranian mirrors for better connectivity
+RUN echo "deb http://mirror.iranserver.net/debian bookworm main contrib non-free" > /etc/apt/sources.list && \
+    echo "deb http://mirror.iranserver.net/debian bookworm-updates main contrib non-free" >> /etc/apt/sources.list && \
     echo "deb http://security.debian.org/debian-security bookworm-security main contrib non-free" >> /etc/apt/sources.list && \
     apt-get update -y && \
-    apt-get install -y --no-install-recommends --fix-missing \
+    apt-get install -y --no-install-recommends --fix-missing --allow-downgrades \
     build-essential \
     libpq-dev \
     postgresql-client \
