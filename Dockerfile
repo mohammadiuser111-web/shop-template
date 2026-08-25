@@ -13,14 +13,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PIP_DEFAULT_TIMEOUT=300 \
-    PIP_INDEX_URL=https://pypi.mirrors.ustc.edu.cn/simple
+    PIP_DEFAULT_TIMEOUT=300
 
-# Install system dependencies - USTC mirror for Debian
-RUN echo "deb https://mirrors.ustc.edu.cn/debian bookworm main contrib non-free" > /etc/apt/sources.list && \
-    echo "deb https://mirrors.ustc.edu.cn/debian bookworm-updates main contrib non-free" >> /etc/apt/sources.list && \
-    echo "deb https://mirrors.ustc.edu.cn/debian-security bookworm-security main contrib non-free" >> /etc/apt/sources.list && \
-    apt-get update -y && \
+# Install system dependencies - Using official Debian mirrors
+RUN apt-get update -y && \
     apt-get install -y --no-install-recommends --fix-missing \
     build-essential \
     libpq-dev \
@@ -46,14 +42,10 @@ FROM --platform=linux/amd64 python:3.11-slim-bookworm
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_INDEX_URL=https://pypi.mirrors.ustc.edu.cn/simple
+    PYTHONUNBUFFERED=1
 
-# Install system dependencies - USTC mirror for Debian
-RUN echo "deb https://mirrors.ustc.edu.cn/debian bookworm main contrib non-free" > /etc/apt/sources.list && \
-    echo "deb https://mirrors.ustc.edu.cn/debian bookworm-updates main contrib non-free" >> /etc/apt/sources.list && \
-    echo "deb https://mirrors.ustc.edu.cn/debian-security bookworm-security main contrib non-free" >> /etc/apt/sources.list && \
-    apt-get update -y && \
+# Install system dependencies - Using official Debian mirrors
+RUN apt-get update -y && \
     apt-get install -y --no-install-recommends --fix-missing \
     libpq5 \
     postgresql-client \
@@ -92,7 +84,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD python /app/scripts/wait_for_db.py --timeout=5 || exit 1
 
 # ============================================
-# Stage 3: Development stage
+# Stage 3: Development stage (optional)
 # ============================================
 FROM --platform=linux/amd64 python:3.11-slim-bookworm AS development
 
@@ -100,14 +92,10 @@ FROM --platform=linux/amd64 python:3.11-slim-bookworm AS development
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DEBUG=1 \
-    DJANGO_SETTINGS_MODULE=shop_template.settings.development \
-    PIP_INDEX_URL=https://pypi.mirrors.ustc.edu.cn/simple
+    DJANGO_SETTINGS_MODULE=shop_template.settings.development
 
-# Install system dependencies - USTC mirror for Debian
-RUN echo "deb https://mirrors.ustc.edu.cn/debian bookworm main contrib non-free" > /etc/apt/sources.list && \
-    echo "deb https://mirrors.ustc.edu.cn/debian bookworm-updates main contrib non-free" >> /etc/apt/sources.list && \
-    echo "deb https://mirrors.ustc.edu.cn/debian-security bookworm-security main contrib non-free" >> /etc/apt/sources.list && \
-    apt-get update -y && \
+# Install system dependencies - Using official Debian mirrors
+RUN apt-get update -y && \
     apt-get install -y --no-install-recommends --fix-missing \
     build-essential \
     libpq-dev \
